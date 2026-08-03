@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: booklist-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: booklist
+      POSTGRES_PASSWORD: booklist_password
+      POSTGRES_DB: booklist
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: booklist-app
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://booklist:booklist_password@postgres:5432/booklist
+      NODE_ENV: production
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
