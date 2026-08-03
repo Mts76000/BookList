@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "@/components/SessionProvider";
@@ -12,8 +12,13 @@ export const metadata: Metadata = {
   title: "BookList - Suivez vos lectures",
   description: "Application de suivi de livres personnelle avec statistiques et recommandations",
   manifest: "/manifest.json",
+};
+
+export const viewport: Viewport = {
   themeColor: "#4f46e5",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default function RootLayout({

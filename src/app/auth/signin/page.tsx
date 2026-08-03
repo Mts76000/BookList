@@ -25,13 +25,13 @@ export default function SignIn() {
       })
 
       if (result?.error) {
-        setError("Invalid email or password")
+        setError("Email ou mot de passe incorrect")
       } else {
         router.push("/dashboard")
         router.refresh()
       }
     } catch (error) {
-      setError("Something went wrong")
+      setError("Une erreur est survenue")
     } finally {
       setIsLoading(false)
     }
