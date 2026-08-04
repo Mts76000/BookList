@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { signIn } from "next-auth/react"
 import Link from "next/link"
+import { PasswordInput } from "@/components/PasswordInput"
 
 export default function SignUp() {
   const router = useRouter()
@@ -144,15 +145,12 @@ export default function SignUp() {
             <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-stone-700">
               Mot de passe
             </label>
-            <input
+            <PasswordInput
               id="password"
-              type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={setPassword}
               required
-              minLength={6}
               autoComplete="new-password"
-              className="input-field"
               placeholder="6 caractères minimum"
             />
           </div>
@@ -161,16 +159,12 @@ export default function SignUp() {
             <label htmlFor="confirmPassword" className="mb-1.5 block text-sm font-medium text-stone-700">
               Confirmer le mot de passe
             </label>
-            <input
+            <PasswordInput
               id="confirmPassword"
-              type="password"
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              onChange={setConfirmPassword}
               required
-              minLength={6}
               autoComplete="new-password"
-              className="input-field"
-              placeholder="••••••••"
             />
           </div>
 

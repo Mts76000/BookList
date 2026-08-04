@@ -5,7 +5,9 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { Navigation } from "@/components/Navigation"
 
-async function getBooks(userId: string, sortBy: string, genre?: string) {
+const BOOKS_PER_PAGE = 12
+
+async function getBooks(userId: string, sortBy: string, genre?: string, page = 1) {
   let orderBy: Record<string, string> | Record<string, string>[] = { userEndDate: "desc" }
 
   switch (sortBy) {
@@ -30,7 +32,17 @@ async function getBooks(userId: string, sortBy: string, genre?: string) {
     where.genre = { contains: genre, mode: "insensitive" }
   }
 
-  return prisma.book.findMany({ where, orderBy })
+  const [books, total] = await Promise.all([
+    prisma.book.findMany({
+      where,
+      orderBy,
+      skip: (page - 1) * BOOKS_PER_PAGE,
+      take: BOOKS_PER_PAGE,
+    }),
+    prisma.book.count({ where }),
+  ])
+
+  return { books, total, totalPages: Math.ceil(total / BOOKS_PER_PAGE) }
 }
 
 async function getGenres(userId: string) {
@@ -53,7 +65,7 @@ async function getGenres(userId: string) {
 export default async function BooksPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sort?: string; genre?: string }>
+  searchParams: Promise<{ sort?: string; genre?: string; page?: string }>
 }) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
@@ -63,9 +75,10 @@ export default async function BooksPage({
   const params = await searchParams
   const sortBy = params.sort || "date"
   const genre = params.genre
+  const currentPage = Math.max(1, parseInt(params.page || "1", 10))
 
-  const [books, genres] = await Promise.all([
-    getBooks(session.user.id, sortBy, genre),
+  const [{ books, total, totalPages }, genres] = await Promise.all([
+    getBooks(session.user.id, sortBy, genre, currentPage),
     getGenres(session.user.id),
   ])
 
@@ -85,7 +98,7 @@ export default async function BooksPage({
           <div>
             <h1 className="text-2xl font-semibold tracking-tight text-stone-900">Mes livres</h1>
             <p className="mt-1 text-sm text-stone-500">
-              {books.length} livre{books.length !== 1 ? "s" : ""}
+              {total} livre{total !== 1 ? "s" : ""}
             </p>
           </div>
           <Link href="/books/add" className="btn-primary">
@@ -202,7 +215,63 @@ export default async function BooksPage({
             </Link>
           </div>
         )}
+
+        {totalPages > 1 && (
+          <div className="mt-6 flex items-center justify-between gap-3">
+            <PaginationLink
+              page={currentPage - 1}
+              sort={sortBy}
+              genre={genre}
+              disabled={currentPage <= 1}
+              label="← Précédent"
+            />
+            <p className="text-sm text-stone-500">
+              Page {currentPage} / {totalPages}
+            </p>
+            <PaginationLink
+              page={currentPage + 1}
+              sort={sortBy}
+              genre={genre}
+              disabled={currentPage >= totalPages}
+              label="Suivant →"
+            />
+          </div>
+        )}
       </main>
     </div>
+  )
+}
+
+function PaginationLink({
+  page,
+  sort,
+  genre,
+  disabled,
+  label,
+}: {
+  page: number
+  sort: string
+  genre?: string
+  disabled: boolean
+  label: string
+}) {
+  if (disabled) {
+    return (
+      <span className="rounded-xl border border-stone-200 bg-white px-4 py-2 text-sm font-medium text-stone-300">
+        {label}
+      </span>
+    )
+  }
+
+  const query = new URLSearchParams({ sort, page: page.toString() })
+  if (genre) query.set("genre", genre)
+
+  return (
+    <Link
+      href={`/books?${query.toString()}`}
+      className="rounded-xl border border-stone-200 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition hover:border-stone-300 hover:bg-stone-50"
+    >
+      {label}
+    </Link>
   )
 }
