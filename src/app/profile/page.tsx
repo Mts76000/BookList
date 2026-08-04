@@ -25,12 +25,57 @@ async function getProfileData(userId: string) {
 
   const commentsCount = await prisma.comment.count({ where: { userId } })
 
+  const topAuthor = await prisma.book.groupBy({
+    by: ["author"],
+    where: { userId },
+    _count: { author: true },
+    orderBy: { _count: { author: "desc" } },
+    take: 1,
+  })
+
+  const booksForStats = await prisma.book.findMany({
+    where: { userId },
+    select: {
+      pageCount: true,
+      userEndDate: true,
+      genre: true,
+    },
+  })
+
+  const genreCounts = new Map<string, number>()
+  const pagesByYear = new Map<number, number>()
+
+  for (const book of booksForStats) {
+    if (book.pageCount && book.userEndDate) {
+      const year = new Date(book.userEndDate).getFullYear()
+      pagesByYear.set(year, (pagesByYear.get(year) || 0) + book.pageCount)
+    }
+
+    if (book.genre) {
+      for (const g of book.genre.split(",")) {
+        const trimmed = g.trim()
+        if (trimmed) {
+          genreCounts.set(trimmed, (genreCounts.get(trimmed) || 0) + 1)
+        }
+      }
+    }
+  }
+
+  const favoriteGenre = Array.from(genreCounts.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] || null
+  const pagesPerYear = Array.from(pagesByYear.entries())
+    .sort(([a], [b]) => b - a)
+    .map(([year, pages]) => ({ year, pages }))
+
   return {
     user,
     totalBooks: totalBooks + (user?.initialBooksRead || 0),
     totalPagesRead: totalPagesRead._sum.pageCount || 0,
     averageRating: averageRating._avg.userRating || 0,
     commentsCount,
+    topAuthor: topAuthor[0]?.author || null,
+    topAuthorCount: topAuthor[0]?._count.author || 0,
+    favoriteGenre,
+    pagesPerYear,
   }
 }
 
@@ -56,6 +101,10 @@ export default async function Profile() {
           totalPagesRead={data.totalPagesRead}
           averageRating={data.averageRating}
           commentsCount={data.commentsCount}
+          topAuthor={data.topAuthor}
+          topAuthorCount={data.topAuthorCount}
+          favoriteGenre={data.favoriteGenre}
+          pagesPerYear={data.pagesPerYear}
         />
       </main>
     </div>

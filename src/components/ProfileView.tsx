@@ -14,6 +14,10 @@ interface ProfileViewProps {
   totalPagesRead: number
   averageRating: number
   commentsCount: number
+  topAuthor: string | null
+  topAuthorCount: number
+  favoriteGenre: string | null
+  pagesPerYear: { year: number; pages: number }[]
 }
 
 export function ProfileView({
@@ -25,6 +29,10 @@ export function ProfileView({
   totalPagesRead,
   averageRating,
   commentsCount,
+  topAuthor,
+  topAuthorCount,
+  favoriteGenre,
+  pagesPerYear,
 }: ProfileViewProps) {
   const router = useRouter()
   const { update } = useSession()
@@ -167,6 +175,38 @@ export function ProfileView({
             <p className="mt-0.5 text-xs text-stone-500">{stat.label}</p>
           </div>
         ))}
+      </div>
+
+      <div className="mt-4 rounded-2xl border border-stone-200/80 bg-white p-5 sm:p-6">
+        <h3 className="text-sm font-medium text-stone-900">Détails</h3>
+        <dl className="mt-3 space-y-2 text-sm text-stone-500">
+          {topAuthor && (
+            <div className="flex justify-between">
+              <dt>Auteur le plus lu</dt>
+              <dd className="font-medium text-stone-900">{topAuthor} ({topAuthorCount})</dd>
+            </div>
+          )}
+          {favoriteGenre && (
+            <div className="flex justify-between">
+              <dt>Genre favori</dt>
+              <dd className="font-medium text-stone-900">{favoriteGenre}</dd>
+            </div>
+          )}
+        </dl>
+
+        {pagesPerYear.length > 0 && (
+          <>
+            <h3 className="mt-5 text-sm font-medium text-stone-900">Pages par année</h3>
+            <dl className="mt-3 space-y-2 text-sm text-stone-500">
+              {pagesPerYear.map(({ year, pages }) => (
+                <div key={year} className="flex justify-between">
+                  <dt>{year}</dt>
+                  <dd className="font-medium text-stone-900">{pages} pages</dd>
+                </div>
+              ))}
+            </dl>
+          </>
+        )}
       </div>
 
       <Link
