@@ -22,6 +22,8 @@ export async function POST(request: Request) {
       publishedDate,
       userRating,
       userReadDate,
+      userStartDate,
+      userEndDate,
     } = body
 
     if (!title || !author) {
@@ -30,8 +32,6 @@ export async function POST(request: Request) {
         { status: 400 }
       )
     }
-
-    const readDate = userReadDate ? new Date(userReadDate) : null
 
     const book = await prisma.book.create({
       data: {
@@ -44,32 +44,12 @@ export async function POST(request: Request) {
         genre: genre || null,
         publishedDate: publishedDate || null,
         userRating: userRating || null,
-        userReadDate: readDate,
+        userReadDate: userReadDate ? new Date(userReadDate) : null,
+        userStartDate: userStartDate ? new Date(userStartDate) : null,
+        userEndDate: userEndDate ? new Date(userEndDate) : null,
         userId: session.user.id,
       },
     })
-
-    if (pageCount && readDate) {
-      const activityDate = new Date(readDate)
-      activityDate.setHours(0, 0, 0, 0)
-
-      await prisma.readingActivity.upsert({
-        where: {
-          userId_date: {
-            userId: session.user.id,
-            date: activityDate,
-          },
-        },
-        update: {
-          pagesRead: { increment: pageCount },
-        },
-        create: {
-          userId: session.user.id,
-          date: activityDate,
-          pagesRead: pageCount,
-        },
-      })
-    }
 
     return NextResponse.json({ book }, { status: 201 })
   } catch (error) {

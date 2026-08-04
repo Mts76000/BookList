@@ -12,6 +12,7 @@ interface ContributionGraphProps {
 }
 
 const PERIODS = [
+  { label: "1 mois", weeks: 4 },
   { label: "3 mois", weeks: 13 },
   { label: "6 mois", weeks: 26 },
   { label: "1 an", weeks: 52 },
@@ -20,7 +21,7 @@ const PERIODS = [
 const CELL_HEIGHT = 14 // px — hauteur fixe des cases ET des étiquettes de jour, pour un alignement parfait
 
 export function ContributionGraph({ activities }: ContributionGraphProps) {
-  const [periodIndex, setPeriodIndex] = useState(0) // 3 mois par défaut : lisible sur mobile
+  const [periodIndex, setPeriodIndex] = useState(2) // 6 mois par défaut
 
   const weeksToShow = PERIODS[periodIndex].weeks
   const totalDays = weeksToShow * 7
@@ -61,7 +62,14 @@ export function ContributionGraph({ activities }: ContributionGraphProps) {
   }
 
   const months = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Aoû", "Sep", "Oct", "Nov", "Déc"]
-  const monthLabelEvery = weeksToShow > 26 ? 4 : weeksToShow > 13 ? 2 : 1
+
+  // Affiche le nom du mois seulement au changement de mois, pas en double.
+  const monthLabels = weeks.map((week, index) => {
+    const current = new Date(week[0].date).getMonth()
+    if (index === 0) return months[current]
+    const previous = new Date(weeks[index - 1][0].date).getMonth()
+    return current !== previous ? months[current] : null
+  })
 
   const totalPages = days.reduce((sum, d) => sum + d.pagesRead, 0)
   const activeDays = days.filter((d) => d.pagesRead > 0).length
@@ -114,14 +122,14 @@ export function ContributionGraph({ activities }: ContributionGraphProps) {
               style={{ gridTemplateColumns: gridColumns, height: "12px" }}
             >
               {weeks.map((week, weekIndex) => {
-                const date = new Date(week[0].date)
-                if (weekIndex % monthLabelEvery === 0) {
+                const label = monthLabels[weekIndex]
+                if (label) {
                   return (
                     <div
                       key={weekIndex}
                       className="overflow-visible whitespace-nowrap text-[10px] text-stone-400"
                     >
-                      {months[date.getMonth()]}
+                      {label}
                     </div>
                   )
                 }

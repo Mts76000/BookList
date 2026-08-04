@@ -37,7 +37,9 @@ export default function AddBook() {
     pageCount: "",
     genre: "",
     publishedDate: "",
-    userReadDate: new Date().toISOString().split("T")[0],
+    userReadDate: "",
+    userStartDate: "",
+    userEndDate: "",
   })
 
   const runSearch = async (overrideIsbn?: string) => {
@@ -101,6 +103,8 @@ export default function AddBook() {
           genre: selectedBook.genres?.join(", "),
           publishedDate: selectedBook.publishedDate,
           userReadDate: manualBook.userReadDate || null,
+          userStartDate: manualBook.userStartDate || null,
+          userEndDate: manualBook.userEndDate || null,
         }
       : {
           title: manualBook.title,
@@ -112,6 +116,8 @@ export default function AddBook() {
           genre: manualBook.genre || null,
           publishedDate: manualBook.publishedDate || null,
           userReadDate: manualBook.userReadDate || null,
+          userStartDate: manualBook.userStartDate || null,
+          userEndDate: manualBook.userEndDate || null,
         }
 
     if (!bookData.title || !bookData.author) {
@@ -313,14 +319,25 @@ export default function AddBook() {
                 </>
               )}
 
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-stone-700">Date de lecture</label>
-                <input
-                  type="date"
-                  value={manualBook.userReadDate}
-                  onChange={(e) => setManualBook({ ...manualBook, userReadDate: e.target.value })}
-                  className="input-field"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-stone-700">Début</label>
+                  <input
+                    type="date"
+                    value={manualBook.userStartDate}
+                    onChange={(e) => setManualBook({ ...manualBook, userStartDate: e.target.value })}
+                    className="input-field"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-stone-700">Fin</label>
+                  <input
+                    type="date"
+                    value={manualBook.userEndDate}
+                    onChange={(e) => setManualBook({ ...manualBook, userEndDate: e.target.value })}
+                    className="input-field"
+                  />
+                </div>
               </div>
 
               <p className="text-xs text-stone-400">
