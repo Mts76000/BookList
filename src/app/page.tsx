@@ -55,10 +55,6 @@ export default async function Home() {
 
       <main>
         <section className="mx-auto max-w-3xl px-4 pb-8 pt-14 text-center sm:px-6 sm:pb-12 sm:pt-20">
-          <div className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full bg-stone-100 px-4 py-1.5 text-xs font-medium text-stone-600">
-            <SparkleIcon className="h-3.5 w-3.5" />
-            Gratuit, sans pub, installable sur mobile
-          </div>
           <h1 className="text-4xl font-semibold tracking-tight text-stone-900 sm:text-6xl">
             Retrouvez le plaisir de lire, sans perdre le fil.
           </h1>
