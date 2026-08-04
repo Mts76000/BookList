@@ -1,12 +1,15 @@
 "use client"
 
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import { signIn } from "next-auth/react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 
-export default function SignIn() {
+function SignInForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const registered = searchParams.get("registered")
+
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
@@ -30,7 +33,7 @@ export default function SignIn() {
         router.push("/dashboard")
         router.refresh()
       }
-    } catch (error) {
+    } catch {
       setError("Une erreur est survenue")
     } finally {
       setIsLoading(false)
@@ -38,22 +41,28 @@ export default function SignIn() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">BookList</h1>
-          <p className="text-gray-600">Connectez-vous pour continuer</p>
+    <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
+      <div className="w-full max-w-sm">
+        <div className="mb-8 text-center">
+          <h1 className="text-2xl font-semibold tracking-tight text-stone-900">BookList</h1>
+          <p className="mt-2 text-sm text-stone-500">Connectez-vous à votre bibliothèque</p>
         </div>
 
+        {registered && (
+          <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+            Compte créé. Vous pouvez vous connecter.
+          </div>
+        )}
+
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-6">
+          <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-stone-700">
               Email
             </label>
             <input
@@ -62,13 +71,14 @@ export default function SignIn() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+              autoComplete="email"
+              className="input-field"
               placeholder="vous@exemple.com"
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-stone-700">
               Mot de passe
             </label>
             <input
@@ -77,27 +87,32 @@ export default function SignIn() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+              autoComplete="current-password"
+              className="input-field"
               placeholder="••••••••"
             />
           </div>
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-300 transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+          <button type="submit" disabled={isLoading} className="btn-primary w-full">
             {isLoading ? "Connexion..." : "Se connecter"}
           </button>
         </form>
 
-        <p className="text-center mt-6 text-gray-600">
+        <p className="mt-6 text-center text-sm text-stone-500">
           Pas encore de compte ?{" "}
-          <Link href="/auth/signup" className="text-indigo-600 hover:text-indigo-700 font-semibold">
-            S'inscrire
+          <Link href="/auth/signup" className="font-medium text-stone-900 hover:underline">
+            S&apos;inscrire
           </Link>
         </p>
       </div>
     </div>
+  )
+}
+
+export default function SignIn() {
+  return (
+    <Suspense>
+      <SignInForm />
+    </Suspense>
   )
 }

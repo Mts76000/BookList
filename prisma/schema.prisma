@@ -16,6 +16,7 @@ model User {
   email         String    @unique
   password      String
   name          String?
+  initialBooksRead Int    @default(0)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   books         Book[]
@@ -78,7 +79,7 @@ model ReadingActivity {
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
-  @@unique([userId, date])
+  @@unique([userId, date], name: "userId_date")
   @@index([userId])
   @@index([date])
 }

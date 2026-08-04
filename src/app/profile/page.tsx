@@ -23,45 +23,47 @@ export default function Profile() {
         body: JSON.stringify({ name }),
       })
 
-      if (!response.ok) {
-        throw new Error("Failed to update profile")
-      }
+      if (!response.ok) throw new Error("Failed")
 
       await update({ name })
-      setMessage("Profil mis à jour avec succès")
+      setMessage("Profil mis à jour")
       setIsEditing(false)
-    } catch (error) {
-      setMessage("Erreur lors de la mise à jour du profil")
+    } catch {
+      setMessage("Erreur lors de la mise à jour")
     } finally {
       setIsLoading(false)
     }
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <Navigation />
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Mon profil</h1>
+  const initials = (session?.user?.name || session?.user?.email || "?")
+    .charAt(0)
+    .toUpperCase()
 
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center">
-              <span className="text-3xl">👤</span>
+  return (
+    <div className="min-h-screen bg-stone-50 pb-24 sm:pb-8">
+      <Navigation />
+      <main className="mx-auto max-w-lg px-4 py-6 sm:px-6 sm:py-8">
+        <h1 className="mb-6 text-2xl font-semibold tracking-tight text-stone-900">Profil</h1>
+
+        <div className="card p-5 sm:p-6">
+          <div className="flex items-center gap-4">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-stone-900 text-xl font-medium text-white">
+              {initials}
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">
-                {session?.user?.name || "Non défini"}
+              <h2 className="font-medium text-stone-900">
+                {session?.user?.name || "Sans nom"}
               </h2>
-              <p className="text-gray-500">{session?.user?.email}</p>
+              <p className="text-sm text-stone-500">{session?.user?.email}</p>
             </div>
           </div>
 
           {message && (
             <div
-              className={`mb-4 px-4 py-3 rounded-lg ${
-                message.includes("succès")
-                  ? "bg-green-50 border border-green-200 text-green-600"
-                  : "bg-red-50 border border-red-200 text-red-600"
+              className={`mt-4 rounded-xl px-4 py-3 text-sm ${
+                message.includes("mis à jour")
+                  ? "border border-emerald-200 bg-emerald-50 text-emerald-700"
+                  : "border border-red-200 bg-red-50 text-red-600"
               }`}
             >
               {message}
@@ -69,25 +71,18 @@ export default function Profile() {
           )}
 
           {isEditing ? (
-            <form onSubmit={handleUpdateProfile} className="space-y-4">
+            <form onSubmit={handleUpdateProfile} className="mt-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nom
-                </label>
+                <label className="mb-1.5 block text-sm font-medium text-stone-700">Nom</label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="input-field"
                 />
               </div>
-
-              <div className="flex gap-4">
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="flex-1 bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 disabled:opacity-50"
-                >
+              <div className="flex gap-3">
+                <button type="submit" disabled={isLoading} className="btn-primary flex-1">
                   {isLoading ? "Enregistrement..." : "Enregistrer"}
                 </button>
                 <button
@@ -96,37 +91,27 @@ export default function Profile() {
                     setIsEditing(false)
                     setName(session?.user?.name || "")
                   }}
-                  className="px-6 py-3 border border-gray-300 rounded-lg font-semibold hover:bg-gray-50"
+                  className="btn-secondary"
                 >
                   Annuler
                 </button>
               </div>
             </form>
           ) : (
-            <button
-              onClick={() => setIsEditing(true)}
-              className="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-indigo-700"
-            >
+            <button onClick={() => setIsEditing(true)} className="btn-secondary mt-6 w-full">
               Modifier le profil
             </button>
           )}
         </div>
 
-        {/* Account Info */}
-        <div className="mt-6 bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Informations du compte</h3>
-          <div className="space-y-3 text-sm">
+        <div className="card mt-4 p-5 sm:p-6">
+          <h3 className="text-sm font-medium text-stone-900">Compte</h3>
+          <dl className="mt-3 space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-500">Email</span>
-              <span className="text-gray-900">{session?.user?.email}</span>
+              <dt className="text-stone-400">Email</dt>
+              <dd className="text-stone-700">{session?.user?.email}</dd>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Membre depuis</span>
-              <span className="text-gray-900">
-                {session?.user?.name ? "Compte actif" : "Nouveau compte"}
-              </span>
-            </div>
-          </div>
+          </dl>
         </div>
       </main>
     </div>

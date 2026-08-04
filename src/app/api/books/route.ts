@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession()
+    const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
@@ -30,6 +31,8 @@ export async function POST(request: Request) {
       )
     }
 
+    const readDate = userReadDate ? new Date(userReadDate) : null
+
     const book = await prisma.book.create({
       data: {
         title,
@@ -41,10 +44,32 @@ export async function POST(request: Request) {
         genre: genre || null,
         publishedDate: publishedDate || null,
         userRating: userRating || null,
-        userReadDate: userReadDate ? new Date(userReadDate) : null,
+        userReadDate: readDate,
         userId: session.user.id,
       },
     })
+
+    if (pageCount && readDate) {
+      const activityDate = new Date(readDate)
+      activityDate.setHours(0, 0, 0, 0)
+
+      await prisma.readingActivity.upsert({
+        where: {
+          userId_date: {
+            userId: session.user.id,
+            date: activityDate,
+          },
+        },
+        update: {
+          pagesRead: { increment: pageCount },
+        },
+        create: {
+          userId: session.user.id,
+          date: activityDate,
+          pagesRead: pageCount,
+        },
+      })
+    }
 
     return NextResponse.json({ book }, { status: 201 })
   } catch (error) {

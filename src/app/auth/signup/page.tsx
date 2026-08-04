@@ -10,6 +10,7 @@ export default function SignUp() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
+  const [initialBooksRead, setInitialBooksRead] = useState("")
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
@@ -24,64 +25,92 @@ export default function SignUp() {
       return
     }
 
+    if (password.length < 6) {
+      setError("Le mot de passe doit contenir au moins 6 caractères")
+      setIsLoading(false)
+      return
+    }
+
     try {
       const response = await fetch("/api/auth/register", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email,
           password,
           name: name || null,
+          initialBooksRead: initialBooksRead ? parseInt(initialBooksRead) : 0,
         }),
       })
 
       const data = await response.json()
 
       if (!response.ok) {
-        setError(data.error || "Something went wrong")
+        setError(
+          data.error === "User already exists"
+            ? "Un compte existe déjà avec cet email"
+            : "Une erreur est survenue"
+        )
       } else {
         router.push("/auth/signin?registered=true")
       }
-    } catch (error) {
-      setError("Something went wrong")
+    } catch {
+      setError("Une erreur est survenue")
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">BookList</h1>
-          <p className="text-gray-600">Créez votre compte</p>
+    <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
+      <div className="w-full max-w-sm">
+        <div className="mb-8 text-center">
+          <h1 className="text-2xl font-semibold tracking-tight text-stone-900">BookList</h1>
+          <p className="mt-2 text-sm text-stone-500">Créez votre compte</p>
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-6">
+          <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-              Nom (optionnel)
+            <label htmlFor="name" className="mb-1.5 block text-sm font-medium text-stone-700">
+              Nom <span className="font-normal text-stone-400">(optionnel)</span>
             </label>
             <input
               id="name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+              autoComplete="name"
+              className="input-field"
               placeholder="Votre nom"
             />
           </div>
 
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="initialBooksRead" className="mb-1.5 block text-sm font-medium text-stone-700">
+              Livres déjà lus <span className="font-normal text-stone-400">(optionnel)</span>
+            </label>
+            <input
+              id="initialBooksRead"
+              type="number"
+              value={initialBooksRead}
+              onChange={(e) => setInitialBooksRead(e.target.value)}
+              min="0"
+              className="input-field"
+              placeholder="Combien de livres avez-vous déjà lus ?"
+            />
+            <p className="mt-1 text-xs text-stone-400">
+              Cela vous permettra de ne pas recommencer à zéro
+            </p>
+          </div>
+
+          <div>
+            <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-stone-700">
               Email
             </label>
             <input
@@ -90,13 +119,14 @@ export default function SignUp() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+              autoComplete="email"
+              className="input-field"
               placeholder="vous@exemple.com"
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-stone-700">
               Mot de passe
             </label>
             <input
@@ -106,13 +136,14 @@ export default function SignUp() {
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={6}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
-              placeholder="••••••••"
+              autoComplete="new-password"
+              className="input-field"
+              placeholder="6 caractères minimum"
             />
           </div>
 
           <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="confirmPassword" className="mb-1.5 block text-sm font-medium text-stone-700">
               Confirmer le mot de passe
             </label>
             <input
@@ -122,23 +153,20 @@ export default function SignUp() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
               minLength={6}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+              autoComplete="new-password"
+              className="input-field"
               placeholder="••••••••"
             />
           </div>
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-300 transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? "Création..." : "S'inscrire"}
+          <button type="submit" disabled={isLoading} className="btn-primary w-full">
+            {isLoading ? "Création..." : "Créer mon compte"}
           </button>
         </form>
 
-        <p className="text-center mt-6 text-gray-600">
+        <p className="mt-6 text-center text-sm text-stone-500">
           Déjà un compte ?{" "}
-          <Link href="/auth/signin" className="text-indigo-600 hover:text-indigo-700 font-semibold">
+          <Link href="/auth/signin" className="font-medium text-stone-900 hover:underline">
             Se connecter
           </Link>
         </p>

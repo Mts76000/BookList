@@ -36,7 +36,7 @@ export default function AddBook() {
     genre: "",
     publishedDate: "",
     userRating: "",
-    userReadDate: "",
+    userReadDate: new Date().toISOString().split("T")[0],
   })
 
   const handleSearch = async (e: React.FormEvent) => {
@@ -45,37 +45,33 @@ export default function AddBook() {
 
     setIsLoading(true)
     setError("")
+    setSearchResults([])
 
     try {
       const params = new URLSearchParams()
-      if (isbnQuery) {
-        params.append("isbn", isbnQuery)
-      } else {
-        params.append("q", searchQuery)
-      }
+      if (isbnQuery) params.append("isbn", isbnQuery)
+      else params.append("q", searchQuery)
 
       const response = await fetch(`/api/books/search?${params}`)
       const data = await response.json()
 
-      if (!response.ok) {
-        throw new Error(data.error || "Search failed")
-      }
+      if (!response.ok) throw new Error(data.error)
 
       setSearchResults(data.books || [])
-    } catch (error) {
+      if (data.books?.length === 0) {
+        setError("Aucun résultat. Essayez une autre recherche ou saisissez manuellement.")
+      }
+    } catch {
       setError("Erreur lors de la recherche")
-      console.error(error)
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleSelectBook = (book: BookSearchResult) => {
-    setSelectedBook(book)
-    setManualMode(false)
-  }
-
   const handleAddBook = async () => {
+    setIsLoading(true)
+    setError("")
+
     const bookData = selectedBook
       ? {
           title: selectedBook.title,
@@ -92,15 +88,21 @@ export default function AddBook() {
       : {
           title: manualBook.title,
           author: manualBook.author,
-          isbn: manualBook.isbn,
-          description: manualBook.description,
-          coverUrl: manualBook.coverUrl,
+          isbn: manualBook.isbn || null,
+          description: manualBook.description || null,
+          coverUrl: manualBook.coverUrl || null,
           pageCount: manualBook.pageCount ? parseInt(manualBook.pageCount) : null,
-          genre: manualBook.genre,
-          publishedDate: manualBook.publishedDate,
+          genre: manualBook.genre || null,
+          publishedDate: manualBook.publishedDate || null,
           userRating: manualBook.userRating ? parseInt(manualBook.userRating) : null,
           userReadDate: manualBook.userReadDate || null,
         }
+
+    if (!bookData.title || !bookData.author) {
+      setError("Le titre et l'auteur sont requis")
+      setIsLoading(false)
+      return
+    }
 
     try {
       const response = await fetch("/api/books", {
@@ -109,270 +111,218 @@ export default function AddBook() {
         body: JSON.stringify(bookData),
       })
 
-      if (!response.ok) {
-        throw new Error("Failed to add book")
-      }
+      if (!response.ok) throw new Error("Failed")
 
       router.push("/books")
-    } catch (error) {
+    } catch {
       setError("Erreur lors de l'ajout du livre")
-      console.error(error)
+    } finally {
+      setIsLoading(false)
     }
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <Navigation />
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Ajouter un livre</h1>
+  const reset = () => {
+    setSelectedBook(null)
+    setManualMode(false)
+    setSearchResults([])
+    setError("")
+  }
 
-        {/* Search Section */}
+  return (
+    <div className="min-h-screen bg-stone-50 pb-24 sm:pb-8">
+      <Navigation />
+      <main className="mx-auto max-w-lg px-4 py-6 sm:px-6 sm:py-8">
+        <h1 className="mb-6 text-2xl font-semibold tracking-tight text-stone-900">
+          Ajouter un livre
+        </h1>
+
         {!manualMode && !selectedBook && (
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Rechercher un livre</h2>
-            
+          <div className="card p-5 sm:p-6">
             <form onSubmit={handleSearch} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Par titre/auteur
+                <label className="mb-1.5 block text-sm font-medium text-stone-700">
+                  Titre ou auteur
                 </label>
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Ex: Harry Potter, J.K. Rowling"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  placeholder="Ex: Le Petit Prince"
+                  className="input-field"
                 />
               </div>
 
-              <div className="text-center text-gray-500">ou</div>
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-stone-200" />
+                </div>
+                <div className="relative flex justify-center text-xs">
+                  <span className="bg-white px-2 text-stone-400">ou</span>
+                </div>
+              </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Par ISBN
-                </label>
+                <label className="mb-1.5 block text-sm font-medium text-stone-700">ISBN</label>
                 <input
                   type="text"
                   value={isbnQuery}
                   onChange={(e) => setIsbnQuery(e.target.value)}
-                  placeholder="Ex: 978-2070612360"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  placeholder="978-2070612758"
+                  className="input-field"
                 />
               </div>
 
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 disabled:opacity-50"
-              >
+              <button type="submit" disabled={isLoading} className="btn-primary w-full">
                 {isLoading ? "Recherche..." : "Rechercher"}
               </button>
             </form>
 
-            {error && (
-              <div className="mt-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg">
-                {error}
+            {error && !searchResults.length && (
+              <p className="mt-4 text-center text-sm text-stone-500">{error}</p>
+            )}
+
+            <button
+              onClick={() => setManualMode(true)}
+              className="mt-4 w-full text-center text-sm font-medium text-stone-600 hover:text-stone-900"
+            >
+              Saisir manuellement
+            </button>
+          </div>
+        )}
+
+        {searchResults.length > 0 && !selectedBook && (
+          <div className="mt-4 space-y-2">
+            <p className="text-sm text-stone-500">{searchResults.length} résultat(s)</p>
+            {searchResults.map((book) => (
+              <button
+                key={book.id}
+                onClick={() => setSelectedBook(book)}
+                className="card flex w-full gap-3 p-3 text-left transition hover:border-stone-300"
+              >
+                {book.coverUrl ? (
+                  <img src={book.coverUrl} alt="" className="h-20 w-14 shrink-0 rounded-lg object-cover" />
+                ) : (
+                  <div className="flex h-20 w-14 shrink-0 items-center justify-center rounded-lg bg-stone-100 text-stone-300">
+                    ?
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <p className="font-medium text-stone-900 line-clamp-2">{book.title}</p>
+                  <p className="text-sm text-stone-500">{book.authors.join(", ")}</p>
+                  {book.pageCount && (
+                    <p className="mt-1 text-xs text-stone-400">{book.pageCount} pages</p>
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {(selectedBook || manualMode) && (
+          <div className="card p-5 sm:p-6">
+            <h2 className="font-medium text-stone-900">
+              {selectedBook ? "Confirmer" : "Saisie manuelle"}
+            </h2>
+
+            {selectedBook && (
+              <div className="mt-4 flex gap-3 rounded-xl bg-stone-50 p-3">
+                {selectedBook.coverUrl && (
+                  <img src={selectedBook.coverUrl} alt="" className="h-24 w-16 rounded-lg object-cover" />
+                )}
+                <div>
+                  <p className="font-medium text-stone-900">{selectedBook.title}</p>
+                  <p className="text-sm text-stone-500">{selectedBook.authors.join(", ")}</p>
+                </div>
               </div>
             )}
 
-            <div className="mt-6 text-center">
-              <button
-                onClick={() => setManualMode(true)}
-                className="text-indigo-600 hover:text-indigo-700 font-medium"
-              >
-                Saisir manuellement →
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Search Results */}
-        {searchResults.length > 0 && !selectedBook && (
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Résultats</h2>
-            <div className="space-y-4">
-              {searchResults.map((book) => (
-                <div
-                  key={book.id}
-                  className="flex gap-4 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition"
-                  onClick={() => handleSelectBook(book)}
-                >
-                  {book.coverUrl && (
-                    <img
-                      src={book.coverUrl}
-                      alt={book.title}
-                      className="w-16 h-24 object-cover rounded"
-                    />
-                  )}
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900">{book.title}</h3>
-                    <p className="text-sm text-gray-500">{book.authors.join(", ")}</p>
-                    {book.pageCount && (
-                      <p className="text-xs text-gray-400 mt-1">{book.pageCount} pages</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Selected Book or Manual Entry */}
-        {(selectedBook || manualMode) && (
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              {selectedBook ? "Confirmer le livre" : "Saisie manuelle"}
-            </h2>
-
-            <div className="space-y-4">
-              {selectedBook && (
-                <div className="flex gap-4 p-4 bg-gray-50 rounded-lg mb-4">
-                  {selectedBook.coverUrl && (
-                    <img
-                      src={selectedBook.coverUrl}
-                      alt={selectedBook.title}
-                      className="w-20 h-28 object-cover rounded"
-                    />
-                  )}
-                  <div>
-                    <h3 className="font-semibold text-gray-900">{selectedBook.title}</h3>
-                    <p className="text-sm text-gray-500">{selectedBook.authors.join(", ")}</p>
-                    {selectedBook.pageCount && (
-                      <p className="text-xs text-gray-400 mt-1">{selectedBook.pageCount} pages</p>
-                    )}
-                  </div>
-                </div>
-              )}
-
+            <div className="mt-4 space-y-4">
               {manualMode && (
                 <>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Titre *
-                    </label>
+                    <label className="mb-1.5 block text-sm font-medium text-stone-700">Titre *</label>
                     <input
                       type="text"
                       value={manualBook.title}
                       onChange={(e) => setManualBook({ ...manualBook, title: e.target.value })}
+                      className="input-field"
                       required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                     />
                   </div>
-
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Auteur *
-                    </label>
+                    <label className="mb-1.5 block text-sm font-medium text-stone-700">Auteur *</label>
                     <input
                       type="text"
                       value={manualBook.author}
                       onChange={(e) => setManualBook({ ...manualBook, author: e.target.value })}
+                      className="input-field"
                       required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                     />
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      ISBN
-                    </label>
-                    <input
-                      type="text"
-                      value={manualBook.isbn}
-                      onChange={(e) => setManualBook({ ...manualBook, isbn: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Nombre de pages
-                    </label>
-                    <input
-                      type="number"
-                      value={manualBook.pageCount}
-                      onChange={(e) => setManualBook({ ...manualBook, pageCount: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Genre
-                    </label>
-                    <input
-                      type="text"
-                      value={manualBook.genre}
-                      onChange={(e) => setManualBook({ ...manualBook, genre: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      URL de couverture
-                    </label>
-                    <input
-                      type="url"
-                      value={manualBook.coverUrl}
-                      onChange={(e) => setManualBook({ ...manualBook, coverUrl: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                    />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-stone-700">Pages</label>
+                      <input
+                        type="number"
+                        value={manualBook.pageCount}
+                        onChange={(e) => setManualBook({ ...manualBook, pageCount: e.target.value })}
+                        className="input-field"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-stone-700">Genre</label>
+                      <input
+                        type="text"
+                        value={manualBook.genre}
+                        onChange={(e) => setManualBook({ ...manualBook, genre: e.target.value })}
+                        className="input-field"
+                        placeholder="Roman, SF..."
+                      />
+                    </div>
                   </div>
                 </>
               )}
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Votre note (1-5)
-                </label>
-                <select
-                  value={manualBook.userRating}
-                  onChange={(e) => setManualBook({ ...manualBook, userRating: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                >
-                  <option value="">Non noté</option>
-                  <option value="1">1 ⭐</option>
-                  <option value="2">2 ⭐⭐</option>
-                  <option value="3">3 ⭐⭐⭐</option>
-                  <option value="4">4 ⭐⭐⭐⭐</option>
-                  <option value="5">5 ⭐⭐⭐⭐⭐</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Date de lecture
-                </label>
-                <input
-                  type="date"
-                  value={manualBook.userReadDate}
-                  onChange={(e) => setManualBook({ ...manualBook, userReadDate: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-stone-700">Note</label>
+                  <select
+                    value={manualBook.userRating}
+                    onChange={(e) => setManualBook({ ...manualBook, userRating: e.target.value })}
+                    className="input-field"
+                  >
+                    <option value="">—</option>
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <option key={n} value={n}>{n}/5</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-stone-700">Date de lecture</label>
+                  <input
+                    type="date"
+                    value={manualBook.userReadDate}
+                    onChange={(e) => setManualBook({ ...manualBook, userReadDate: e.target.value })}
+                    className="input-field"
+                  />
+                </div>
               </div>
 
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg">
+                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
                   {error}
                 </div>
               )}
 
-              <div className="flex gap-4">
+              <div className="flex gap-3 pt-2">
                 <button
                   onClick={handleAddBook}
-                  className="flex-1 bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700"
+                  disabled={isLoading}
+                  className="btn-primary flex-1"
                 >
-                  Ajouter le livre
+                  {isLoading ? "Ajout..." : "Ajouter"}
                 </button>
-                <button
-                  onClick={() => {
-                    setSelectedBook(null)
-                    setManualMode(false)
-                    setSearchResults([])
-                  }}
-                  className="px-6 py-3 border border-gray-300 rounded-lg font-semibold hover:bg-gray-50"
-                >
+                <button onClick={reset} className="btn-secondary">
                   Annuler
                 </button>
               </div>

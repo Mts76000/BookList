@@ -1,43 +1,48 @@
 import { getServerSession } from "next-auth"
 import { redirect } from "next/navigation"
+import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { Navigation } from "@/components/Navigation"
 import { BookDetails } from "@/components/BookDetails"
 
 async function getBook(id: string, userId: string) {
-  const book = await prisma.book.findFirst({
+  return prisma.book.findFirst({
     where: { id, userId },
     include: {
       comments: {
         orderBy: { createdAt: "desc" },
+        include: {
+          user: {
+            select: { name: true },
+          },
+        },
       },
     },
   })
-
-  return book
 }
 
 export default async function BookDetailPage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
-  const session = await getServerSession()
+  const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
     redirect("/auth/signin")
   }
 
-  const book = await getBook(params.id, session.user.id)
+  const { id } = await params
+  const book = await getBook(id, session.user.id)
 
   if (!book) {
     redirect("/books")
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-stone-50 pb-24 sm:pb-8">
       <Navigation />
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <BookDetails book={book} userId={session.user.id} />
+      <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6 sm:py-8">
+        <BookDetails book={book} />
       </main>
     </div>
   )
