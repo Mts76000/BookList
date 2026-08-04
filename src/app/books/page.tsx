@@ -5,6 +5,7 @@ import { Prisma } from "@prisma/client"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { Navigation } from "@/components/Navigation"
+import { BooksFilter } from "@/components/BooksFilter"
 
 const BOOKS_PER_PAGE = 12
 
@@ -129,28 +130,7 @@ export default async function BooksPage({
           </Link>
         </div>
 
-        <form method="GET" action="/books" className="mb-4 space-y-3">
-          <input type="hidden" name="sort" value={sortBy} />
-          <input type="hidden" name="genre" value={genre || ""} />
-          <div className="flex gap-2">
-            <input
-              type="text"
-              name="search"
-              defaultValue={search || ""}
-              placeholder="Rechercher un titre ou auteur..."
-              className="input-field flex-1"
-            />
-            <input
-              type="number"
-              name="year"
-              defaultValue={year || ""}
-              placeholder="Année"
-              min="1900"
-              max="2100"
-              className="input-field w-24"
-            />
-          </div>
-        </form>
+        <BooksFilter sortBy={sortBy} genre={genre} />
 
         <div className="mb-6 space-y-3">
           <div className="flex flex-wrap gap-2">
