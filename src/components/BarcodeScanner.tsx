@@ -24,6 +24,27 @@ export function BarcodeScanner({ onDetected, onClose }: BarcodeScannerProps) {
       return
     }
 
+    // ZXing logue un warning/error à chaque frame sans code détecté (comportement
+    // normal du scan continu) ainsi que lors du remount rapide de la vidéo.
+    // On filtre ce bruit connu et inoffensif pendant que le scanner est actif.
+    const originalWarn = console.warn
+    const originalError = console.error
+    const isKnownZxingNoise = (args: unknown[]) =>
+      typeof args[0] === "string" &&
+      (args[0].includes("non-ReaderException") ||
+        args[0].includes("Trying to play video") ||
+        args[0].includes("possible to play the video") ||
+        args[0].includes("interrupted by new loading request"))
+
+    console.warn = (...args: unknown[]) => {
+      if (isKnownZxingNoise(args)) return
+      originalWarn(...args)
+    }
+    console.error = (...args: unknown[]) => {
+      if (isKnownZxingNoise(args)) return
+      originalError(...args)
+    }
+
     // Codes-barres livres = EAN-13 (parfois UPC-A). On restreint pour plus de fiabilité/vitesse.
     const hints = new Map()
     hints.set(DecodeHintType.POSSIBLE_FORMATS, [
@@ -77,6 +98,8 @@ export function BarcodeScanner({ onDetected, onClose }: BarcodeScannerProps) {
     return () => {
       cancelled = true
       controlsRef.current?.stop()
+      console.warn = originalWarn
+      console.error = originalError
     }
   }, [onDetected])
 

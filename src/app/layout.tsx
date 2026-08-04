@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "@/components/SessionProvider";
+import { DevServiceWorkerCleanup } from "@/components/DevServiceWorkerCleanup";
+import { SerwistProvider } from "@serwist/turbopack/react";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -27,9 +29,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" className={`${inter.variable} h-full antialiased`}>
+    <html
+      lang="fr"
+      className={`${inter.variable} h-full antialiased`}
+      data-scroll-behavior="smooth"
+    >
       <body className="min-h-full flex flex-col">
-        <SessionProvider>{children}</SessionProvider>
+        <DevServiceWorkerCleanup />
+        <SerwistProvider
+          swUrl="/serwist/sw.js"
+          disable={process.env.NODE_ENV === "development"}
+        >
+          <SessionProvider>{children}</SessionProvider>
+        </SerwistProvider>
       </body>
     </html>
   );
