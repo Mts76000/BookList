@@ -1,7 +1,7 @@
 "use client"
 
-import { useCallback, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useCallback, useEffect, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Navigation } from "@/components/Navigation"
 import { BarcodeScanner } from "@/components/BarcodeScanner"
 

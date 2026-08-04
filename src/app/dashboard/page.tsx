@@ -54,6 +54,36 @@ async function getDashboardData(userId: string) {
     select: { createdAt: true },
   })
 
+  const topAuthors = await prisma.book.groupBy({
+    by: ["author"],
+    where: { userId },
+    _count: { author: true },
+    orderBy: { _count: { author: "desc" } },
+    take: 3,
+  })
+
+  const allBooks = await prisma.book.findMany({
+    where: { userId },
+    select: { genre: true },
+  })
+
+  const genreCounts = new Map<string, number>()
+  for (const book of allBooks) {
+    if (book.genre) {
+      for (const g of book.genre.split(",")) {
+        const trimmed = g.trim()
+        if (trimmed) {
+          genreCounts.set(trimmed, (genreCounts.get(trimmed) || 0) + 1)
+        }
+      }
+    }
+  }
+
+  const topGenres = Array.from(genreCounts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([genre]) => genre)
+
   return {
     books,
     totalBooks: totalBooks + (user?.initialBooksRead || 0),
@@ -62,6 +92,8 @@ async function getDashboardData(userId: string) {
     booksThisYear,
     averageRating: averageRating._avg.userRating || 0,
     memberSince: yearsReading?.createdAt,
+    topAuthors: topAuthors.map((a) => ({ author: a.author, count: a._count.author })),
+    topGenres,
   }
 }
 
@@ -118,6 +150,33 @@ export default async function Dashboard() {
         <section className="mb-8">
           <AddReadingActivity />
         </section>
+
+        {(data.topAuthors.length > 0 || data.topGenres.length > 0) && (
+          <section className="mb-8 rounded-2xl border border-stone-200/80 bg-white p-4 sm:p-6">
+            <h2 className="text-sm font-medium text-stone-900">Suggestions</h2>
+            <p className="mt-1 text-xs text-stone-500">
+              Basées sur vos lectures
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {data.topAuthors.map(({ author }) => (
+                <span
+                  key={author}
+                  className="rounded-full bg-stone-100 px-3 py-1.5 text-xs font-medium text-stone-700"
+                >
+                  Auteur : {author}
+                </span>
+              ))}
+              {data.topGenres.map((genre) => (
+                <span
+                  key={genre}
+                  className="rounded-full bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-800"
+                >
+                  Genre : {genre}
+                </span>
+              ))}
+            </div>
+          </section>
+        )}
 
         <section>
           <div className="mb-4 flex items-center justify-between">
