@@ -10,7 +10,7 @@ import { AddReadingActivity } from "@/components/AddReadingActivity"
 async function getDashboardData(userId: string) {
   const books = await prisma.book.findMany({
     where: { userId },
-    orderBy: { userReadDate: "desc" },
+    orderBy: { userEndDate: "desc" },
     take: 5,
   })
 
@@ -37,7 +37,7 @@ async function getDashboardData(userId: string) {
   const booksThisYear = await prisma.book.count({
     where: {
       userId,
-      userReadDate: {
+      userEndDate: {
         gte: new Date(currentYear, 0, 1),
         lte: new Date(currentYear, 11, 31),
       },
@@ -159,9 +159,15 @@ export default async function Dashboard() {
                           {book.userRating}/5
                         </span>
                       )}
-                      {book.userReadDate && (
+                      {(book.userStartDate || book.userEndDate) && (
                         <span>
-                          {new Date(book.userReadDate).toLocaleDateString("fr-FR")}
+                          {book.userStartDate
+                            ? new Date(book.userStartDate).toLocaleDateString("fr-FR")
+                            : "?"}
+                          {" — "}
+                          {book.userEndDate
+                            ? new Date(book.userEndDate).toLocaleDateString("fr-FR")
+                            : "?"}
                         </span>
                       )}
                     </div>

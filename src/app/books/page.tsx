@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma"
 import { Navigation } from "@/components/Navigation"
 
 async function getBooks(userId: string, sortBy: string, genre?: string) {
-  let orderBy: Record<string, string> | Record<string, string>[] = { userReadDate: "desc" }
+  let orderBy: Record<string, string> | Record<string, string>[] = { userEndDate: "desc" }
 
   switch (sortBy) {
     case "title":
@@ -16,13 +16,13 @@ async function getBooks(userId: string, sortBy: string, genre?: string) {
       orderBy = [{ userRating: "desc" }, { title: "asc" }]
       break
     case "oldest":
-      orderBy = { userReadDate: "asc" }
+      orderBy = { userEndDate: "asc" }
       break
     case "pages":
       orderBy = [{ pageCount: "desc" }, { title: "asc" }]
       break
     default:
-      orderBy = { userReadDate: "desc" }
+      orderBy = { userEndDate: "desc" }
   }
 
   const where: { userId: string; genre?: { contains: string; mode: "insensitive" } } = { userId }
@@ -175,9 +175,15 @@ export default async function BooksPage({
                     {book.pageCount && (
                       <span className="text-xs text-stone-400">{book.pageCount} p.</span>
                     )}
-                    {book.userReadDate && (
+                    {(book.userStartDate || book.userEndDate) && (
                       <span className="text-xs text-stone-400">
-                        {new Date(book.userReadDate).toLocaleDateString("fr-FR")}
+                        {book.userStartDate
+                          ? new Date(book.userStartDate).toLocaleDateString("fr-FR")
+                          : "?"}
+                        {" — "}
+                        {book.userEndDate
+                          ? new Date(book.userEndDate).toLocaleDateString("fr-FR")
+                          : "?"}
                       </span>
                     )}
                   </div>

@@ -24,7 +24,6 @@ export async function PATCH(
       pageCount,
       genre,
       publishedDate,
-      userReadDate,
       userStartDate,
       userEndDate,
     } = body
@@ -47,7 +46,6 @@ export async function PATCH(
     if (pageCount !== undefined) data.pageCount = pageCount || null
     if (genre !== undefined) data.genre = genre || null
     if (publishedDate !== undefined) data.publishedDate = publishedDate || null
-    if (userReadDate !== undefined) data.userReadDate = userReadDate ? new Date(userReadDate) : null
     if (userStartDate !== undefined) data.userStartDate = userStartDate ? new Date(userStartDate) : null
     if (userEndDate !== undefined) data.userEndDate = userEndDate ? new Date(userEndDate) : null
 

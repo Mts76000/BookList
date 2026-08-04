@@ -37,7 +37,6 @@ export default function AddBook() {
     pageCount: "",
     genre: "",
     publishedDate: "",
-    userReadDate: "",
     userStartDate: "",
     userEndDate: "",
   })
@@ -102,7 +101,6 @@ export default function AddBook() {
           pageCount: selectedBook.pageCount,
           genre: selectedBook.genres?.join(", "),
           publishedDate: selectedBook.publishedDate,
-          userReadDate: manualBook.userReadDate || null,
           userStartDate: manualBook.userStartDate || null,
           userEndDate: manualBook.userEndDate || null,
         }
@@ -115,7 +113,6 @@ export default function AddBook() {
           pageCount: manualBook.pageCount ? parseInt(manualBook.pageCount) : null,
           genre: manualBook.genre || null,
           publishedDate: manualBook.publishedDate || null,
-          userReadDate: manualBook.userReadDate || null,
           userStartDate: manualBook.userStartDate || null,
           userEndDate: manualBook.userEndDate || null,
         }

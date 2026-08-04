@@ -21,7 +21,6 @@ export async function POST(request: Request) {
       genre,
       publishedDate,
       userRating,
-      userReadDate,
       userStartDate,
       userEndDate,
     } = body
@@ -44,7 +43,6 @@ export async function POST(request: Request) {
         genre: genre || null,
         publishedDate: publishedDate || null,
         userRating: userRating || null,
-        userReadDate: userReadDate ? new Date(userReadDate) : null,
         userStartDate: userStartDate ? new Date(userStartDate) : null,
         userEndDate: userEndDate ? new Date(userEndDate) : null,
         userId: session.user.id,

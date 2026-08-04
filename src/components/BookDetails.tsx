@@ -23,7 +23,6 @@ interface Book {
   genre: string | null
   publishedDate: string | null
   userRating: number | null
-  userReadDate: Date | null
   userStartDate: Date | null
   userEndDate: Date | null
   comments: Comment[]
@@ -54,9 +53,6 @@ export function BookDetails({ book }: BookDetailsProps) {
     pageCount: book.pageCount?.toString() || "",
     genre: book.genre || "",
     publishedDate: book.publishedDate || "",
-    userReadDate: book.userReadDate
-      ? new Date(book.userReadDate).toISOString().split("T")[0]
-      : "",
     userStartDate: book.userStartDate
       ? new Date(book.userStartDate).toISOString().split("T")[0]
       : "",
@@ -132,7 +128,6 @@ export function BookDetails({ book }: BookDetailsProps) {
           pageCount: editForm.pageCount ? parseInt(editForm.pageCount) : null,
           genre: editForm.genre || null,
           publishedDate: editForm.publishedDate || null,
-          userReadDate: editForm.userReadDate || null,
           userStartDate: editForm.userStartDate || null,
           userEndDate: editForm.userEndDate || null,
         }),
@@ -400,10 +395,18 @@ export function BookDetails({ book }: BookDetailsProps) {
                     <dd>{book.publishedDate}</dd>
                   </div>
                 )}
-                {book.userReadDate && (
+                {(book.userStartDate || book.userEndDate) && (
                   <div className="flex gap-2">
-                    <dt className="text-stone-400">Lu le</dt>
-                    <dd>{new Date(book.userReadDate).toLocaleDateString("fr-FR")}</dd>
+                    <dt className="text-stone-400">Lecture</dt>
+                    <dd>
+                      {book.userStartDate
+                        ? new Date(book.userStartDate).toLocaleDateString("fr-FR")
+                        : "?"}
+                      {" — "}
+                      {book.userEndDate
+                        ? new Date(book.userEndDate).toLocaleDateString("fr-FR")
+                        : "?"}
+                    </dd>
                   </div>
                 )}
               </dl>
