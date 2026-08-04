@@ -74,10 +74,8 @@ export function ContributionGraph({ activities }: ContributionGraphProps) {
   const totalPages = days.reduce((sum, d) => sum + d.pagesRead, 0)
   const activeDays = days.filter((d) => d.pagesRead > 0).length
 
-  // Grille fluide : chaque semaine occupe une part égale (1fr) de la largeur disponible,
-  // pour remplir toute la carte. Le conteneur ne scrolle que si la largeur minimale
-  // (8px/semaine) ne rentre vraiment pas (petit écran + période "1 an").
-  const gridColumns = `repeat(${weeks.length}, minmax(8px, 1fr))`
+  // Grille en cases carrées fixes (14px) avec défilement horizontal si besoin.
+  const gridColumns = `repeat(${weeks.length}, 14px)`
 
   return (
     <div>
@@ -103,7 +101,7 @@ export function ContributionGraph({ activities }: ContributionGraphProps) {
       </div>
 
       <div className="overflow-x-auto overflow-y-visible -mx-1 px-1">
-        <div className="flex w-full gap-1.5" style={{ minWidth: `${weeks.length * 8 + 24}px` }}>
+        <div className="flex w-full gap-1.5" style={{ minWidth: `${weeks.length * 17 + 40}px` }}>
           <div className="flex shrink-0 flex-col gap-[3px] pt-[17px]">
             {["L", "", "M", "", "V", "", "D"].map((day, i) => (
               <div
