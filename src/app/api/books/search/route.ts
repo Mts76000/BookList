@@ -51,16 +51,33 @@ export async function GET(request: Request) {
     }
     
     const apiKey = process.env.GOOGLE_BOOKS_API_KEY
-    const url = apiKey 
-      ? `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(searchQuery)}&maxResults=10&printType=books&key=${apiKey}`
-      : `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(searchQuery)}&maxResults=10&printType=books`
-    
-    const response = await fetchWithRetry(url, {
+    const buildUrl = (q: string) =>
+      apiKey
+        ? `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=10&printType=books&key=${apiKey}`
+        : `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=10&printType=books`
+
+    // Premier essai : recherche exacte par isbn:...
+    let response = await fetchWithRetry(buildUrl(searchQuery), {
       headers: {
-        "Accept": "application/json",
+        Accept: "application/json",
       },
-      next: { revalidate: 3600 } // Cache pendant 1 heure
+      next: { revalidate: 3600 },
     })
+
+    // Si la recherche exacte par ISBN est vide, on relance une recherche
+    // générale avec le numéro nu. L'index `isbn:` est strict et certains
+    // codes scannés n'y sont pas référencés, alors qu'un simple match de
+    // chaîne ramène le bon ouvrage.
+    if (isbn && response.ok) {
+      const firstTry = await response.clone().json()
+      if (!firstTry.items?.length) {
+        const fallbackResponse = await fetchWithRetry(buildUrl(cleanIsbn), {
+          headers: { Accept: "application/json" },
+          next: { revalidate: 3600 },
+        })
+        if (fallbackResponse.ok) response = fallbackResponse
+      }
+    }
 
     if (!response.ok) {
       const errorText = await response.text()

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Navigation } from "@/components/Navigation"
 import { BarcodeScanner } from "@/components/BarcodeScanner"
@@ -78,12 +78,13 @@ export default function AddBook() {
     await runSearch()
   }
 
-  const handleBarcodeDetected = (code: string) => {
+  const handleBarcodeDetected = useCallback((code: string) => {
     setIsScannerOpen(false)
     setIsbnQuery(code)
     setSearchQuery("")
     runSearch(code)
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleAddBook = async () => {
     setIsLoading(true)
@@ -147,7 +148,7 @@ export default function AddBook() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 pb-24 sm:pb-8">
+    <div className="min-h-screen bg-stone-50 pb-24 sm:pb-8 sm:pl-60">
       <Navigation />
       <main className="mx-auto max-w-lg px-4 py-6 sm:px-6 sm:py-8">
         <h1 className="mb-6 text-2xl font-semibold tracking-tight text-stone-900">

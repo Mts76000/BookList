@@ -25,20 +25,16 @@ export function Navigation() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-stone-200/80 bg-stone-50/90 backdrop-blur-md">
-        <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4 sm:px-6">
+      {/* Mobile top bar */}
+      <header className="sticky top-0 z-40 border-b border-stone-200/80 bg-stone-50/90 backdrop-blur-md sm:hidden">
+        <div className="flex h-14 items-center justify-between px-4">
           <Link href="/dashboard" className="text-lg font-semibold tracking-tight text-stone-900">
             BookList
           </Link>
-          <button
-            onClick={() => signOut({ callbackUrl: "/auth/signin" })}
-            className="hidden text-sm font-medium text-stone-500 transition hover:text-stone-900 sm:block"
-          >
-            Déconnexion
-          </button>
         </div>
       </header>
 
+      {/* Mobile bottom tab bar */}
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-stone-200/80 bg-white/95 backdrop-blur-md sm:hidden">
         <div className="mx-auto grid max-w-lg grid-cols-4">
           {navItems.map((item) => {
@@ -60,26 +56,44 @@ export function Navigation() {
         </div>
       </nav>
 
-      <nav className="hidden sm:block">
-        <div className="mx-auto max-w-5xl px-6 pb-2">
-          <div className="flex gap-1">
-            {navItems.map((item) => {
-              const active = isActive(item.href)
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
-                    active
-                      ? "bg-stone-900 text-white"
-                      : "text-stone-500 hover:bg-stone-100 hover:text-stone-900"
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              )
-            })}
-          </div>
+      {/* Desktop left sidebar */}
+      <nav className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-stone-200/80 bg-white sm:flex">
+        <Link
+          href="/dashboard"
+          className="flex h-16 items-center px-6 text-lg font-semibold tracking-tight text-stone-900"
+        >
+          📖 BookList
+        </Link>
+
+        <div className="flex-1 space-y-1 px-3 py-2">
+          {navItems.map((item) => {
+            const active = isActive(item.href)
+            const Icon = item.icon
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
+                  active
+                    ? "bg-stone-900 text-white"
+                    : "text-stone-500 hover:bg-stone-100 hover:text-stone-900"
+                }`}
+              >
+                <Icon className="h-5 w-5 shrink-0" />
+                {item.label}
+              </Link>
+            )
+          })}
+        </div>
+
+        <div className="border-t border-stone-200/80 p-3">
+          <button
+            onClick={() => signOut({ callbackUrl: "/auth/signin" })}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-stone-500 transition hover:bg-red-50 hover:text-red-600"
+          >
+            <LogoutIcon className="h-5 w-5 shrink-0" />
+            Déconnexion
+          </button>
         </div>
       </nav>
     </>
@@ -114,6 +128,18 @@ function UserIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+    </svg>
+  )
+}
+
+function LogoutIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M8.25 9V5.25A2.25 2.25 0 0110.5 3h6a2.25 2.25 0 012.25 2.25v13.5A2.25 2.25 0 0116.5 21h-6a2.25 2.25 0 01-2.25-2.25V15m-3 0l-3-3m0 0l3-3m-3 3H15"
+      />
     </svg>
   )
 }

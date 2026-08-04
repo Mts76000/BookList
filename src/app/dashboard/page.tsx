@@ -75,7 +75,7 @@ export default async function Dashboard() {
   const firstName = session.user.name?.split(" ")[0] || "Lecteur"
 
   return (
-    <div className="min-h-screen bg-stone-50 pb-24 sm:pb-8">
+    <div className="min-h-screen bg-stone-50 pb-24 sm:pb-8 sm:pl-60">
       <Navigation />
       <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
         <header className="mb-8">

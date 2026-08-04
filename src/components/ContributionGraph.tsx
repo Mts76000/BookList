@@ -17,8 +17,10 @@ const PERIODS = [
   { label: "1 an", weeks: 52 },
 ] as const
 
+const CELL_HEIGHT = 14 // px — hauteur fixe des cases ET des étiquettes de jour, pour un alignement parfait
+
 export function ContributionGraph({ activities }: ContributionGraphProps) {
-  const [periodIndex, setPeriodIndex] = useState(0) // 3 mois par défaut : pas de scroll, lisible sur mobile
+  const [periodIndex, setPeriodIndex] = useState(0) // 3 mois par défaut : lisible sur mobile
 
   const weeksToShow = PERIODS[periodIndex].weeks
   const totalDays = weeksToShow * 7
@@ -64,6 +66,11 @@ export function ContributionGraph({ activities }: ContributionGraphProps) {
   const totalPages = days.reduce((sum, d) => sum + d.pagesRead, 0)
   const activeDays = days.filter((d) => d.pagesRead > 0).length
 
+  // Grille fluide : chaque semaine occupe une part égale (1fr) de la largeur disponible,
+  // pour remplir toute la carte. Le conteneur ne scrolle que si la largeur minimale
+  // (8px/semaine) ne rentre vraiment pas (petit écran + période "1 an").
+  const gridColumns = `repeat(${weeks.length}, minmax(8px, 1fr))`
+
   return (
     <div>
       <div className="mb-3 flex items-center justify-between gap-2">
@@ -87,38 +94,49 @@ export function ContributionGraph({ activities }: ContributionGraphProps) {
         </div>
       </div>
 
-      <div className="overflow-x-auto -mx-1 px-1">
-        <div style={{ minWidth: `${weeks.length * 14 + 24}px` }}>
-          <div className="mb-2 flex gap-[3px] pl-6">
-            {weeks.map((week, weekIndex) => {
-              const date = new Date(week[0].date)
-              if (weekIndex % monthLabelEvery === 0) {
-                return (
-                  <div key={weekIndex} className="w-[11px] text-[10px] text-stone-400">
-                    {months[date.getMonth()]}
-                  </div>
-                )
-              }
-              return <div key={weekIndex} className="w-[11px]" />
-            })}
+      <div className="overflow-x-auto overflow-y-visible -mx-1 px-1">
+        <div className="flex w-full gap-1.5" style={{ minWidth: `${weeks.length * 8 + 24}px` }}>
+          <div className="flex shrink-0 flex-col gap-[3px] pt-[17px]">
+            {["L", "", "M", "", "V", "", "D"].map((day, i) => (
+              <div
+                key={i}
+                className="flex w-4 items-center text-[10px] text-stone-400"
+                style={{ height: `${CELL_HEIGHT}px` }}
+              >
+                {day}
+              </div>
+            ))}
           </div>
 
-          <div className="flex gap-[3px]">
-            <div className="flex flex-col gap-[3px] pr-1">
-              {["L", "", "M", "", "V", "", "D"].map((day, i) => (
-                <div key={i} className="flex h-[11px] w-4 items-center text-[10px] text-stone-400">
-                  {day}
-                </div>
-              ))}
+          <div className="min-w-0 flex-1">
+            <div
+              className="relative mb-[3px] grid gap-[3px]"
+              style={{ gridTemplateColumns: gridColumns, height: "12px" }}
+            >
+              {weeks.map((week, weekIndex) => {
+                const date = new Date(week[0].date)
+                if (weekIndex % monthLabelEvery === 0) {
+                  return (
+                    <div
+                      key={weekIndex}
+                      className="overflow-visible whitespace-nowrap text-[10px] text-stone-400"
+                    >
+                      {months[date.getMonth()]}
+                    </div>
+                  )
+                }
+                return <div key={weekIndex} />
+              })}
             </div>
 
-            <div className="flex gap-[3px]">
+            <div className="grid gap-[3px]" style={{ gridTemplateColumns: gridColumns }}>
               {weeks.map((week, weekIndex) => (
-                <div key={weekIndex} className="flex flex-col gap-[3px]">
+                <div key={weekIndex} className="grid gap-[3px]">
                   {week.map((day) => (
                     <div
                       key={day.date}
-                      className={`h-[11px] w-[11px] rounded-sm ${getColor(day.pagesRead)}`}
+                      className={`w-full rounded-sm ${getColor(day.pagesRead)}`}
+                      style={{ height: `${CELL_HEIGHT}px` }}
                       title={`${new Date(day.date).toLocaleDateString("fr-FR")} : ${day.pagesRead} pages`}
                     />
                   ))}
@@ -126,19 +144,19 @@ export function ContributionGraph({ activities }: ContributionGraphProps) {
               ))}
             </div>
           </div>
-
-          <div className="mt-3 flex items-center justify-end gap-2 text-[10px] text-stone-400">
-            <span>Moins</span>
-            <div className="flex gap-[3px]">
-              <div className="h-[11px] w-[11px] rounded-sm bg-stone-100" />
-              <div className="h-[11px] w-[11px] rounded-sm bg-amber-200" />
-              <div className="h-[11px] w-[11px] rounded-sm bg-amber-300" />
-              <div className="h-[11px] w-[11px] rounded-sm bg-amber-400" />
-              <div className="h-[11px] w-[11px] rounded-sm bg-amber-500" />
-            </div>
-            <span>Plus</span>
-          </div>
         </div>
+      </div>
+
+      <div className="mt-3 flex items-center justify-end gap-2 text-[10px] text-stone-400">
+        <span>Moins</span>
+        <div className="flex gap-[3px]">
+          <div className="h-[11px] w-[11px] rounded-sm bg-stone-100" />
+          <div className="h-[11px] w-[11px] rounded-sm bg-amber-200" />
+          <div className="h-[11px] w-[11px] rounded-sm bg-amber-300" />
+          <div className="h-[11px] w-[11px] rounded-sm bg-amber-400" />
+          <div className="h-[11px] w-[11px] rounded-sm bg-amber-500" />
+        </div>
+        <span>Plus</span>
       </div>
     </div>
   )

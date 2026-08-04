@@ -8,7 +8,7 @@ export default async function InstallPage() {
   const session = await getServerSession(authOptions)
 
   return (
-    <div className="min-h-screen bg-stone-50 pb-24 sm:pb-8">
+    <div className={`min-h-screen bg-stone-50 pb-24 sm:pb-8 ${session ? "sm:pl-60" : ""}`}>
       {session ? (
         <Navigation />
       ) : (

@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { useSession } from "next-auth/react"
+import { useSession, signOut } from "next-auth/react"
 import Link from "next/link"
 
 interface ProfileViewProps {
@@ -34,6 +34,7 @@ export function ProfileView({
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState("")
   const [isError, setIsError] = useState(false)
+  const [isSigningOut, setIsSigningOut] = useState(false)
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -63,6 +64,11 @@ export function ProfileView({
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleSignOut = async () => {
+    setIsSigningOut(true)
+    await signOut({ callbackUrl: "/auth/signin" })
   }
 
   const initials = (name || email || "?").charAt(0).toUpperCase()
@@ -178,6 +184,15 @@ export function ProfileView({
         </div>
         <ChevronRightIcon className="h-4 w-4 shrink-0 text-stone-400" />
       </Link>
+
+      <button
+        onClick={handleSignOut}
+        disabled={isSigningOut}
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-stone-200/80 bg-white p-4 text-sm font-medium text-red-600 transition hover:border-red-200 hover:bg-red-50 disabled:opacity-50"
+      >
+        <LogoutIcon className="h-4 w-4" />
+        {isSigningOut ? "Déconnexion..." : "Déconnexion"}
+      </button>
     </>
   )
 }
@@ -194,6 +209,18 @@ function ChevronRightIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+    </svg>
+  )
+}
+
+function LogoutIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M8.25 9V5.25A2.25 2.25 0 0110.5 3h6a2.25 2.25 0 012.25 2.25v13.5A2.25 2.25 0 0116.5 21h-6a2.25 2.25 0 01-2.25-2.25V15m-3 0l-3-3m0 0l3-3m-3 3H15"
+      />
     </svg>
   )
 }

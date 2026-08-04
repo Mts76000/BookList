@@ -43,7 +43,7 @@ export default async function Profile() {
   const data = await getProfileData(session.user.id)
 
   return (
-    <div className="min-h-screen bg-stone-50 pb-24 sm:pb-8">
+    <div className="min-h-screen bg-stone-50 pb-24 sm:pb-8 sm:pl-60">
       <Navigation />
       <main className="mx-auto max-w-lg px-4 py-6 sm:px-6 sm:py-8">
         <h1 className="mb-6 text-2xl font-semibold tracking-tight text-stone-900">Profil</h1>
