@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Navigation } from "@/components/Navigation"
+import { BarcodeScanner } from "@/components/BarcodeScanner"
 
 interface BookSearchResult {
   id: string
@@ -25,6 +26,7 @@ export default function AddBook() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const [manualMode, setManualMode] = useState(false)
+  const [isScannerOpen, setIsScannerOpen] = useState(false)
 
   const [manualBook, setManualBook] = useState({
     title: "",
@@ -39,9 +41,9 @@ export default function AddBook() {
     userReadDate: new Date().toISOString().split("T")[0],
   })
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!searchQuery && !isbnQuery) return
+  const runSearch = async (overrideIsbn?: string) => {
+    const isbnToUse = overrideIsbn ?? isbnQuery
+    if (!searchQuery && !isbnToUse) return
 
     setIsLoading(true)
     setError("")
@@ -49,14 +51,14 @@ export default function AddBook() {
 
     try {
       const params = new URLSearchParams()
-      if (isbnQuery) params.append("isbn", isbnQuery)
+      if (isbnToUse) params.append("isbn", isbnToUse)
       else params.append("q", searchQuery)
 
       const response = await fetch(`/api/books/search?${params}`)
       const data = await response.json()
 
       setSearchResults(data.books || [])
-      
+
       if (data.error) {
         // Si l'API retourne une erreur (quota dépassé ou autre)
         setError(data.message || "Erreur lors de la recherche")
@@ -70,6 +72,18 @@ export default function AddBook() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault()
+    await runSearch()
+  }
+
+  const handleBarcodeDetected = (code: string) => {
+    setIsScannerOpen(false)
+    setIsbnQuery(code)
+    setSearchQuery("")
+    runSearch(code)
   }
 
   const handleAddBook = async () => {
@@ -167,13 +181,24 @@ export default function AddBook() {
 
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-stone-700">ISBN</label>
-                <input
-                  type="text"
-                  value={isbnQuery}
-                  onChange={(e) => setIsbnQuery(e.target.value)}
-                  placeholder="978-2070612758"
-                  className="input-field"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={isbnQuery}
+                    onChange={(e) => setIsbnQuery(e.target.value)}
+                    placeholder="978-2070612758"
+                    className="input-field flex-1"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setIsScannerOpen(true)}
+                    className="flex shrink-0 items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3 text-sm font-medium text-stone-700 transition hover:border-stone-300 hover:bg-stone-50"
+                    aria-label="Scanner le code-barres"
+                  >
+                    <BarcodeIcon className="h-5 w-5" />
+                    <span className="hidden sm:inline">Scanner</span>
+                  </button>
+                </div>
               </div>
 
               <button type="submit" disabled={isLoading} className="btn-primary w-full">
@@ -334,6 +359,21 @@ export default function AddBook() {
           </div>
         )}
       </main>
+
+      {isScannerOpen && (
+        <BarcodeScanner
+          onDetected={handleBarcodeDetected}
+          onClose={() => setIsScannerOpen(false)}
+        />
+      )}
     </div>
+  )
+}
+
+function BarcodeIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4 5.25v13.5m3-13.5v13.5m4.5-13.5v13.5M15 5.25v13.5m1.5-13.5v13.5m3-13.5v13.5M4 5.25h16.5M4 18.75h16.5" />
+    </svg>
   )
 }
