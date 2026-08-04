@@ -13,7 +13,6 @@ interface ContributionGraphProps {
 
 const PERIODS = [
   { label: "1 mois", weeks: 4 },
-  { label: "3 mois", weeks: 13 },
   { label: "6 mois", weeks: 26 },
   { label: "1 an", weeks: 52 },
 ] as const
@@ -21,7 +20,7 @@ const PERIODS = [
 const CELL_HEIGHT = 14 // px — hauteur fixe des cases ET des étiquettes de jour, pour un alignement parfait
 
 export function ContributionGraph({ activities }: ContributionGraphProps) {
-  const [periodIndex, setPeriodIndex] = useState(2) // 6 mois par défaut
+  const [periodIndex, setPeriodIndex] = useState(0) // 1 mois par défaut
 
   const weeksToShow = PERIODS[periodIndex].weeks
   const totalDays = weeksToShow * 7
