@@ -149,9 +149,6 @@ export default async function BooksPage({
               max="2100"
               className="input-field w-24"
             />
-            <button type="submit" className="btn-secondary px-4">
-              Filtrer
-            </button>
           </div>
         </form>
 
