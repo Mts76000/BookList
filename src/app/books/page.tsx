@@ -116,7 +116,7 @@ export default async function BooksPage({
                 href={`/books?sort=${sortBy}`}
                 className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
                   !genre
-                    ? "bg-amber-100 text-amber-800 ring-1 ring-amber-200"
+                    ? "bg-stone-900 text-white"
                     : "bg-white text-stone-600 ring-1 ring-stone-200 hover:ring-stone-300"
                 }`}
               >
@@ -128,7 +128,7 @@ export default async function BooksPage({
                   href={`/books?sort=${sortBy}&genre=${encodeURIComponent(g)}`}
                   className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
                     genre === g
-                      ? "bg-amber-100 text-amber-800 ring-1 ring-amber-200"
+                      ? "bg-stone-900 text-white"
                       : "bg-white text-stone-600 ring-1 ring-stone-200 hover:ring-stone-300"
                   }`}
                 >

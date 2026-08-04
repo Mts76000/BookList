@@ -15,7 +15,17 @@ export async function PATCH(
     }
 
     const body = await request.json()
-    const { userRating } = body
+    const {
+      userRating,
+      title,
+      author,
+      description,
+      coverUrl,
+      pageCount,
+      genre,
+      publishedDate,
+      userReadDate,
+    } = body
 
     const book = await prisma.book.findFirst({
       where: { id, userId: session.user.id },
@@ -25,9 +35,21 @@ export async function PATCH(
       return NextResponse.json({ error: "Book not found" }, { status: 404 })
     }
 
+    // On ne met à jour que les champs explicitement fournis dans la requête
+    const data: Record<string, unknown> = {}
+    if (userRating !== undefined) data.userRating = userRating
+    if (title !== undefined) data.title = title
+    if (author !== undefined) data.author = author
+    if (description !== undefined) data.description = description || null
+    if (coverUrl !== undefined) data.coverUrl = coverUrl || null
+    if (pageCount !== undefined) data.pageCount = pageCount || null
+    if (genre !== undefined) data.genre = genre || null
+    if (publishedDate !== undefined) data.publishedDate = publishedDate || null
+    if (userReadDate !== undefined) data.userReadDate = userReadDate ? new Date(userReadDate) : null
+
     const updatedBook = await prisma.book.update({
       where: { id },
-      data: { userRating },
+      data,
     })
 
     return NextResponse.json({ book: updatedBook })

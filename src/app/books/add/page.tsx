@@ -37,7 +37,6 @@ export default function AddBook() {
     pageCount: "",
     genre: "",
     publishedDate: "",
-    userRating: "",
     userReadDate: new Date().toISOString().split("T")[0],
   })
 
@@ -100,7 +99,6 @@ export default function AddBook() {
           pageCount: selectedBook.pageCount,
           genre: selectedBook.genres?.join(", "),
           publishedDate: selectedBook.publishedDate,
-          userRating: manualBook.userRating ? parseInt(manualBook.userRating) : null,
           userReadDate: manualBook.userReadDate || null,
         }
       : {
@@ -112,7 +110,6 @@ export default function AddBook() {
           pageCount: manualBook.pageCount ? parseInt(manualBook.pageCount) : null,
           genre: manualBook.genre || null,
           publishedDate: manualBook.publishedDate || null,
-          userRating: manualBook.userRating ? parseInt(manualBook.userRating) : null,
           userReadDate: manualBook.userReadDate || null,
         }
 
@@ -129,9 +126,12 @@ export default function AddBook() {
         body: JSON.stringify(bookData),
       })
 
+      const data = await response.json()
+
       if (!response.ok) throw new Error("Failed")
 
-      router.push("/books")
+      // On va directement sur la fiche du livre pour le noter et voir sa description
+      router.push(`/books/${data.book.id}`)
     } catch {
       setError("Erreur lors de l'ajout du livre")
     } finally {
@@ -312,30 +312,19 @@ export default function AddBook() {
                 </>
               )}
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-stone-700">Note</label>
-                  <select
-                    value={manualBook.userRating}
-                    onChange={(e) => setManualBook({ ...manualBook, userRating: e.target.value })}
-                    className="input-field"
-                  >
-                    <option value="">—</option>
-                    {[1, 2, 3, 4, 5].map((n) => (
-                      <option key={n} value={n}>{n}/5</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-stone-700">Date de lecture</label>
-                  <input
-                    type="date"
-                    value={manualBook.userReadDate}
-                    onChange={(e) => setManualBook({ ...manualBook, userReadDate: e.target.value })}
-                    className="input-field"
-                  />
-                </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-stone-700">Date de lecture</label>
+                <input
+                  type="date"
+                  value={manualBook.userReadDate}
+                  onChange={(e) => setManualBook({ ...manualBook, userReadDate: e.target.value })}
+                  className="input-field"
+                />
               </div>
+
+              <p className="text-xs text-stone-400">
+                Vous pourrez noter le livre et lire sa description juste après l&apos;ajout.
+              </p>
 
               {error && (
                 <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
