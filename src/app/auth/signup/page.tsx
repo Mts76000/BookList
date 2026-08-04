@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { signIn } from "next-auth/react"
 import Link from "next/link"
 
 export default function SignUp() {
@@ -51,12 +52,26 @@ export default function SignUp() {
             ? "Un compte existe déjà avec cet email"
             : "Une erreur est survenue"
         )
-      } else {
+        setIsLoading(false)
+        return
+      }
+
+      // Connexion automatique après l'inscription
+      const signInResult = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      })
+
+      if (signInResult?.error) {
+        // L'inscription a réussi mais la connexion auto a échoué, on redirige vers signin
         router.push("/auth/signin?registered=true")
+      } else {
+        router.push("/dashboard")
+        router.refresh()
       }
     } catch {
       setError("Une erreur est survenue")
-    } finally {
       setIsLoading(false)
     }
   }

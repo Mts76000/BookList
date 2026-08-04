@@ -1,5 +1,32 @@
 import { NextResponse } from "next/server"
 
+async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3): Promise<Response> {
+  let lastError: Error | null = null
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, options)
+
+      // Retry sur les erreurs serveur temporaires (503, 502, 504)
+      if ([502, 503, 504].includes(response.status) && attempt < maxRetries - 1) {
+        const delay = 300 * Math.pow(2, attempt) // backoff exponentiel: 300ms, 600ms, 1200ms
+        await new Promise((resolve) => setTimeout(resolve, delay))
+        continue
+      }
+
+      return response
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error("Unknown fetch error")
+      if (attempt < maxRetries - 1) {
+        const delay = 300 * Math.pow(2, attempt)
+        await new Promise((resolve) => setTimeout(resolve, delay))
+      }
+    }
+  }
+
+  throw lastError || new Error("Failed after retries")
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const query = searchParams.get("q")
@@ -28,7 +55,7 @@ export async function GET(request: Request) {
       ? `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(searchQuery)}&maxResults=10&printType=books&key=${apiKey}`
       : `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(searchQuery)}&maxResults=10&printType=books`
     
-    const response = await fetch(url, {
+    const response = await fetchWithRetry(url, {
       headers: {
         "Accept": "application/json",
       },
@@ -48,6 +75,18 @@ export async function GET(request: Request) {
             books: []
           },
           { status: 200 } // On retourne 200 pour permettre le fallback
+        )
+      }
+
+      // Erreurs serveur temporaires (503, 502, 504) après épuisement des retries
+      if ([502, 503, 504].includes(response.status)) {
+        return NextResponse.json(
+          {
+            error: "API_UNAVAILABLE",
+            message: "Le service Google Books est temporairement indisponible. Réessayez dans quelques instants ou utilisez la saisie manuelle.",
+            books: []
+          },
+          { status: 200 }
         )
       }
       
