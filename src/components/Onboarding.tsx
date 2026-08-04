@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useSession } from "next-auth/react"
 import Link from "next/link"
 
 const STEPS = [
@@ -22,18 +23,27 @@ const STEPS = [
 ]
 
 export function Onboarding() {
+  const { data: session, update } = useSession()
   const [isOpen, setIsOpen] = useState(false)
   const [step, setStep] = useState(0)
 
   useEffect(() => {
-    const seen = localStorage.getItem("booklist-onboarding-seen")
-    if (!seen) {
+    if (session?.user && !session.user.hasSeenOnboarding) {
       setIsOpen(true)
     }
-  }, [])
+  }, [session])
+
+  const markAsSeen = async () => {
+    try {
+      await fetch("/api/user/onboarding", { method: "PATCH" })
+      await update({ hasSeenOnboarding: true })
+    } catch {
+      // ignore
+    }
+  }
 
   const handleClose = () => {
-    localStorage.setItem("booklist-onboarding-seen", "true")
+    markAsSeen()
     setIsOpen(false)
   }
 

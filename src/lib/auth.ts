@@ -37,6 +37,7 @@ export const authOptions: NextAuthOptions = {
           id: user.id,
           email: user.email,
           name: user.name,
+          hasSeenOnboarding: user.hasSeenOnboarding,
         }
       },
     }),
@@ -51,9 +52,13 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id
+        token.hasSeenOnboarding = user.hasSeenOnboarding
       }
       if (trigger === "update" && session?.name !== undefined) {
         token.name = session.name
+      }
+      if (trigger === "update" && session?.hasSeenOnboarding !== undefined) {
+        token.hasSeenOnboarding = session.hasSeenOnboarding
       }
       return token
     },
@@ -63,6 +68,7 @@ export const authOptions: NextAuthOptions = {
         if (token.name) {
           session.user.name = token.name as string
         }
+        session.user.hasSeenOnboarding = token.hasSeenOnboarding as boolean
       }
       return session
     },

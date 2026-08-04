@@ -19,6 +19,7 @@ model User {
   initialBooksRead Int    @default(0)
   resetToken    String?   @unique
   resetTokenExpiry DateTime?
+  hasSeenOnboarding Boolean @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   books         Book[]
