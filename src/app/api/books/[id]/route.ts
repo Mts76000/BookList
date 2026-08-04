@@ -25,6 +25,8 @@ export async function PATCH(
       genre,
       publishedDate,
       userReadDate,
+      userStartDate,
+      userEndDate,
     } = body
 
     const book = await prisma.book.findFirst({
@@ -46,6 +48,8 @@ export async function PATCH(
     if (genre !== undefined) data.genre = genre || null
     if (publishedDate !== undefined) data.publishedDate = publishedDate || null
     if (userReadDate !== undefined) data.userReadDate = userReadDate ? new Date(userReadDate) : null
+    if (userStartDate !== undefined) data.userStartDate = userStartDate ? new Date(userStartDate) : null
+    if (userEndDate !== undefined) data.userEndDate = userEndDate ? new Date(userEndDate) : null
 
     const updatedBook = await prisma.book.update({
       where: { id },

@@ -24,6 +24,8 @@ interface Book {
   publishedDate: string | null
   userRating: number | null
   userReadDate: Date | null
+  userStartDate: Date | null
+  userEndDate: Date | null
   comments: Comment[]
 }
 
@@ -54,6 +56,12 @@ export function BookDetails({ book }: BookDetailsProps) {
     publishedDate: book.publishedDate || "",
     userReadDate: book.userReadDate
       ? new Date(book.userReadDate).toISOString().split("T")[0]
+      : "",
+    userStartDate: book.userStartDate
+      ? new Date(book.userStartDate).toISOString().split("T")[0]
+      : "",
+    userEndDate: book.userEndDate
+      ? new Date(book.userEndDate).toISOString().split("T")[0]
       : "",
   })
 
@@ -125,6 +133,8 @@ export function BookDetails({ book }: BookDetailsProps) {
           genre: editForm.genre || null,
           publishedDate: editForm.publishedDate || null,
           userReadDate: editForm.userReadDate || null,
+          userStartDate: editForm.userStartDate || null,
+          userEndDate: editForm.userEndDate || null,
         }),
       })
 
@@ -289,7 +299,7 @@ export function BookDetails({ book }: BookDetailsProps) {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-stone-700">Publié</label>
                 <input
@@ -300,11 +310,20 @@ export function BookDetails({ book }: BookDetailsProps) {
                 />
               </div>
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-stone-700">Lu le</label>
+                <label className="mb-1.5 block text-sm font-medium text-stone-700">Début</label>
                 <input
                   type="date"
-                  value={editForm.userReadDate}
-                  onChange={(e) => setEditForm({ ...editForm, userReadDate: e.target.value })}
+                  value={editForm.userStartDate}
+                  onChange={(e) => setEditForm({ ...editForm, userStartDate: e.target.value })}
+                  className="input-field"
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-stone-700">Fin</label>
+                <input
+                  type="date"
+                  value={editForm.userEndDate}
+                  onChange={(e) => setEditForm({ ...editForm, userEndDate: e.target.value })}
                   className="input-field"
                 />
               </div>
