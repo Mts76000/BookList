@@ -1,13 +1,19 @@
 import { getServerSession } from "next-auth"
 import { redirect } from "next/navigation"
 import Link from "next/link"
+import { Prisma } from "@prisma/client"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { Navigation } from "@/components/Navigation"
 
 const BOOKS_PER_PAGE = 12
 
-async function getBooks(userId: string, sortBy: string, genre?: string, page = 1) {
+async function getBooks(
+  userId: string,
+  sortBy: string,
+  page: number,
+  options: { genre?: string; search?: string; year?: number } = {}
+) {
   let orderBy: Record<string, string> | Record<string, string>[] = { userEndDate: "desc" }
 
   switch (sortBy) {
@@ -27,9 +33,24 @@ async function getBooks(userId: string, sortBy: string, genre?: string, page = 1
       orderBy = { userEndDate: "desc" }
   }
 
-  const where: { userId: string; genre?: { contains: string; mode: "insensitive" } } = { userId }
-  if (genre) {
-    where.genre = { contains: genre, mode: "insensitive" }
+  const where: Prisma.BookWhereInput = { userId }
+
+  if (options.genre) {
+    where.genre = { contains: options.genre, mode: "insensitive" }
+  }
+
+  if (options.search?.trim()) {
+    where.OR = [
+      { title: { contains: options.search.trim(), mode: "insensitive" } },
+      { author: { contains: options.search.trim(), mode: "insensitive" } },
+    ]
+  }
+
+  if (options.year) {
+    where.userEndDate = {
+      gte: new Date(options.year, 0, 1),
+      lte: new Date(options.year, 11, 31),
+    }
   }
 
   const [books, total] = await Promise.all([
@@ -65,7 +86,7 @@ async function getGenres(userId: string) {
 export default async function BooksPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sort?: string; genre?: string; page?: string }>
+  searchParams: Promise<{ sort?: string; genre?: string; page?: string; search?: string; year?: string }>
 }) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
@@ -75,10 +96,12 @@ export default async function BooksPage({
   const params = await searchParams
   const sortBy = params.sort || "date"
   const genre = params.genre
+  const search = params.search
+  const year = params.year ? parseInt(params.year, 10) : undefined
   const currentPage = Math.max(1, parseInt(params.page || "1", 10))
 
   const [{ books, total, totalPages }, genres] = await Promise.all([
-    getBooks(session.user.id, sortBy, genre, currentPage),
+    getBooks(session.user.id, sortBy, currentPage, { genre, search, year }),
     getGenres(session.user.id),
   ])
 
@@ -106,12 +129,38 @@ export default async function BooksPage({
           </Link>
         </div>
 
+        <form method="GET" action="/books" className="mb-4 space-y-3">
+          <input type="hidden" name="sort" value={sortBy} />
+          <input type="hidden" name="genre" value={genre || ""} />
+          <div className="flex gap-2">
+            <input
+              type="text"
+              name="search"
+              defaultValue={search || ""}
+              placeholder="Rechercher un titre ou auteur..."
+              className="input-field flex-1"
+            />
+            <input
+              type="number"
+              name="year"
+              defaultValue={year || ""}
+              placeholder="Année"
+              min="1900"
+              max="2100"
+              className="input-field w-24"
+            />
+            <button type="submit" className="btn-secondary px-4">
+              Filtrer
+            </button>
+          </div>
+        </form>
+
         <div className="mb-6 space-y-3">
           <div className="flex flex-wrap gap-2">
             {sortOptions.map((option) => (
               <Link
                 key={option.value}
-                href={`/books?sort=${option.value}${genre ? `&genre=${encodeURIComponent(genre)}` : ""}`}
+                href={`/books?sort=${option.value}${genre ? `&genre=${encodeURIComponent(genre)}` : ""}${search ? `&search=${encodeURIComponent(search)}` : ""}${year ? `&year=${year}` : ""}`}
                 className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
                   sortBy === option.value
                     ? "bg-stone-900 text-white"
@@ -126,7 +175,7 @@ export default async function BooksPage({
           {genres.length > 0 && (
             <div className="flex flex-wrap gap-2">
               <Link
-                href={`/books?sort=${sortBy}`}
+                href={`/books?sort=${sortBy}${search ? `&search=${encodeURIComponent(search)}` : ""}${year ? `&year=${year}` : ""}`}
                 className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
                   !genre
                     ? "bg-stone-900 text-white"
@@ -138,7 +187,7 @@ export default async function BooksPage({
               {genres.map((g) => (
                 <Link
                   key={g}
-                  href={`/books?sort=${sortBy}&genre=${encodeURIComponent(g)}`}
+                    href={`/books?sort=${sortBy}&genre=${encodeURIComponent(g)}${search ? `&search=${encodeURIComponent(search)}` : ""}${year ? `&year=${year}` : ""}`}
                   className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
                     genre === g
                       ? "bg-stone-900 text-white"
@@ -222,6 +271,8 @@ export default async function BooksPage({
               page={currentPage - 1}
               sort={sortBy}
               genre={genre}
+              search={search}
+              year={year}
               disabled={currentPage <= 1}
               label="← Précédent"
             />
@@ -232,6 +283,8 @@ export default async function BooksPage({
               page={currentPage + 1}
               sort={sortBy}
               genre={genre}
+              search={search}
+              year={year}
               disabled={currentPage >= totalPages}
               label="Suivant →"
             />
@@ -246,12 +299,16 @@ function PaginationLink({
   page,
   sort,
   genre,
+  search,
+  year,
   disabled,
   label,
 }: {
   page: number
   sort: string
   genre?: string
+  search?: string
+  year?: number
   disabled: boolean
   label: string
 }) {
@@ -265,6 +322,8 @@ function PaginationLink({
 
   const query = new URLSearchParams({ sort, page: page.toString() })
   if (genre) query.set("genre", genre)
+  if (search) query.set("search", search)
+  if (year) query.set("year", year.toString())
 
   return (
     <Link
