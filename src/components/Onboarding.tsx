@@ -61,17 +61,23 @@ export function Onboarding() {
         <p className="mt-2 text-sm leading-relaxed text-stone-500">{STEPS[step].description}</p>
 
         {step === 1 && (
-          <div className="mt-5 flex items-center gap-3 rounded-xl bg-stone-50 p-3 text-sm text-stone-700">
-            <span className="text-2xl">📷</span>
-            <span>Essayez le scan de code-barres dans Ajouter un livre.</span>
-          </div>
+          <Link
+            href="/books/add"
+            onClick={handleClose}
+            className="mt-5 block rounded-xl bg-stone-900 px-4 py-3 text-center text-sm font-medium text-white transition hover:bg-stone-800"
+          >
+            Ajouter mon premier livre
+          </Link>
         )}
 
         {step === 2 && (
-          <div className="mt-5 rounded-xl bg-stone-50 p-3 text-sm text-stone-700">
-            <p>Vos stats sont sur la page Profil.</p>
-            <p className="mt-1 text-stone-500">Et vos recommandations sur le Dashboard.</p>
-          </div>
+          <Link
+            href="/profile"
+            onClick={handleClose}
+            className="mt-5 block rounded-xl bg-stone-900 px-4 py-3 text-center text-sm font-medium text-white transition hover:bg-stone-800"
+          >
+            Voir mon profil
+          </Link>
         )}
 
         <div className="mt-6 flex items-center gap-3">
@@ -89,20 +95,10 @@ export function Onboarding() {
             </button>
           ) : (
             <button onClick={handleNext} className="btn-primary flex-1">
-              Commencer
+              C&apos;est parti !
             </button>
           )}
         </div>
-
-        {step === 0 && (
-          <Link
-            href="/books/add"
-            onClick={handleClose}
-            className="mt-3 block w-full rounded-xl border border-stone-200 py-3 text-center text-sm font-medium text-stone-700 transition hover:bg-stone-50"
-          >
-            Ajouter mon premier livre
-          </Link>
-        )}
       </div>
     </div>
   )
