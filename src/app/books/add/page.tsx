@@ -55,14 +55,18 @@ export default function AddBook() {
       const response = await fetch(`/api/books/search?${params}`)
       const data = await response.json()
 
-      if (!response.ok) throw new Error(data.error)
-
       setSearchResults(data.books || [])
-      if (data.books?.length === 0) {
+      
+      if (data.error) {
+        // Si l'API retourne une erreur (quota dépassé ou autre)
+        setError(data.message || "Erreur lors de la recherche")
+        setManualMode(true) // Proposer directement la saisie manuelle
+      } else if (data.books?.length === 0) {
         setError("Aucun résultat. Essayez une autre recherche ou saisissez manuellement.")
       }
     } catch {
-      setError("Erreur lors de la recherche")
+      setError("Erreur lors de la recherche. Veuillez utiliser la saisie manuelle.")
+      setManualMode(true)
     } finally {
       setIsLoading(false)
     }

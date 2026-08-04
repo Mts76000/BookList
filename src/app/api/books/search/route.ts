@@ -23,19 +23,34 @@ export async function GET(request: Request) {
       searchQuery = query
     }
     
-    const response = await fetch(
-      `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(searchQuery)}&maxResults=10&printType=books&key=${process.env.GOOGLE_BOOKS_API_KEY || ""}`,
-      {
-        headers: {
-          "Accept": "application/json",
-        },
-        next: { revalidate: 3600 } // Cache pendant 1 heure
-      }
-    )
+    const apiKey = process.env.GOOGLE_BOOKS_API_KEY
+    const url = apiKey 
+      ? `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(searchQuery)}&maxResults=10&printType=books&key=${apiKey}`
+      : `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(searchQuery)}&maxResults=10&printType=books`
+    
+    const response = await fetch(url, {
+      headers: {
+        "Accept": "application/json",
+      },
+      next: { revalidate: 3600 } // Cache pendant 1 heure
+    })
 
     if (!response.ok) {
       const errorText = await response.text()
       console.error("Google Books API error:", response.status, errorText)
+      
+      // Gérer spécifiquement l'erreur 429 (quota dépassé)
+      if (response.status === 429) {
+        return NextResponse.json(
+          { 
+            error: "API_LIMIT_EXCEEDED",
+            message: "Le quota de l'API Google Books est dépassé. Veuillez utiliser la saisie manuelle ou configurer une clé API.",
+            books: []
+          },
+          { status: 200 } // On retourne 200 pour permettre le fallback
+        )
+      }
+      
       throw new Error(`Google Books API error: ${response.status}`)
     }
 
@@ -73,8 +88,12 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error("Google Books API error:", error)
     return NextResponse.json(
-      { error: "Failed to search books", details: error instanceof Error ? error.message : "Unknown error" },
-      { status: 500 }
+      { 
+        error: "API_ERROR",
+        message: "Erreur lors de la recherche. Veuillez utiliser la saisie manuelle.",
+        books: []
+      },
+      { status: 200 } // On retourne 200 pour permettre le fallback
     )
   }
 }
