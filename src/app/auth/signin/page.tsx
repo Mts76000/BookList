@@ -94,6 +94,12 @@ function SignInForm() {
           <button type="submit" disabled={isLoading} className="btn-primary w-full">
             {isLoading ? "Connexion..." : "Se connecter"}
           </button>
+
+          <p className="mt-3 text-center text-sm">
+            <Link href="/auth/forgot-password" className="font-medium text-stone-600 hover:text-stone-900 hover:underline">
+              Mot de passe oublié ?
+            </Link>
+          </p>
         </form>
 
         <p className="mt-6 text-center text-sm text-stone-500">

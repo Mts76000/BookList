@@ -17,6 +17,8 @@ model User {
   password      String
   name          String?
   initialBooksRead Int    @default(0)
+  resetToken    String?   @unique
+  resetTokenExpiry DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   books         Book[]
