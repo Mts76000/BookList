@@ -26,6 +26,12 @@ const FEATURES = [
   },
 ]
 
+const STEPS = [
+  { title: "Scannez", description: "Utilisez l'appareil photo pour scanner le code-barres d'un livre." },
+  { title: "Notez", description: "Ajoutez votre avis, votre note et les dates de lecture." },
+  { title: "Suivez", description: "Consultez vos stats et découvrez vos habitudes de lecture." },
+]
+
 export default async function Home() {
   const session = await getServerSession(authOptions)
 
@@ -48,14 +54,16 @@ export default async function Home() {
       </header>
 
       <main>
-        <section className="mx-auto max-w-3xl px-4 py-14 text-center sm:px-6 sm:py-20">
-          <h1 className="text-3xl font-semibold tracking-tight text-stone-900 sm:text-5xl">
-            Votre bibliothèque personnelle,
-            <br className="hidden sm:block" /> enfin bien rangée.
+        <section className="mx-auto max-w-3xl px-4 pb-8 pt-14 text-center sm:px-6 sm:pb-12 sm:pt-20">
+          <div className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full bg-stone-100 px-4 py-1.5 text-xs font-medium text-stone-600">
+            <SparkleIcon className="h-3.5 w-3.5" />
+            Gratuit, sans pub, installable sur mobile
+          </div>
+          <h1 className="text-4xl font-semibold tracking-tight text-stone-900 sm:text-6xl">
+            Retrouvez le plaisir de lire, sans perdre le fil.
           </h1>
-          <p className="mx-auto mt-4 max-w-xl text-base text-stone-500 sm:text-lg">
-            Suivez vos lectures, notez vos livres et gardez un œil sur vos statistiques.
-            Simple, rapide, et toujours dans votre poche.
+          <p className="mx-auto mt-5 max-w-xl text-base text-stone-500 sm:text-lg">
+            BookList vous aide à suivre vos lectures, noter vos coups de cœur et visualiser votre évolution au fil du temps.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link href="/auth/signup" className="btn-primary w-full sm:w-auto">
@@ -78,6 +86,25 @@ export default async function Home() {
                 <p className="mt-1.5 text-sm leading-relaxed text-stone-500">{feature.description}</p>
               </div>
             ))}
+          </div>
+        </section>
+
+        <section className="border-y border-stone-200/80 bg-white">
+          <div className="mx-auto max-w-5xl px-4 py-14 sm:px-6 sm:py-20">
+            <h2 className="text-center text-2xl font-semibold tracking-tight text-stone-900 sm:text-3xl">
+              Comment ça marche ?
+            </h2>
+            <div className="mt-8 grid gap-6 sm:grid-cols-3">
+              {STEPS.map((step, i) => (
+                <div key={step.title} className="text-center">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-stone-900 text-lg font-semibold text-white">
+                    {i + 1}
+                  </div>
+                  <h3 className="mt-4 font-medium text-stone-900">{step.title}</h3>
+                  <p className="mt-1.5 text-sm text-stone-500">{step.description}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -104,6 +131,23 @@ export default async function Home() {
         </div>
       </footer>
     </div>
+  )
+}
+
+function SparkleIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"
+      />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M17.512 8.81l-.54-1.89a3.375 3.375 0 00-2.313-2.312l-1.89-.54.54 1.89a3.375 3.375 0 002.312 2.312l1.89.54z"
+      />
+    </svg>
   )
 }
 

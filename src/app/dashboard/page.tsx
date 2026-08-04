@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma"
 import { Navigation } from "@/components/Navigation"
 import { ContributionGraph } from "@/components/ContributionGraph"
 import { AddReadingActivity } from "@/components/AddReadingActivity"
+import { Onboarding } from "@/components/Onboarding"
 
 async function getDashboardData(userId: string) {
   const books = await prisma.book.findMany({
@@ -109,6 +110,7 @@ export default async function Dashboard() {
   return (
     <div className="min-h-screen bg-stone-50 pb-24 sm:pb-8 sm:pl-60">
       <Navigation />
+      <Onboarding />
       <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
         <header className="mb-8">
           <p className="text-sm font-medium text-stone-500">Bonjour</p>
