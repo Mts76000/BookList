@@ -11,11 +11,18 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json()
-    const { name } = body
+    const { name, initialBooksRead } = body
+
+    const data: Record<string, unknown> = {}
+    if (name !== undefined) data.name = name || null
+    if (initialBooksRead !== undefined) {
+      const parsed = parseInt(initialBooksRead, 10)
+      data.initialBooksRead = Number.isFinite(parsed) && parsed >= 0 ? parsed : 0
+    }
 
     const updatedUser = await prisma.user.update({
       where: { id: session.user.id },
-      data: { name: name || null },
+      data,
     })
 
     return NextResponse.json({ user: updatedUser })

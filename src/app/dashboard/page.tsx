@@ -18,11 +18,10 @@ async function getDashboardData(userId: string) {
     where: { userId },
   })
 
-  // Temporairement désactivé à cause de l'erreur Prisma
-  // const user = await prisma.user.findUnique({
-  //   where: { id: userId },
-  //   select: { initialBooksRead: true },
-  // })
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { initialBooksRead: true },
+  })
 
   const totalPagesRead = await prisma.book.aggregate({
     where: { userId, pageCount: { not: null } },
@@ -57,7 +56,7 @@ async function getDashboardData(userId: string) {
 
   return {
     books,
-    totalBooks, // Temporairement sans initialBooksRead
+    totalBooks: totalBooks + (user?.initialBooksRead || 0),
     totalPagesRead: totalPagesRead._sum.pageCount || 0,
     readingActivities,
     booksThisYear,
