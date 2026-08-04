@@ -41,10 +41,11 @@ export async function GET(request: Request) {
 
   try {
     let searchQuery = ""
+    let cleanIsbn = ""
     
     if (isbn) {
       // Nettoyer l'ISBN (enlever les tirets et espaces)
-      const cleanIsbn = isbn.replace(/[-\s]/g, "")
+      cleanIsbn = isbn.replace(/[-\s]/g, "")
       searchQuery = `isbn:${cleanIsbn}`
     } else if (query) {
       searchQuery = query
