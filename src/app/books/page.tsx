@@ -17,7 +17,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 const STATUS_STYLES: Record<string, string> = {
   TO_READ: "bg-stone-100 text-stone-600",
-  READING: "bg-amber-100 text-amber-800",
+  READING: "bg-blue-100 text-blue-700",
   FINISHED: "bg-emerald-100 text-emerald-800",
 }
 
@@ -25,7 +25,7 @@ async function getBooks(
   userId: string,
   sortBy: string,
   page: number,
-  options: { genre?: string; search?: string; year?: number; status?: string } = {}
+  options: { genre?: string; search?: string; status?: string } = {}
 ) {
   let orderBy: Record<string, string> | Record<string, string>[] = { userEndDate: "desc" }
 
@@ -57,13 +57,6 @@ async function getBooks(
       { title: { contains: options.search.trim(), mode: "insensitive" } },
       { author: { contains: options.search.trim(), mode: "insensitive" } },
     ]
-  }
-
-  if (options.year) {
-    where.userEndDate = {
-      gte: new Date(options.year, 0, 1),
-      lte: new Date(options.year, 11, 31),
-    }
   }
 
   if (options.status && (Object.values(BookStatus) as string[]).includes(options.status)) {
@@ -108,7 +101,6 @@ export default async function BooksPage({
     genre?: string
     page?: string
     search?: string
-    year?: string
     status?: string
   }>
 }) {
@@ -121,34 +113,23 @@ export default async function BooksPage({
   const sortBy = params.sort || "date"
   const genre = params.genre
   const search = params.search
-  const year = params.year ? parseInt(params.year, 10) : undefined
   const status = params.status
   const currentPage = Math.max(1, parseInt(params.page || "1", 10))
 
   const [{ books, total, totalPages }, genres] = await Promise.all([
-    getBooks(session.user.id, sortBy, currentPage, { genre, search, year, status }),
+    getBooks(session.user.id, sortBy, currentPage, { genre, search, status }),
     getGenres(session.user.id),
   ])
-
-  const extraParams = `${search ? `&search=${encodeURIComponent(search)}` : ""}${year ? `&year=${year}` : ""}`
-
-  const sortOptions = [
-    { value: "date", label: "Plus récents" },
-    { value: "oldest", label: "Plus anciens" },
-    { value: "title", label: "Titre" },
-    { value: "rating", label: "Mieux notés" },
-    { value: "pages", label: "Plus longs" },
-  ]
 
   return (
     <div className="min-h-screen bg-stone-50 pb-24 sm:pb-8 sm:pl-60">
       <Navigation />
-      <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
+      <main className="animate-fade-in-up mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight text-stone-900">Mes livres</h1>
             <p className="mt-1 text-sm text-stone-500">
-              {total} livre{total !== 1 ? "s" : ""}
+              {total} livre{total !== 1 ? "s" : ""} dans votre bibliothèque
             </p>
           </div>
           <Link href="/books/add" className="btn-primary">
@@ -156,79 +137,7 @@ export default async function BooksPage({
           </Link>
         </div>
 
-        <BooksFilter sortBy={sortBy} genre={genre} />
-
-        <div className="mb-6 space-y-3">
-          <div className="flex flex-wrap gap-2">
-            <Link
-              href={`/books?sort=${sortBy}${genre ? `&genre=${encodeURIComponent(genre)}` : ""}${extraParams}`}
-              className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
-                !status
-                  ? "bg-stone-900 text-white"
-                  : "bg-white text-stone-600 ring-1 ring-stone-200 hover:ring-stone-300"
-              }`}
-            >
-              Tous statuts
-            </Link>
-            {Object.entries(STATUS_LABELS).map(([value, label]) => (
-              <Link
-                key={value}
-                href={`/books?sort=${sortBy}${genre ? `&genre=${encodeURIComponent(genre)}` : ""}${extraParams}&status=${value}`}
-                className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
-                  status === value
-                    ? "bg-stone-900 text-white"
-                    : "bg-white text-stone-600 ring-1 ring-stone-200 hover:ring-stone-300"
-                }`}
-              >
-                {label}
-              </Link>
-            ))}
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {sortOptions.map((option) => (
-              <Link
-                key={option.value}
-                href={`/books?sort=${option.value}${genre ? `&genre=${encodeURIComponent(genre)}` : ""}${extraParams}${status ? `&status=${status}` : ""}`}
-                className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
-                  sortBy === option.value
-                    ? "bg-stone-900 text-white"
-                    : "bg-white text-stone-600 ring-1 ring-stone-200 hover:ring-stone-300"
-                }`}
-              >
-                {option.label}
-              </Link>
-            ))}
-          </div>
-
-          {genres.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              <Link
-                href={`/books?sort=${sortBy}${search ? `&search=${encodeURIComponent(search)}` : ""}${year ? `&year=${year}` : ""}`}
-                className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
-                  !genre
-                    ? "bg-stone-900 text-white"
-                    : "bg-white text-stone-600 ring-1 ring-stone-200 hover:ring-stone-300"
-                }`}
-              >
-                Tous genres
-              </Link>
-              {genres.map((g) => (
-                <Link
-                  key={g}
-                    href={`/books?sort=${sortBy}&genre=${encodeURIComponent(g)}${search ? `&search=${encodeURIComponent(search)}` : ""}${year ? `&year=${year}` : ""}`}
-                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
-                    genre === g
-                      ? "bg-stone-900 text-white"
-                      : "bg-white text-stone-600 ring-1 ring-stone-200 hover:ring-stone-300"
-                  }`}
-                >
-                  {g}
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
+        <BooksFilter sortBy={sortBy} genre={genre} status={status} genres={genres} />
 
         {books.length > 0 ? (
           <div className="space-y-3">
@@ -236,7 +145,7 @@ export default async function BooksPage({
               <Link
                 key={book.id}
                 href={`/books/${book.id}`}
-                className="flex gap-4 rounded-2xl border border-stone-200/80 bg-white p-4 transition hover:border-stone-300"
+                className="card card-interactive flex gap-4 p-4"
               >
                 {book.coverUrl ? (
                   <img
@@ -268,7 +177,7 @@ export default async function BooksPage({
                       </span>
                     )}
                     {book.userRating && (
-                      <span className="text-xs text-amber-600">{book.userRating}/5</span>
+                      <span className="text-xs text-sky-600">{book.userRating}/5</span>
                     )}
                     {book.pageCount && (
                       <span className="text-xs text-stone-400">{book.pageCount} p.</span>
@@ -290,7 +199,7 @@ export default async function BooksPage({
             ))}
           </div>
         ) : (
-          <div className="rounded-2xl border border-dashed border-stone-300 bg-white px-6 py-12 text-center">
+          <div className="rounded-3xl border border-dashed border-stone-300 bg-white px-6 py-12 text-center">
             <p className="font-medium text-stone-900">Aucun livre trouvé</p>
             <p className="mt-1 text-sm text-stone-500">
               {genre ? "Essayez un autre filtre ou ajoutez un livre." : "Commencez par ajouter votre première lecture."}
@@ -308,7 +217,6 @@ export default async function BooksPage({
               sort={sortBy}
               genre={genre}
               search={search}
-              year={year}
               status={status}
               disabled={currentPage <= 1}
               label="← Précédent"
@@ -321,7 +229,6 @@ export default async function BooksPage({
               sort={sortBy}
               genre={genre}
               search={search}
-              year={year}
               status={status}
               disabled={currentPage >= totalPages}
               label="Suivant →"
@@ -338,7 +245,6 @@ function PaginationLink({
   sort,
   genre,
   search,
-  year,
   status,
   disabled,
   label,
@@ -347,14 +253,13 @@ function PaginationLink({
   sort: string
   genre?: string
   search?: string
-  year?: number
   status?: string
   disabled: boolean
   label: string
 }) {
   if (disabled) {
     return (
-      <span className="rounded-xl border border-stone-200 bg-white px-4 py-2 text-sm font-medium text-stone-300">
+      <span className="rounded-full border border-stone-200 bg-stone-50 px-4 py-2 text-sm font-medium text-stone-300">
         {label}
       </span>
     )
@@ -363,13 +268,12 @@ function PaginationLink({
   const query = new URLSearchParams({ sort, page: page.toString() })
   if (genre) query.set("genre", genre)
   if (search) query.set("search", search)
-  if (year) query.set("year", year.toString())
   if (status) query.set("status", status)
 
   return (
     <Link
       href={`/books?${query.toString()}`}
-      className="rounded-xl border border-stone-200 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition hover:border-stone-300 hover:bg-stone-50"
+      className="rounded-full border border-stone-200 bg-white px-4 py-2 text-sm font-medium text-stone-700 shadow-sm transition hover:border-stone-300 hover:bg-stone-50 hover:shadow-md"
     >
       {label}
     </Link>

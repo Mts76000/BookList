@@ -87,8 +87,11 @@ export default async function Profile() {
   return (
     <div className="min-h-screen bg-stone-50 pb-24 sm:pb-8 sm:pl-60">
       <Navigation />
-      <main className="mx-auto max-w-lg px-4 py-6 sm:px-6 sm:py-8">
-        <h1 className="mb-6 text-2xl font-semibold tracking-tight text-stone-900">Profil</h1>
+      <main className="animate-fade-in-up mx-auto max-w-lg px-4 py-6 sm:px-6 sm:py-8">
+        <header className="mb-6">
+          <h1 className="text-2xl font-semibold tracking-tight text-stone-900">Profil</h1>
+          <p className="mt-1 text-sm text-stone-500">Votre compte et vos statistiques</p>
+        </header>
         <ProfileView
           name={data.user?.name || null}
           email={data.user?.email || session.user.email || ""}

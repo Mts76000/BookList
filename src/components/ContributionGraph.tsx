@@ -49,10 +49,10 @@ export function ContributionGraph({ activities }: ContributionGraphProps) {
 
   const getColor = (pagesRead: number) => {
     if (pagesRead === 0) return "bg-stone-100"
-    if (pagesRead < 20) return "bg-amber-200"
-    if (pagesRead < 50) return "bg-amber-300"
-    if (pagesRead < 100) return "bg-amber-400"
-    return "bg-amber-500"
+    if (pagesRead < 20) return "bg-sky-200"
+    if (pagesRead < 50) return "bg-sky-300"
+    if (pagesRead < 100) return "bg-sky-400"
+    return "bg-sky-500"
   }
 
   const weeks: typeof days[] = []
@@ -156,10 +156,10 @@ export function ContributionGraph({ activities }: ContributionGraphProps) {
         <span>Moins</span>
         <div className="flex gap-[3px]">
           <div className="h-[11px] w-[11px] rounded-sm bg-stone-100" />
-          <div className="h-[11px] w-[11px] rounded-sm bg-amber-200" />
-          <div className="h-[11px] w-[11px] rounded-sm bg-amber-300" />
-          <div className="h-[11px] w-[11px] rounded-sm bg-amber-400" />
-          <div className="h-[11px] w-[11px] rounded-sm bg-amber-500" />
+          <div className="h-[11px] w-[11px] rounded-sm bg-sky-200" />
+          <div className="h-[11px] w-[11px] rounded-sm bg-sky-300" />
+          <div className="h-[11px] w-[11px] rounded-sm bg-sky-400" />
+          <div className="h-[11px] w-[11px] rounded-sm bg-sky-500" />
         </div>
         <span>Plus</span>
       </div>

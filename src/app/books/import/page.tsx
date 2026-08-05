@@ -77,13 +77,15 @@ export default function ImportBooks() {
   return (
     <div className="min-h-screen bg-stone-50 pb-24 sm:pb-8 sm:pl-60">
       <Navigation />
-      <main className="mx-auto max-w-lg px-4 py-6 sm:px-6 sm:py-8">
-        <h1 className="mb-2 text-2xl font-semibold tracking-tight text-stone-900">
-          Importer des livres
-        </h1>
-        <p className="mb-6 text-sm text-stone-500">
-          Importez votre bibliothèque depuis un fichier CSV (500 lignes max).
-        </p>
+      <main className="animate-fade-in-up mx-auto max-w-lg px-4 py-6 sm:px-6 sm:py-8">
+        <header className="mb-6">
+          <h1 className="text-2xl font-semibold tracking-tight text-stone-900">
+            Importer des livres
+          </h1>
+          <p className="mt-1 text-sm text-stone-500">
+            Importez votre bibliothèque depuis un fichier CSV (500 lignes max).
+          </p>
+        </header>
 
         <div className="card p-5 sm:p-6">
           <button
@@ -108,20 +110,20 @@ export default function ImportBooks() {
           </div>
 
           {error && (
-            <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+            <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
               {error}
             </div>
           )}
 
           {result && (
             <div className="mt-4 space-y-2">
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
                 {result.imported} livre{result.imported !== 1 ? "s" : ""} importé
                 {result.imported !== 1 ? "s" : ""}
                 {result.failed > 0 && `, ${result.failed} ligne(s) ignorée(s)`}
               </div>
               {result.errors.length > 0 && (
-                <div className="max-h-48 overflow-y-auto rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+                <div className="max-h-48 overflow-y-auto rounded-2xl border border-orange-200 bg-orange-50 px-4 py-3 text-xs text-orange-800">
                   {result.errors.map((e, i) => (
                     <p key={i}>
                       Ligne {e.line} : {e.message}

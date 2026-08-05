@@ -26,7 +26,7 @@ export function Navigation() {
   return (
     <>
       {/* Mobile top bar */}
-      <header className="sticky top-0 z-40 border-b border-stone-200/80 bg-stone-50/90 backdrop-blur-md sm:hidden">
+      <header className="sticky top-0 z-40 border-b border-stone-200/60 bg-white sm:hidden">
         <div className="flex h-14 items-center justify-between px-4">
           <Link href="/dashboard" className="text-lg font-semibold tracking-tight text-stone-900">
             BookList
@@ -35,7 +35,7 @@ export function Navigation() {
       </header>
 
       {/* Mobile bottom tab bar */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-stone-200/80 bg-white/95 backdrop-blur-md sm:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-stone-200/60 bg-white sm:hidden">
         <div className="mx-auto grid max-w-lg grid-cols-4">
           {navItems.map((item) => {
             const active = isActive(item.href)
@@ -44,11 +44,11 @@ export function Navigation() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex flex-col items-center gap-1 py-2.5 text-[10px] font-medium transition ${
+                className={`relative flex flex-col items-center gap-1 py-2.5 text-[10px] font-medium transition-colors duration-200 ${
                   active ? "text-stone-900" : "text-stone-400"
                 }`}
               >
-                <Icon className={`h-5 w-5 ${active ? "text-stone-900" : "text-stone-400"}`} />
+                <Icon className={`h-5 w-5 transition-transform duration-200 ${active ? "-translate-y-0.5 text-stone-900" : "text-stone-400"}`} />
                 {item.label}
               </Link>
             )
@@ -57,12 +57,12 @@ export function Navigation() {
       </nav>
 
       {/* Desktop left sidebar */}
-      <nav className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-stone-200/80 bg-white sm:flex">
+      <nav className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-stone-200/70 bg-white sm:flex">
         <Link
           href="/dashboard"
           className="flex h-16 items-center px-6 text-lg font-semibold tracking-tight text-stone-900"
         >
-          📖 BookList
+          BookList
         </Link>
 
         <div className="flex-1 space-y-1 px-3 py-2">
@@ -73,23 +73,26 @@ export function Navigation() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
+                className={`relative flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ease-out ${
                   active
-                    ? "bg-stone-900 text-white"
-                    : "text-stone-500 hover:bg-stone-100 hover:text-stone-900"
+                    ? "bg-stone-100 text-stone-900"
+                    : "text-stone-500 hover:bg-stone-100/60 hover:text-stone-900"
                 }`}
               >
-                <Icon className="h-5 w-5 shrink-0" />
+                {active && (
+                  <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-blue-500" />
+                )}
+                <Icon className={`h-5 w-5 shrink-0 ${active ? "text-stone-900" : ""}`} />
                 {item.label}
               </Link>
             )
           })}
         </div>
 
-        <div className="border-t border-stone-200/80 p-3">
+        <div className="border-t border-stone-200/70 p-3">
           <button
             onClick={() => signOut({ callbackUrl: "/auth/signin" })}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-stone-500 transition hover:bg-red-50 hover:text-red-600"
+            className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium text-stone-500 transition-colors duration-200 hover:bg-red-50 hover:text-red-600"
           >
             <LogoutIcon className="h-5 w-5 shrink-0" />
             Déconnexion

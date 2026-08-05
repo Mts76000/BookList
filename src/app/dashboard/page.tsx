@@ -114,7 +114,7 @@ export default async function Dashboard() {
     <div className="min-h-screen bg-stone-50 pb-24 sm:pb-8 sm:pl-60">
       <Navigation />
       <Onboarding />
-      <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
+      <main className="animate-fade-in-up mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
         <header className="mb-8">
           <p className="text-sm font-medium text-stone-500">Bonjour</p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight text-stone-900 sm:text-3xl">
@@ -125,18 +125,17 @@ export default async function Dashboard() {
 
         <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
           {[
-            { label: "Livres lus", value: data.totalBooks },
-            { label: "Pages lues", value: data.totalPagesRead },
-            { label: "Cette année", value: data.booksThisYear },
+            { label: "Livres lus", value: data.totalBooks, accent: "bg-blue-500" },
+            { label: "Pages lues", value: data.totalPagesRead, accent: "bg-violet-500" },
+            { label: "Cette année", value: data.booksThisYear, accent: "bg-emerald-500" },
             {
               label: "Note moyenne",
               value: data.averageRating > 0 ? data.averageRating.toFixed(1) : "—",
+              accent: "bg-sky-500",
             },
           ].map((stat) => (
-            <div
-              key={stat.label}
-              className="rounded-2xl border border-stone-200/80 bg-white p-4 sm:p-5"
-            >
+            <div key={stat.label} className="card p-4 sm:p-5">
+              <div className={`mb-3 h-1.5 w-8 rounded-full ${stat.accent}`} />
               <p className="text-2xl font-semibold tabular-nums text-stone-900 sm:text-3xl">
                 {stat.value}
               </p>
@@ -145,7 +144,7 @@ export default async function Dashboard() {
           ))}
         </div>
 
-        <section className="mb-8 rounded-2xl border border-stone-200/80 bg-white p-4 sm:p-6">
+        <section className="card mb-8 p-4 sm:p-6">
           <h2 className="mb-4 text-sm font-medium text-stone-900">
             Pages lues par jour
           </h2>
@@ -157,28 +156,32 @@ export default async function Dashboard() {
         </section>
 
         {(data.topAuthors.length > 0 || data.topGenres.length > 0) && (
-          <section className="mb-8 rounded-2xl border border-stone-200/80 bg-white p-4 sm:p-6">
-            <h2 className="text-sm font-medium text-stone-900">Suggestions</h2>
-            <p className="mt-1 text-xs text-stone-500">
-              Basées sur vos lectures
-            </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {data.topAuthors.map(({ author }) => (
-                <span
-                  key={author}
-                  className="rounded-full bg-stone-100 px-3 py-1.5 text-xs font-medium text-stone-700"
-                >
-                  Auteur : {author}
-                </span>
-              ))}
-              {data.topGenres.map((genre) => (
-                <span
-                  key={genre}
-                  className="rounded-full bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-800"
-                >
-                  Genre : {genre}
-                </span>
-              ))}
+          <section className="mb-8">
+            <h2 className="mb-3 text-sm font-medium text-stone-900">Vos tendances</h2>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {data.topAuthors[0] && (
+                <div className="card flex items-center gap-4 p-4">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-stone-900 text-white shadow-sm">
+                    <PenIcon className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs text-stone-500">Auteur le plus lu</p>
+                    <p className="truncate font-medium text-stone-900">{data.topAuthors[0].author}</p>
+                    <p className="text-xs text-stone-400">{data.topAuthors[0].count} livre{data.topAuthors[0].count > 1 ? "s" : ""}</p>
+                  </div>
+                </div>
+              )}
+              {data.topGenres[0] && (
+                <div className="card flex items-center gap-4 p-4">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-stone-900 text-white shadow-sm">
+                    <TagIcon className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs text-stone-500">Genre préféré</p>
+                    <p className="truncate font-medium text-stone-900">{data.topGenres[0]}</p>
+                  </div>
+                </div>
+              )}
             </div>
           </section>
         )}
@@ -200,7 +203,7 @@ export default async function Dashboard() {
                 <Link
                   key={book.id}
                   href={`/books/${book.id}`}
-                  className="flex gap-4 rounded-2xl border border-stone-200/80 bg-white p-4 transition hover:border-stone-300"
+                  className="card card-interactive flex gap-4 p-4"
                 >
                   {book.coverUrl ? (
                     <img
@@ -208,11 +211,11 @@ export default async function Dashboard() {
                       alt=""
                       loading="lazy"
                       decoding="async"
-                      className="h-20 w-14 shrink-0 rounded-lg object-cover"
+                      className="h-24 w-16 shrink-0 rounded-xl object-cover shadow-md"
                     />
                   ) : (
-                    <div className="flex h-20 w-14 shrink-0 items-center justify-center rounded-lg bg-stone-100 text-stone-400">
-                      <BookIcon className="h-6 w-6" />
+                    <div className="flex h-24 w-16 shrink-0 items-center justify-center rounded-xl bg-stone-100 text-stone-400 shadow-sm">
+                      <BookIcon className="h-7 w-7" />
                     </div>
                   )}
                   <div className="min-w-0 flex-1">
@@ -242,30 +245,28 @@ export default async function Dashboard() {
               ))}
             </div>
           ) : (
-            <div className="rounded-2xl border border-dashed border-stone-300 bg-white px-6 py-12 text-center">
+            <div className="rounded-3xl border border-dashed border-stone-300 bg-white px-6 py-12 text-center">
               <BookIcon className="mx-auto h-10 w-10 text-stone-300" />
               <p className="mt-4 font-medium text-stone-900">Aucun livre pour l&apos;instant</p>
               <p className="mt-1 text-sm text-stone-500">
                 Ajoutez votre première lecture pour commencer.
               </p>
-              <Link
-                href="/books/add"
-                className="mt-6 inline-flex items-center justify-center rounded-xl bg-stone-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-stone-800"
-              >
+              <Link href="/books/add" className="btn-primary mt-6">
                 Ajouter un livre
               </Link>
             </div>
           )}
         </section>
 
-        <Link
-          href="/books/add"
-          className="fixed bottom-20 right-4 flex h-14 w-14 items-center justify-center rounded-full bg-stone-900 text-white shadow-lg transition hover:bg-stone-800 sm:bottom-8"
-          aria-label="Ajouter un livre"
-        >
-          <PlusIcon className="h-6 w-6" />
-        </Link>
       </main>
+
+      <Link
+        href="/books/add"
+        className="fixed bottom-24 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-stone-900 text-white shadow-[0_8px_24px_-6px_rgba(0,0,0,0.45)] transition-all duration-300 ease-out hover:-translate-y-1 hover:bg-stone-800 hover:shadow-[0_12px_32px_-8px_rgba(0,0,0,0.5)] active:translate-y-0 active:shadow-none sm:bottom-8 sm:right-8"
+        aria-label="Ajouter un livre"
+      >
+        <PlusIcon className="h-6 w-6" />
+      </Link>
     </div>
   )
 }
@@ -290,6 +291,24 @@ function PlusIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+    </svg>
+  )
+}
+
+function PenIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12v6.75a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18.75V6.75A2.25 2.25 0 015.25 4.5h6.75" />
+    </svg>
+  )
+}
+
+function TagIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.182 9.182a2.25 2.25 0 003.182 0l4.318-4.317a2.25 2.25 0 000-3.183L12.659 3.659A2.25 2.25 0 009.568 3z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6z" />
     </svg>
   )
 }

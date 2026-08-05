@@ -20,7 +20,7 @@ export default async function InstallPage() {
           </div>
         </header>
       )}
-      <main className="mx-auto max-w-lg px-4 py-6 sm:px-6 sm:py-8">
+      <main className="animate-fade-in-up mx-auto max-w-lg px-4 py-6 sm:px-6 sm:py-8">
         {session && (
           <Link
             href="/profile"

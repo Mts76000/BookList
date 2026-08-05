@@ -82,17 +82,17 @@ export function ProfileView({
   const initials = (name || email || "?").charAt(0).toUpperCase()
 
   const stats = [
-    { label: "Livres lus", value: totalBooks },
-    { label: "Pages lues", value: totalPagesRead },
-    { label: "Note moyenne", value: averageRating > 0 ? averageRating.toFixed(1) : "—" },
-    { label: "Commentaires", value: commentsCount },
+    { label: "Livres lus", value: totalBooks, accent: "bg-blue-500" },
+    { label: "Pages lues", value: totalPagesRead, accent: "bg-violet-500" },
+    { label: "Note moyenne", value: averageRating > 0 ? averageRating.toFixed(1) : "—", accent: "bg-sky-500" },
+    { label: "Commentaires", value: commentsCount, accent: "bg-emerald-500" },
   ]
 
   return (
     <>
       <div className="card p-5 sm:p-6">
         <div className="flex items-center gap-4">
-          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-stone-900 text-xl font-medium text-white">
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-stone-900 text-xl font-medium text-white shadow-sm">
             {initials}
           </div>
           <div className="min-w-0">
@@ -171,13 +171,14 @@ export function ProfileView({
       <div className="mt-4 grid grid-cols-2 gap-3">
         {stats.map((stat) => (
           <div key={stat.label} className="card p-4">
+            <div className={`mb-2 h-1.5 w-8 rounded-full ${stat.accent}`} />
             <p className="text-xl font-semibold tabular-nums text-stone-900">{stat.value}</p>
             <p className="mt-0.5 text-xs text-stone-500">{stat.label}</p>
           </div>
         ))}
       </div>
 
-      <div className="mt-4 rounded-2xl border border-stone-200/80 bg-white p-5 sm:p-6">
+      <div className="card mt-4 p-5 sm:p-6">
         <h3 className="text-sm font-medium text-stone-900">Détails</h3>
         <dl className="mt-3 space-y-2 text-sm text-stone-500">
           {topAuthor && (
@@ -211,10 +212,10 @@ export function ProfileView({
 
       <Link
         href="/install"
-        className="card mt-4 flex items-center justify-between p-5 transition hover:border-stone-300 sm:p-6"
+        className="card card-interactive mt-4 flex items-center justify-between p-5 sm:p-6"
       >
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-stone-100 text-stone-600">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-stone-900 text-white shadow-sm">
             <DownloadIcon className="h-5 w-5" />
           </div>
           <div>
@@ -228,7 +229,7 @@ export function ProfileView({
       <button
         onClick={handleSignOut}
         disabled={isSigningOut}
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-stone-200/80 bg-white p-4 text-sm font-medium text-red-600 transition hover:border-red-200 hover:bg-red-50 disabled:opacity-50"
+        className="card mt-4 flex w-full items-center justify-center gap-2 p-4 text-sm font-medium text-red-600 transition hover:border-red-200 hover:bg-red-50/70 disabled:opacity-50"
       >
         <LogoutIcon className="h-4 w-4" />
         {isSigningOut ? "Déconnexion..." : "Déconnexion"}

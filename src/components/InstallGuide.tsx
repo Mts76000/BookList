@@ -54,7 +54,7 @@ export function InstallGuide() {
   if (isInstalled) {
     return (
       <div className="card p-5 text-center sm:p-6">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-600 text-white shadow-sm">
           <CheckIcon className="h-6 w-6" />
         </div>
         <p className="mt-3 font-medium text-stone-900">BookList est déjà installée</p>
@@ -79,12 +79,12 @@ export function InstallGuide() {
         </div>
       )}
 
-      <div className="mb-4 flex gap-1 rounded-lg bg-stone-100 p-0.5">
+      <div className="mb-4 flex gap-1 rounded-2xl bg-stone-100 p-1">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setPlatform(tab.key)}
-            className={`flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition ${
+            className={`flex-1 rounded-xl px-2 py-1.5 text-xs font-medium transition ${
               platform === tab.key
                 ? "bg-white text-stone-900 shadow-sm"
                 : "text-stone-500 hover:text-stone-700"
@@ -160,7 +160,7 @@ export function InstallGuide() {
 function Step({ number, children }: { number: number; children: React.ReactNode }) {
   return (
     <li className="flex gap-3">
-      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-stone-900 text-xs font-medium text-white">
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-stone-900 text-xs font-medium text-white shadow-sm">
         {number}
       </span>
       <p className="text-sm leading-relaxed text-stone-600">{children}</p>

@@ -49,7 +49,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 const STATUS_STYLES: Record<string, string> = {
   TO_READ: "bg-stone-100 text-stone-600",
-  READING: "bg-amber-100 text-amber-800",
+  READING: "bg-blue-100 text-blue-700",
   FINISHED: "bg-emerald-100 text-emerald-800",
 }
 
@@ -325,7 +325,11 @@ export function BookDetails({ book }: BookDetailsProps) {
                     onClick={() => setEditForm({ ...editForm, status: option.value })}
                     className={`rounded-xl px-3 py-2 text-sm font-medium transition ${
                       editForm.status === option.value
-                        ? "bg-stone-900 text-white"
+                        ? option.value === "TO_READ"
+                          ? "bg-stone-800 text-white shadow-md"
+                          : option.value === "READING"
+                            ? "bg-blue-600 text-white shadow-md"
+                            : "bg-emerald-600 text-white shadow-md"
                         : "bg-white text-stone-600 ring-1 ring-stone-200 hover:ring-stone-300"
                     }`}
                   >
@@ -403,7 +407,7 @@ export function BookDetails({ book }: BookDetailsProps) {
                 className="mx-auto h-56 w-40 shrink-0 rounded-xl object-cover sm:mx-0"
               />
             ) : (
-              <div className="mx-auto flex h-56 w-40 shrink-0 items-center justify-center rounded-xl bg-stone-100 text-stone-300 sm:mx-0">
+              <div className="mx-auto flex h-56 w-40 shrink-0 items-center justify-center rounded-2xl bg-stone-100 text-stone-300 shadow-sm sm:mx-0">
                 <svg className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
                 </svg>
@@ -411,9 +415,7 @@ export function BookDetails({ book }: BookDetailsProps) {
             )}
 
             <div className="flex-1">
-              <span
-                className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLES[book.status]}`}
-              >
+              <span className={`badge ${STATUS_STYLES[book.status]}`}>
                 {STATUS_LABELS[book.status]}
               </span>
               <h1 className="mt-2 text-xl font-semibold text-stone-900 sm:text-2xl">{book.title}</h1>
@@ -422,10 +424,7 @@ export function BookDetails({ book }: BookDetailsProps) {
               {book.genre && (
                 <div className="mt-3 flex flex-wrap gap-1.5">
                   {book.genre.split(",").map((g) => (
-                    <span
-                      key={g.trim()}
-                      className="rounded-full bg-stone-100 px-2.5 py-0.5 text-xs text-stone-600"
-                    >
+                    <span key={g.trim()} className="badge bg-stone-100 text-stone-600">
                       {g.trim()}
                     </span>
                   ))}
@@ -463,7 +462,7 @@ export function BookDetails({ book }: BookDetailsProps) {
 
               <div className="mt-5">
                 <p className="mb-2 text-sm font-medium text-stone-700">Votre note</p>
-                <div className="flex gap-1">
+                <div className="flex gap-1.5">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
                       key={star}
@@ -473,7 +472,7 @@ export function BookDetails({ book }: BookDetailsProps) {
                       aria-label={`Noter ${star} sur 5`}
                     >
                       <svg
-                        className={`h-7 w-7 ${star <= rating ? "text-amber-400" : "text-stone-200"}`}
+                        className={`h-7 w-7 ${star <= rating ? "text-amber-500" : "text-stone-200"}`}
                         fill="currentColor"
                         viewBox="0 0 20 20"
                       >
@@ -496,7 +495,7 @@ export function BookDetails({ book }: BookDetailsProps) {
                   {isDescriptionLong && (
                     <button
                       onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-                      className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-stone-900 hover:underline"
+                      className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-stone-900 transition hover:opacity-70"
                     >
                       {isDescriptionExpanded ? "Voir moins" : "Voir plus"}
                       <ChevronIcon
@@ -515,13 +514,16 @@ export function BookDetails({ book }: BookDetailsProps) {
 
       {!isEditing && (
         <section className="card mt-6 p-5 sm:p-6">
-          <h2 className="text-lg font-semibold text-stone-900">Commentaires</h2>
+          <h2 className="text-lg font-semibold text-stone-900">Notes personnelles</h2>
+          <p className="mt-1 text-sm text-stone-500">
+            Optionnel — conservez ici vos réflexions sur ce livre. Votre note est déjà enregistrée.
+          </p>
 
           <div className="mt-4">
             <textarea
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
-              placeholder="Votre avis personnel..."
+              placeholder="Réflexions, citations, impressions..."
               rows={3}
               className="input-field resize-none"
             />
@@ -531,7 +533,7 @@ export function BookDetails({ book }: BookDetailsProps) {
                 disabled={isSubmitting || !newComment.trim()}
                 className="btn-primary px-4 py-2"
               >
-                {isSubmitting ? "Envoi..." : "Publier"}
+                {isSubmitting ? "Ajout..." : "Ajouter une note"}
               </button>
             </div>
           </div>

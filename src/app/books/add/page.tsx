@@ -163,10 +163,13 @@ export default function AddBook() {
   return (
     <div className="min-h-screen bg-stone-50 pb-24 sm:pb-8 sm:pl-60">
       <Navigation />
-      <main className="mx-auto max-w-lg px-4 py-6 sm:px-6 sm:py-8">
-        <h1 className="mb-6 text-2xl font-semibold tracking-tight text-stone-900">
-          Ajouter un livre
-        </h1>
+      <main className="animate-fade-in-up mx-auto max-w-lg px-4 py-6 sm:px-6 sm:py-8">
+        <header className="mb-6">
+          <h1 className="text-2xl font-semibold tracking-tight text-stone-900">
+            Ajouter un livre
+          </h1>
+          <p className="mt-1 text-sm text-stone-500">Recherche, scan ou saisie manuelle</p>
+        </header>
 
         {!manualMode && !selectedBook && (
           <div className="card p-5 sm:p-6">
@@ -206,7 +209,7 @@ export default function AddBook() {
                   <button
                     type="button"
                     onClick={() => setIsScannerOpen(true)}
-                    className="flex shrink-0 items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3 text-sm font-medium text-stone-700 transition hover:border-stone-300 hover:bg-stone-50"
+                    className="btn-secondary shrink-0 px-3"
                     aria-label="Scanner le code-barres"
                   >
                     <BarcodeIcon className="h-5 w-5" />
@@ -226,14 +229,14 @@ export default function AddBook() {
 
             <button
               onClick={() => setManualMode(true)}
-              className="mt-4 w-full text-center text-sm font-medium text-stone-600 hover:text-stone-900"
+              className="mt-4 w-full text-center text-sm font-medium text-stone-600 transition hover:text-stone-900"
             >
               Saisir manuellement
             </button>
 
             <Link
               href="/books/import"
-              className="mt-2 block w-full text-center text-sm font-medium text-stone-600 hover:text-stone-900"
+              className="mt-2 block w-full text-center text-sm font-medium text-stone-600 transition hover:text-stone-900"
             >
               Importer plusieurs livres (CSV)
             </Link>
@@ -247,7 +250,7 @@ export default function AddBook() {
               <button
                 key={book.id}
                 onClick={() => setSelectedBook(book)}
-                className="card flex w-full gap-3 p-3 text-left transition hover:border-stone-300"
+                className="card card-interactive flex w-full gap-3 p-3 text-left"
               >
                 {book.coverUrl ? (
                   <img src={book.coverUrl} alt="" loading="lazy" decoding="async" className="h-20 w-14 shrink-0 rounded-lg object-cover" />
@@ -275,9 +278,9 @@ export default function AddBook() {
             </h2>
 
             {selectedBook && (
-              <div className="mt-4 flex gap-3 rounded-xl bg-stone-50 p-3">
+              <div className="mt-4 flex gap-3 rounded-2xl bg-stone-50/70 p-3 ring-1 ring-stone-100">
                 {selectedBook.coverUrl && (
-                  <img src={selectedBook.coverUrl} alt="" className="h-24 w-16 rounded-lg object-cover" />
+                  <img src={selectedBook.coverUrl} alt="" className="h-24 w-16 rounded-lg object-cover shadow-sm" />
                 )}
                 <div>
                   <p className="font-medium text-stone-900">{selectedBook.title}</p>
@@ -343,7 +346,11 @@ export default function AddBook() {
                       onClick={() => setManualBook({ ...manualBook, status: option.value })}
                       className={`rounded-xl px-3 py-2 text-sm font-medium transition ${
                         manualBook.status === option.value
-                          ? "bg-stone-900 text-white"
+                          ? option.value === "TO_READ"
+                            ? "bg-stone-800 text-white shadow-md"
+                            : option.value === "READING"
+                              ? "bg-blue-600 text-white shadow-md"
+                              : "bg-emerald-600 text-white shadow-md"
                           : "bg-white text-stone-600 ring-1 ring-stone-200 hover:ring-stone-300"
                       }`}
                     >
@@ -383,7 +390,7 @@ export default function AddBook() {
               </p>
 
               {error && (
-                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
                   {error}
                 </div>
               )}

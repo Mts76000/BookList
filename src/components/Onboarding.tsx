@@ -58,8 +58,8 @@ export function Onboarding() {
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-stone-900/40 p-4 sm:items-center">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-stone-900/30 p-4 backdrop-blur-sm sm:items-center">
+      <div className="animate-fade-in-up w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl ring-1 ring-stone-900/5">
         <div className="mb-4 flex justify-between text-xs font-medium text-stone-400">
           <span>Étape {step + 1} / {STEPS.length}</span>
           <button onClick={handleClose} className="text-stone-500 hover:text-stone-900">

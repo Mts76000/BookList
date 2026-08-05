@@ -8,21 +8,29 @@ const FEATURES = [
     title: "Suivi de lecture",
     description: "Gardez une trace de tous les livres que vous avez lus, avec vos notes et vos avis personnels.",
     icon: BookIcon,
+    bg: "bg-blue-100",
+    color: "text-blue-600",
   },
   {
     title: "Scan de code-barres",
     description: "Ajoutez un livre en un instant en scannant son ISBN directement avec l'appareil photo.",
     icon: BarcodeIcon,
+    bg: "bg-violet-100",
+    color: "text-violet-600",
   },
   {
     title: "Statistiques de lecture",
     description: "Visualisez votre activité jour par jour et suivez vos objectifs de lecture au fil du temps.",
     icon: ChartIcon,
+    bg: "bg-emerald-100",
+    color: "text-emerald-600",
   },
   {
     title: "Application installable",
     description: "Installez BookList sur votre téléphone comme une vraie app, avec un accès hors ligne.",
     icon: DeviceIcon,
+    bg: "bg-amber-100",
+    color: "text-amber-600",
   },
 ]
 
@@ -40,13 +48,13 @@ export default async function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50">
-      <header className="border-b border-stone-200/80">
+    <div className="min-h-screen overflow-x-hidden bg-stone-50">
+      <header className="glass sticky top-0 z-50 border-b border-stone-200/60">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6">
-          <span className="text-lg font-semibold tracking-tight text-stone-900">📖 BookList</span>
+          <span className="text-lg font-semibold tracking-tight text-stone-900">BookList</span>
           <Link
             href="/auth/signin"
-            className="text-sm font-medium text-stone-600 transition hover:text-stone-900"
+            className="text-sm font-medium text-stone-600 transition-colors duration-200 hover:text-stone-900"
           >
             Se connecter
           </Link>
@@ -54,66 +62,100 @@ export default async function Home() {
       </header>
 
       <main>
-        <section className="mx-auto max-w-3xl px-4 pb-8 pt-14 text-center sm:px-6 sm:pb-12 sm:pt-20">
-          <h1 className="text-4xl font-semibold tracking-tight text-stone-900 sm:text-6xl">
-            Retrouvez le plaisir de lire, sans perdre le fil.
-          </h1>
-          <p className="mx-auto mt-5 max-w-xl text-base text-stone-500 sm:text-lg">
-            BookList vous aide à suivre vos lectures, noter vos coups de cœur et visualiser votre évolution au fil du temps.
-          </p>
-          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Link href="/auth/signup" className="btn-primary w-full sm:w-auto">
-              Créer un compte gratuit
-            </Link>
-            <Link href="/auth/signin" className="btn-secondary w-full sm:w-auto">
-              J&apos;ai déjà un compte
-            </Link>
+        <section className="relative">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 -top-40 -z-10 flex justify-center blur-3xl"
+          >
+            <div className="aspect-square w-[46rem] rounded-full bg-[conic-gradient(from_140deg,theme(colors.sky.200),theme(colors.violet.200),theme(colors.emerald.100),theme(colors.sky.200))] opacity-40" />
+          </div>
+
+          <div className="mx-auto max-w-3xl px-4 pb-12 pt-20 text-center sm:px-6 sm:pb-16 sm:pt-32">
+            <div className="animate-fade-in-up mx-auto mb-6 inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-white/80 px-4 py-1.5 text-xs font-medium text-stone-500 shadow-sm">
+              Votre bibliothèque, réinventée
+            </div>
+            <h1
+              className="animate-fade-in-up text-5xl font-semibold tracking-tight text-balance text-stone-900 sm:text-7xl"
+              style={{ animationDelay: "80ms" }}
+            >
+              Retrouvez le plaisir de lire,
+              <br className="hidden sm:block" /> sans perdre le fil.
+            </h1>
+            <p
+              className="animate-fade-in-up mx-auto mt-6 max-w-xl text-lg text-stone-500"
+              style={{ animationDelay: "160ms" }}
+            >
+              BookList vous aide à suivre vos lectures, noter vos coups de cœur et
+              visualiser votre évolution au fil du temps.
+            </p>
+            <div
+              className="animate-fade-in-up mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row"
+              style={{ animationDelay: "240ms" }}
+            >
+              <Link href="/auth/signup" className="btn-primary w-full sm:w-auto">
+                Créer un compte gratuit
+              </Link>
+              <Link href="/auth/signin" className="btn-secondary w-full sm:w-auto">
+                J&apos;ai déjà un compte
+              </Link>
+            </div>
           </div>
         </section>
 
-        <section className="mx-auto max-w-5xl px-4 pb-16 sm:px-6 sm:pb-24">
+        <section className="mx-auto max-w-5xl px-4 pb-20 sm:px-6 sm:pb-28">
           <div className="grid gap-4 sm:grid-cols-2">
             {FEATURES.map((feature) => (
-              <div key={feature.title} className="card p-5 sm:p-6">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-stone-900 text-white">
+              <div key={feature.title} className="card card-interactive p-6 sm:p-7">
+                <div
+                  className={`flex h-11 w-11 items-center justify-center rounded-2xl shadow-sm ${feature.bg} ${feature.color}`}
+                >
                   <feature.icon className="h-5 w-5" />
                 </div>
-                <h2 className="mt-4 font-medium text-stone-900">{feature.title}</h2>
-                <p className="mt-1.5 text-sm leading-relaxed text-stone-500">{feature.description}</p>
+                <h2 className="mt-5 font-semibold tracking-tight text-stone-900">{feature.title}</h2>
+                <p className="mt-2 text-sm leading-relaxed text-stone-500">{feature.description}</p>
               </div>
             ))}
           </div>
         </section>
 
-        <section className="border-y border-stone-200/80 bg-white">
-          <div className="mx-auto max-w-5xl px-4 py-14 sm:px-6 sm:py-20">
-            <h2 className="text-center text-2xl font-semibold tracking-tight text-stone-900 sm:text-3xl">
+        <section className="border-y border-stone-200/70 bg-white">
+          <div className="mx-auto max-w-5xl px-4 py-20 sm:px-6 sm:py-28">
+            <h2 className="text-center text-3xl font-semibold tracking-tight text-stone-900 sm:text-4xl">
               Comment ça marche ?
             </h2>
-            <div className="mt-8 grid gap-6 sm:grid-cols-3">
+            <div className="mt-14 grid gap-10 sm:grid-cols-3">
               {STEPS.map((step, i) => (
                 <div key={step.title} className="text-center">
-                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-stone-900 text-lg font-semibold text-white">
+                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-blue-500 text-xl font-semibold text-white shadow-[0_8px_24px_-8px_rgba(59,130,246,0.4)]">
                     {i + 1}
                   </div>
-                  <h3 className="mt-4 font-medium text-stone-900">{step.title}</h3>
-                  <p className="mt-1.5 text-sm text-stone-500">{step.description}</p>
+                  <h3 className="mt-5 font-semibold tracking-tight text-stone-900">{step.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-stone-500">{step.description}</p>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        <section className="border-t border-stone-200/80 bg-white">
-          <div className="mx-auto max-w-3xl px-4 py-14 text-center sm:px-6 sm:py-20">
-            <h2 className="text-2xl font-semibold tracking-tight text-stone-900 sm:text-3xl">
+        <section className="relative overflow-hidden bg-stone-900">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 top-0 flex justify-center blur-3xl"
+          >
+            <div className="aspect-square w-[36rem] translate-y-[-40%] rounded-full bg-gradient-to-tr from-sky-800 via-violet-800 to-transparent opacity-40" />
+          </div>
+          <div className="relative mx-auto max-w-3xl px-4 py-20 text-center sm:px-6 sm:py-28">
+            <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
               Prêt à commencer ?
             </h2>
-            <p className="mx-auto mt-3 max-w-md text-stone-500">
+            <p className="mx-auto mt-4 max-w-md text-stone-300">
               Rejoignez BookList et donnez à vos lectures la place qu&apos;elles méritent.
             </p>
-            <div className="mt-6">
-              <Link href="/auth/signup" className="btn-primary">
+            <div className="mt-8">
+              <Link
+                href="/auth/signup"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-medium tracking-tight text-stone-900 shadow-[0_8px_24px_-8px_rgba(0,0,0,0.5)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-[0_16px_32px_-10px_rgba(0,0,0,0.6)]"
+              >
                 Créer mon compte
               </Link>
             </div>
@@ -121,8 +163,8 @@ export default async function Home() {
         </section>
       </main>
 
-      <footer className="border-t border-stone-200/80">
-        <div className="mx-auto max-w-5xl px-4 py-6 text-center text-xs text-stone-400 sm:px-6">
+      <footer className="border-t border-stone-200/70 bg-stone-50">
+        <div className="mx-auto max-w-5xl px-4 py-8 text-center text-xs text-stone-400 sm:px-6">
           BookList — votre suivi de lecture personnel
         </div>
       </footer>
