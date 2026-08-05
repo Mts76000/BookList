@@ -2,17 +2,34 @@ import { NextResponse } from "next/server"
 import { randomBytes } from "crypto"
 import { Resend } from "resend"
 import { prisma } from "@/lib/prisma"
+import { getClientIp, rateLimit } from "@/lib/rate-limit"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const fromEmail = process.env.RESEND_FROM_EMAIL || "noreply@booklist.app"
 const appUrl = process.env.NEXTAUTH_URL || "http://localhost:3000"
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export async function POST(request: Request) {
+  const ip = getClientIp(request)
+  const { success } = rateLimit(`forgot-password:${ip}`, { limit: 5, windowMs: 15 * 60_000 })
+  if (!success) {
+    return NextResponse.json(
+      { error: "Trop de tentatives. Réessayez plus tard." },
+      { status: 429 }
+    )
+  }
+
   try {
     const { email } = await request.json()
-    if (!email) {
-      return NextResponse.json({ error: "Email requis" }, { status: 400 })
+    if (!email || typeof email !== "string" || !EMAIL_REGEX.test(email)) {
+      return NextResponse.json({ error: "Email invalide" }, { status: 400 })
     }
+
+    // Nettoyage opportuniste des tokens expirés
+    await prisma.user.updateMany({
+      where: { resetTokenExpiry: { lt: new Date() } },
+      data: { resetToken: null, resetTokenExpiry: null },
+    })
 
     const user = await prisma.user.findUnique({ where: { email } })
     if (!user) {

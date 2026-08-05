@@ -2,6 +2,8 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { validateBookInput } from "@/lib/validation"
+import { getClientIp, rateLimit } from "@/lib/rate-limit"
 
 export async function PATCH(
   request: Request,
@@ -14,19 +16,25 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    const { success } = rateLimit(`books-update:${getClientIp(request)}:${session.user.id}`, {
+      limit: 60,
+      windowMs: 60_000,
+    })
+    if (!success) {
+      return NextResponse.json({ error: "Trop de requêtes. Réessayez dans une minute." }, { status: 429 })
+    }
+
     const body = await request.json()
-    const {
-      userRating,
-      title,
-      author,
-      description,
-      coverUrl,
-      pageCount,
-      genre,
-      publishedDate,
-      userStartDate,
-      userEndDate,
-    } = body
+
+    let fields
+    try {
+      fields = validateBookInput(body)
+    } catch (validationError) {
+      return NextResponse.json(
+        { error: validationError instanceof Error ? validationError.message : "Champs invalides" },
+        { status: 400 }
+      )
+    }
 
     const book = await prisma.book.findFirst({
       where: { id, userId: session.user.id },
@@ -36,22 +44,9 @@ export async function PATCH(
       return NextResponse.json({ error: "Book not found" }, { status: 404 })
     }
 
-    // On ne met à jour que les champs explicitement fournis dans la requête
-    const data: Record<string, unknown> = {}
-    if (userRating !== undefined) data.userRating = userRating
-    if (title !== undefined) data.title = title
-    if (author !== undefined) data.author = author
-    if (description !== undefined) data.description = description || null
-    if (coverUrl !== undefined) data.coverUrl = coverUrl || null
-    if (pageCount !== undefined) data.pageCount = pageCount || null
-    if (genre !== undefined) data.genre = genre || null
-    if (publishedDate !== undefined) data.publishedDate = publishedDate || null
-    if (userStartDate !== undefined) data.userStartDate = userStartDate ? new Date(userStartDate) : null
-    if (userEndDate !== undefined) data.userEndDate = userEndDate ? new Date(userEndDate) : null
-
     const updatedBook = await prisma.book.update({
       where: { id },
-      data,
+      data: fields,
     })
 
     return NextResponse.json({ book: updatedBook })

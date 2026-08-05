@@ -9,64 +9,67 @@ import { AddReadingActivity } from "@/components/AddReadingActivity"
 import { Onboarding } from "@/components/Onboarding"
 
 async function getDashboardData(userId: string) {
-  const books = await prisma.book.findMany({
-    where: { userId },
-    orderBy: { userEndDate: "desc" },
-    take: 5,
-  })
-
-  const totalBooks = await prisma.book.count({
-    where: { userId },
-  })
-
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { initialBooksRead: true },
-  })
-
-  const totalPagesRead = await prisma.book.aggregate({
-    where: { userId, pageCount: { not: null } },
-    _sum: { pageCount: true },
-  })
-
-  const readingActivities = await prisma.readingActivity.findMany({
-    where: { userId },
-    orderBy: { date: "asc" },
-  })
-
   const currentYear = new Date().getFullYear()
-  const booksThisYear = await prisma.book.count({
-    where: {
-      userId,
-      userEndDate: {
-        gte: new Date(currentYear, 0, 1),
-        lte: new Date(currentYear, 11, 31),
+
+  const [
+    books,
+    totalBooks,
+    user,
+    totalPagesRead,
+    readingActivities,
+    booksThisYear,
+    averageRating,
+    yearsReading,
+    topAuthors,
+    allBooks,
+  ] = await Promise.all([
+    prisma.book.findMany({
+      where: { userId },
+      orderBy: { userEndDate: "desc" },
+      take: 5,
+    }),
+    prisma.book.count({ where: { userId } }),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { initialBooksRead: true },
+    }),
+    prisma.book.aggregate({
+      where: { userId, pageCount: { not: null } },
+      _sum: { pageCount: true },
+    }),
+    prisma.readingActivity.findMany({
+      where: { userId },
+      orderBy: { date: "asc" },
+    }),
+    prisma.book.count({
+      where: {
+        userId,
+        userEndDate: {
+          gte: new Date(currentYear, 0, 1),
+          lte: new Date(currentYear, 11, 31),
+        },
       },
-    },
-  })
-
-  const averageRating = await prisma.book.aggregate({
-    where: { userId, userRating: { not: null } },
-    _avg: { userRating: true },
-  })
-
-  const yearsReading = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { createdAt: true },
-  })
-
-  const topAuthors = await prisma.book.groupBy({
-    by: ["author"],
-    where: { userId },
-    _count: { author: true },
-    orderBy: { _count: { author: "desc" } },
-    take: 3,
-  })
-
-  const allBooks = await prisma.book.findMany({
-    where: { userId },
-    select: { genre: true },
-  })
+    }),
+    prisma.book.aggregate({
+      where: { userId, userRating: { not: null } },
+      _avg: { userRating: true },
+    }),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { createdAt: true },
+    }),
+    prisma.book.groupBy({
+      by: ["author"],
+      where: { userId },
+      _count: { author: true },
+      orderBy: { _count: { author: "desc" } },
+      take: 3,
+    }),
+    prisma.book.findMany({
+      where: { userId },
+      select: { genre: true },
+    }),
+  ])
 
   const genreCounts = new Map<string, number>()
   for (const book of allBooks) {
@@ -203,6 +206,8 @@ export default async function Dashboard() {
                     <img
                       src={book.coverUrl}
                       alt=""
+                      loading="lazy"
+                      decoding="async"
                       className="h-20 w-14 shrink-0 rounded-lg object-cover"
                     />
                   ) : (

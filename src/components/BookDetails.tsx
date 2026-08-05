@@ -25,6 +25,7 @@ interface Book {
   userRating: number | null
   userStartDate: Date | null
   userEndDate: Date | null
+  status: "TO_READ" | "READING" | "FINISHED"
   comments: Comment[]
 }
 
@@ -33,6 +34,24 @@ interface BookDetailsProps {
 }
 
 const DESCRIPTION_PREVIEW_LENGTH = 260
+
+const STATUS_OPTIONS: { value: "TO_READ" | "READING" | "FINISHED"; label: string }[] = [
+  { value: "TO_READ", label: "À lire" },
+  { value: "READING", label: "En cours" },
+  { value: "FINISHED", label: "Terminé" },
+]
+
+const STATUS_LABELS: Record<string, string> = {
+  TO_READ: "À lire",
+  READING: "En cours",
+  FINISHED: "Terminé",
+}
+
+const STATUS_STYLES: Record<string, string> = {
+  TO_READ: "bg-stone-100 text-stone-600",
+  READING: "bg-amber-100 text-amber-800",
+  FINISHED: "bg-emerald-100 text-emerald-800",
+}
 
 export function BookDetails({ book }: BookDetailsProps) {
   const router = useRouter()
@@ -59,6 +78,7 @@ export function BookDetails({ book }: BookDetailsProps) {
     userEndDate: book.userEndDate
       ? new Date(book.userEndDate).toISOString().split("T")[0]
       : "",
+    status: book.status,
   })
 
   const handleAddComment = async () => {
@@ -130,6 +150,7 @@ export function BookDetails({ book }: BookDetailsProps) {
           publishedDate: editForm.publishedDate || null,
           userStartDate: editForm.userStartDate || null,
           userEndDate: editForm.userEndDate || null,
+          status: editForm.status,
         }),
       })
 
@@ -294,6 +315,26 @@ export function BookDetails({ book }: BookDetailsProps) {
               </div>
             </div>
 
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-stone-700">Statut</label>
+              <div className="grid grid-cols-3 gap-2">
+                {STATUS_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setEditForm({ ...editForm, status: option.value })}
+                    className={`rounded-xl px-3 py-2 text-sm font-medium transition ${
+                      editForm.status === option.value
+                        ? "bg-stone-900 text-white"
+                        : "bg-white text-stone-600 ring-1 ring-stone-200 hover:ring-stone-300"
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-stone-700">Publié</label>
@@ -304,24 +345,28 @@ export function BookDetails({ book }: BookDetailsProps) {
                   className="input-field"
                 />
               </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-stone-700">Début</label>
-                <input
-                  type="date"
-                  value={editForm.userStartDate}
-                  onChange={(e) => setEditForm({ ...editForm, userStartDate: e.target.value })}
-                  className="input-field"
-                />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-stone-700">Fin</label>
-                <input
-                  type="date"
-                  value={editForm.userEndDate}
-                  onChange={(e) => setEditForm({ ...editForm, userEndDate: e.target.value })}
-                  className="input-field"
-                />
-              </div>
+              {editForm.status !== "TO_READ" && (
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-stone-700">Début</label>
+                  <input
+                    type="date"
+                    value={editForm.userStartDate}
+                    onChange={(e) => setEditForm({ ...editForm, userStartDate: e.target.value })}
+                    className="input-field"
+                  />
+                </div>
+              )}
+              {editForm.status === "FINISHED" && (
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-stone-700">Fin</label>
+                  <input
+                    type="date"
+                    value={editForm.userEndDate}
+                    onChange={(e) => setEditForm({ ...editForm, userEndDate: e.target.value })}
+                    className="input-field"
+                  />
+                </div>
+              )}
             </div>
 
             {error && (
@@ -366,7 +411,12 @@ export function BookDetails({ book }: BookDetailsProps) {
             )}
 
             <div className="flex-1">
-              <h1 className="text-xl font-semibold text-stone-900 sm:text-2xl">{book.title}</h1>
+              <span
+                className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLES[book.status]}`}
+              >
+                {STATUS_LABELS[book.status]}
+              </span>
+              <h1 className="mt-2 text-xl font-semibold text-stone-900 sm:text-2xl">{book.title}</h1>
               <p className="mt-1 text-stone-500">{book.author}</p>
 
               {book.genre && (

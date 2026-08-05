@@ -1,9 +1,16 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useCallback, useState } from "react"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { Navigation } from "@/components/Navigation"
 import { BarcodeScanner } from "@/components/BarcodeScanner"
+
+const STATUS_OPTIONS: { value: "TO_READ" | "READING" | "FINISHED"; label: string }[] = [
+  { value: "TO_READ", label: "À lire" },
+  { value: "READING", label: "En cours" },
+  { value: "FINISHED", label: "Terminé" },
+]
 
 interface BookSearchResult {
   id: string
@@ -39,6 +46,7 @@ export default function AddBook() {
     publishedDate: "",
     userStartDate: "",
     userEndDate: "",
+    status: "FINISHED" as "TO_READ" | "READING" | "FINISHED",
   })
 
   const runSearch = async (overrideIsbn?: string) => {
@@ -103,6 +111,7 @@ export default function AddBook() {
           publishedDate: selectedBook.publishedDate,
           userStartDate: manualBook.userStartDate || null,
           userEndDate: manualBook.userEndDate || null,
+          status: manualBook.status,
         }
       : {
           title: manualBook.title,
@@ -115,6 +124,7 @@ export default function AddBook() {
           publishedDate: manualBook.publishedDate || null,
           userStartDate: manualBook.userStartDate || null,
           userEndDate: manualBook.userEndDate || null,
+          status: manualBook.status,
         }
 
     if (!bookData.title || !bookData.author) {
@@ -220,6 +230,13 @@ export default function AddBook() {
             >
               Saisir manuellement
             </button>
+
+            <Link
+              href="/books/import"
+              className="mt-2 block w-full text-center text-sm font-medium text-stone-600 hover:text-stone-900"
+            >
+              Importer plusieurs livres (CSV)
+            </Link>
           </div>
         )}
 
@@ -233,7 +250,7 @@ export default function AddBook() {
                 className="card flex w-full gap-3 p-3 text-left transition hover:border-stone-300"
               >
                 {book.coverUrl ? (
-                  <img src={book.coverUrl} alt="" className="h-20 w-14 shrink-0 rounded-lg object-cover" />
+                  <img src={book.coverUrl} alt="" loading="lazy" decoding="async" className="h-20 w-14 shrink-0 rounded-lg object-cover" />
                 ) : (
                   <div className="flex h-20 w-14 shrink-0 items-center justify-center rounded-lg bg-stone-100 text-stone-300">
                     ?
@@ -316,26 +333,50 @@ export default function AddBook() {
                 </>
               )}
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-stone-700">Début</label>
-                  <input
-                    type="date"
-                    value={manualBook.userStartDate}
-                    onChange={(e) => setManualBook({ ...manualBook, userStartDate: e.target.value })}
-                    className="input-field"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-stone-700">Fin</label>
-                  <input
-                    type="date"
-                    value={manualBook.userEndDate}
-                    onChange={(e) => setManualBook({ ...manualBook, userEndDate: e.target.value })}
-                    className="input-field"
-                  />
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-stone-700">Statut</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {STATUS_OPTIONS.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setManualBook({ ...manualBook, status: option.value })}
+                      className={`rounded-xl px-3 py-2 text-sm font-medium transition ${
+                        manualBook.status === option.value
+                          ? "bg-stone-900 text-white"
+                          : "bg-white text-stone-600 ring-1 ring-stone-200 hover:ring-stone-300"
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
                 </div>
               </div>
+
+              {manualBook.status !== "TO_READ" && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium text-stone-700">Début</label>
+                    <input
+                      type="date"
+                      value={manualBook.userStartDate}
+                      onChange={(e) => setManualBook({ ...manualBook, userStartDate: e.target.value })}
+                      className="input-field"
+                    />
+                  </div>
+                  {manualBook.status === "FINISHED" && (
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-stone-700">Fin</label>
+                      <input
+                        type="date"
+                        value={manualBook.userEndDate}
+                        onChange={(e) => setManualBook({ ...manualBook, userEndDate: e.target.value })}
+                        className="input-field"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
 
               <p className="text-xs text-stone-400">
                 Vous pourrez noter le livre et lire sa description juste après l&apos;ajout.

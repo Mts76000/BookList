@@ -2,6 +2,8 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { validateBookInput } from "@/lib/validation"
+import { getClientIp, rateLimit } from "@/lib/rate-limit"
 
 export async function POST(request: Request) {
   try {
@@ -10,41 +12,40 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const body = await request.json()
-    const {
-      title,
-      author,
-      isbn,
-      description,
-      coverUrl,
-      pageCount,
-      genre,
-      publishedDate,
-      userRating,
-      userStartDate,
-      userEndDate,
-    } = body
+    const { success } = rateLimit(`books-create:${getClientIp(request)}:${session.user.id}`, {
+      limit: 30,
+      windowMs: 60_000,
+    })
+    if (!success) {
+      return NextResponse.json({ error: "Trop de requêtes. Réessayez dans une minute." }, { status: 429 })
+    }
 
-    if (!title || !author) {
+    const body = await request.json()
+
+    let fields
+    try {
+      fields = validateBookInput(body, { requireTitleAuthor: true })
+    } catch (validationError) {
       return NextResponse.json(
-        { error: "Title and author are required" },
+        { error: validationError instanceof Error ? validationError.message : "Champs invalides" },
         { status: 400 }
       )
     }
 
     const book = await prisma.book.create({
       data: {
-        title,
-        author,
-        isbn: isbn || null,
-        description: description || null,
-        coverUrl: coverUrl || null,
-        pageCount: pageCount || null,
-        genre: genre || null,
-        publishedDate: publishedDate || null,
-        userRating: userRating || null,
-        userStartDate: userStartDate ? new Date(userStartDate) : null,
-        userEndDate: userEndDate ? new Date(userEndDate) : null,
+        title: fields.title!,
+        author: fields.author!,
+        isbn: fields.isbn ?? null,
+        description: fields.description ?? null,
+        coverUrl: fields.coverUrl ?? null,
+        pageCount: fields.pageCount ?? null,
+        genre: fields.genre ?? null,
+        publishedDate: fields.publishedDate ?? null,
+        userRating: fields.userRating ?? null,
+        userStartDate: fields.userStartDate ?? null,
+        userEndDate: fields.userEndDate ?? null,
+        status: fields.status ?? "FINISHED",
         userId: session.user.id,
       },
     })

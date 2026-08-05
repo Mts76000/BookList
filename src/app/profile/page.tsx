@@ -6,41 +6,38 @@ import { Navigation } from "@/components/Navigation"
 import { ProfileView } from "@/components/ProfileView"
 
 async function getProfileData(userId: string) {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { name: true, email: true, initialBooksRead: true, createdAt: true },
-  })
-
-  const totalBooks = await prisma.book.count({ where: { userId } })
-
-  const totalPagesRead = await prisma.book.aggregate({
-    where: { userId, pageCount: { not: null } },
-    _sum: { pageCount: true },
-  })
-
-  const averageRating = await prisma.book.aggregate({
-    where: { userId, userRating: { not: null } },
-    _avg: { userRating: true },
-  })
-
-  const commentsCount = await prisma.comment.count({ where: { userId } })
-
-  const topAuthor = await prisma.book.groupBy({
-    by: ["author"],
-    where: { userId },
-    _count: { author: true },
-    orderBy: { _count: { author: "desc" } },
-    take: 1,
-  })
-
-  const booksForStats = await prisma.book.findMany({
-    where: { userId },
-    select: {
-      pageCount: true,
-      userEndDate: true,
-      genre: true,
-    },
-  })
+  const [user, totalBooks, totalPagesRead, averageRating, commentsCount, topAuthor, booksForStats] =
+    await Promise.all([
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: { name: true, email: true, initialBooksRead: true, createdAt: true },
+      }),
+      prisma.book.count({ where: { userId } }),
+      prisma.book.aggregate({
+        where: { userId, pageCount: { not: null } },
+        _sum: { pageCount: true },
+      }),
+      prisma.book.aggregate({
+        where: { userId, userRating: { not: null } },
+        _avg: { userRating: true },
+      }),
+      prisma.comment.count({ where: { userId } }),
+      prisma.book.groupBy({
+        by: ["author"],
+        where: { userId },
+        _count: { author: true },
+        orderBy: { _count: { author: "desc" } },
+        take: 1,
+      }),
+      prisma.book.findMany({
+        where: { userId },
+        select: {
+          pageCount: true,
+          userEndDate: true,
+          genre: true,
+        },
+      }),
+    ])
 
   const genreCounts = new Map<string, number>()
   const pagesByYear = new Map<number, number>()

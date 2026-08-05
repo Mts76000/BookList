@@ -17,7 +17,7 @@ export async function POST(
     const body = await request.json()
     const { content } = body
 
-    if (!content || !content.trim()) {
+    if (typeof content !== "string" || !content.trim() || content.length > 5000) {
       return NextResponse.json(
         { error: "Content is required" },
         { status: 400 }

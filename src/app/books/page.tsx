@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth"
 import { redirect } from "next/navigation"
 import Link from "next/link"
-import { Prisma } from "@prisma/client"
+import { Prisma, BookStatus } from "@prisma/client"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { Navigation } from "@/components/Navigation"
@@ -9,11 +9,23 @@ import { BooksFilter } from "@/components/BooksFilter"
 
 const BOOKS_PER_PAGE = 12
 
+const STATUS_LABELS: Record<string, string> = {
+  TO_READ: "À lire",
+  READING: "En cours",
+  FINISHED: "Terminé",
+}
+
+const STATUS_STYLES: Record<string, string> = {
+  TO_READ: "bg-stone-100 text-stone-600",
+  READING: "bg-amber-100 text-amber-800",
+  FINISHED: "bg-emerald-100 text-emerald-800",
+}
+
 async function getBooks(
   userId: string,
   sortBy: string,
   page: number,
-  options: { genre?: string; search?: string; year?: number } = {}
+  options: { genre?: string; search?: string; year?: number; status?: string } = {}
 ) {
   let orderBy: Record<string, string> | Record<string, string>[] = { userEndDate: "desc" }
 
@@ -54,6 +66,10 @@ async function getBooks(
     }
   }
 
+  if (options.status && (Object.values(BookStatus) as string[]).includes(options.status)) {
+    where.status = options.status as BookStatus
+  }
+
   const [books, total] = await Promise.all([
     prisma.book.findMany({
       where,
@@ -87,7 +103,14 @@ async function getGenres(userId: string) {
 export default async function BooksPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sort?: string; genre?: string; page?: string; search?: string; year?: string }>
+  searchParams: Promise<{
+    sort?: string
+    genre?: string
+    page?: string
+    search?: string
+    year?: string
+    status?: string
+  }>
 }) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
@@ -99,12 +122,15 @@ export default async function BooksPage({
   const genre = params.genre
   const search = params.search
   const year = params.year ? parseInt(params.year, 10) : undefined
+  const status = params.status
   const currentPage = Math.max(1, parseInt(params.page || "1", 10))
 
   const [{ books, total, totalPages }, genres] = await Promise.all([
-    getBooks(session.user.id, sortBy, currentPage, { genre, search, year }),
+    getBooks(session.user.id, sortBy, currentPage, { genre, search, year, status }),
     getGenres(session.user.id),
   ])
+
+  const extraParams = `${search ? `&search=${encodeURIComponent(search)}` : ""}${year ? `&year=${year}` : ""}`
 
   const sortOptions = [
     { value: "date", label: "Plus récents" },
@@ -134,10 +160,36 @@ export default async function BooksPage({
 
         <div className="mb-6 space-y-3">
           <div className="flex flex-wrap gap-2">
+            <Link
+              href={`/books?sort=${sortBy}${genre ? `&genre=${encodeURIComponent(genre)}` : ""}${extraParams}`}
+              className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+                !status
+                  ? "bg-stone-900 text-white"
+                  : "bg-white text-stone-600 ring-1 ring-stone-200 hover:ring-stone-300"
+              }`}
+            >
+              Tous statuts
+            </Link>
+            {Object.entries(STATUS_LABELS).map(([value, label]) => (
+              <Link
+                key={value}
+                href={`/books?sort=${sortBy}${genre ? `&genre=${encodeURIComponent(genre)}` : ""}${extraParams}&status=${value}`}
+                className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+                  status === value
+                    ? "bg-stone-900 text-white"
+                    : "bg-white text-stone-600 ring-1 ring-stone-200 hover:ring-stone-300"
+                }`}
+              >
+                {label}
+              </Link>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap gap-2">
             {sortOptions.map((option) => (
               <Link
                 key={option.value}
-                href={`/books?sort=${option.value}${genre ? `&genre=${encodeURIComponent(genre)}` : ""}${search ? `&search=${encodeURIComponent(search)}` : ""}${year ? `&year=${year}` : ""}`}
+                href={`/books?sort=${option.value}${genre ? `&genre=${encodeURIComponent(genre)}` : ""}${extraParams}${status ? `&status=${status}` : ""}`}
                 className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
                   sortBy === option.value
                     ? "bg-stone-900 text-white"
@@ -190,6 +242,8 @@ export default async function BooksPage({
                   <img
                     src={book.coverUrl}
                     alt=""
+                    loading="lazy"
+                    decoding="async"
                     className="h-24 w-16 shrink-0 rounded-lg object-cover"
                   />
                 ) : (
@@ -203,6 +257,11 @@ export default async function BooksPage({
                   <h3 className="font-medium text-stone-900 line-clamp-2">{book.title}</h3>
                   <p className="mt-0.5 text-sm text-stone-500">{book.author}</p>
                   <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[book.status]}`}
+                    >
+                      {STATUS_LABELS[book.status]}
+                    </span>
                     {book.genre && (
                       <span className="rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-600">
                         {book.genre.split(",")[0].trim()}
@@ -250,6 +309,7 @@ export default async function BooksPage({
               genre={genre}
               search={search}
               year={year}
+              status={status}
               disabled={currentPage <= 1}
               label="← Précédent"
             />
@@ -262,6 +322,7 @@ export default async function BooksPage({
               genre={genre}
               search={search}
               year={year}
+              status={status}
               disabled={currentPage >= totalPages}
               label="Suivant →"
             />
@@ -278,6 +339,7 @@ function PaginationLink({
   genre,
   search,
   year,
+  status,
   disabled,
   label,
 }: {
@@ -286,6 +348,7 @@ function PaginationLink({
   genre?: string
   search?: string
   year?: number
+  status?: string
   disabled: boolean
   label: string
 }) {
@@ -301,6 +364,7 @@ function PaginationLink({
   if (genre) query.set("genre", genre)
   if (search) query.set("search", search)
   if (year) query.set("year", year.toString())
+  if (status) query.set("status", status)
 
   return (
     <Link

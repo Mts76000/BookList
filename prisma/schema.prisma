@@ -27,6 +27,12 @@ model User {
   readingActivities ReadingActivity[]
 }
 
+enum BookStatus {
+  TO_READ
+  READING
+  FINISHED
+}
+
 model Book {
   id              String    @id @default(cuid())
   title           String
@@ -41,6 +47,7 @@ model Book {
   userReadDate    DateTime?
   userStartDate   DateTime?
   userEndDate     DateTime?
+  status          BookStatus @default(FINISHED)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   userId          String
@@ -50,6 +57,7 @@ model Book {
   
   @@index([userId])
   @@index([userRating])
+  @@index([status])
 }
 
 model Comment {

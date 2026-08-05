@@ -1,4 +1,26 @@
 import { NextResponse } from "next/server"
+import { getClientIp, rateLimit } from "@/lib/rate-limit"
+
+interface GoogleBooksIndustryIdentifier {
+  type: string
+  identifier: string
+}
+
+interface GoogleBooksVolumeInfo {
+  title?: string
+  authors?: string[]
+  description?: string
+  imageLinks?: { thumbnail?: string; smallThumbnail?: string }
+  pageCount?: number
+  publishedDate?: string
+  categories?: string[]
+  industryIdentifiers?: GoogleBooksIndustryIdentifier[]
+}
+
+interface GoogleBooksItem {
+  id: string
+  volumeInfo?: GoogleBooksVolumeInfo
+}
 
 async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3): Promise<Response> {
   let lastError: Error | null = null
@@ -28,6 +50,15 @@ async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3)
 }
 
 export async function GET(request: Request) {
+  const ip = getClientIp(request)
+  const { success } = rateLimit(`books-search:${ip}`, { limit: 30, windowMs: 60_000 })
+  if (!success) {
+    return NextResponse.json(
+      { error: "RATE_LIMITED", message: "Trop de recherches. Réessayez dans une minute.", books: [] },
+      { status: 429 }
+    )
+  }
+
   const { searchParams } = new URL(request.url)
   const query = searchParams.get("q")
   const isbn = searchParams.get("isbn")
@@ -117,14 +148,14 @@ export async function GET(request: Request) {
       return NextResponse.json({ books: [] })
     }
 
-    const books = data.items.map((item: any) => {
+    const books = (data.items as GoogleBooksItem[]).map((item) => {
       const volumeInfo = item.volumeInfo || {}
       
       // Trouver le bon ISBN (ISBN-13 prioritaire sur ISBN-10)
       let foundIsbn = null
       if (volumeInfo.industryIdentifiers) {
-        const isbn13 = volumeInfo.industryIdentifiers.find((id: any) => id.type === "ISBN_13")
-        const isbn10 = volumeInfo.industryIdentifiers.find((id: any) => id.type === "ISBN_10")
+        const isbn13 = volumeInfo.industryIdentifiers.find((id) => id.type === "ISBN_13")
+        const isbn10 = volumeInfo.industryIdentifiers.find((id) => id.type === "ISBN_10")
         foundIsbn = isbn13?.identifier || isbn10?.identifier || null
       }
 
