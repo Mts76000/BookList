@@ -339,17 +339,17 @@ export function BookDetails({ book }: BookDetailsProps) {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-stone-700">Publié</label>
-                <input
-                  type="text"
-                  value={editForm.publishedDate}
-                  onChange={(e) => setEditForm({ ...editForm, publishedDate: e.target.value })}
-                  className="input-field"
-                />
-              </div>
-              {editForm.status !== "TO_READ" && (
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-stone-700">Publié</label>
+              <input
+                type="text"
+                value={editForm.publishedDate}
+                onChange={(e) => setEditForm({ ...editForm, publishedDate: e.target.value })}
+                className="input-field"
+              />
+            </div>
+            {editForm.status !== "TO_READ" && (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-stone-700">Début</label>
                   <input
@@ -359,19 +359,19 @@ export function BookDetails({ book }: BookDetailsProps) {
                     className="input-field"
                   />
                 </div>
-              )}
-              {editForm.status === "FINISHED" && (
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-stone-700">Fin</label>
-                  <input
-                    type="date"
-                    value={editForm.userEndDate}
-                    onChange={(e) => setEditForm({ ...editForm, userEndDate: e.target.value })}
-                    className="input-field"
-                  />
-                </div>
-              )}
-            </div>
+                {editForm.status === "FINISHED" && (
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium text-stone-700">Fin</label>
+                    <input
+                      type="date"
+                      value={editForm.userEndDate}
+                      onChange={(e) => setEditForm({ ...editForm, userEndDate: e.target.value })}
+                      className="input-field"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
 
             {error && (
               <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">

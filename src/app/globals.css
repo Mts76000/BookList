@@ -70,6 +70,13 @@ html {
     @apply w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 text-base text-stone-900 placeholder:text-stone-400 shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all duration-200 ease-out focus:border-stone-900 focus:outline-none focus:ring-4 focus:ring-stone-900/5;
   }
 
+  .input-field[type="date"] {
+    min-height: 48px;
+    -webkit-appearance: none;
+    appearance: none;
+    min-width: 0;
+  }
+
   .btn-primary {
     @apply inline-flex items-center justify-center gap-2 rounded-full bg-stone-900 px-6 py-3 text-sm font-medium tracking-tight text-white shadow-[0_1px_2px_rgba(0,0,0,0.04),0_8px_20px_-8px_rgba(0,0,0,0.35)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:bg-stone-800 hover:shadow-[0_1px_2px_rgba(0,0,0,0.04),0_16px_28px_-10px_rgba(0,0,0,0.4)] active:translate-y-0 active:shadow-none disabled:pointer-events-none disabled:opacity-50;
   }
