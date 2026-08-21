@@ -207,7 +207,7 @@ export default async function Dashboard() {
                 >
                   {book.coverUrl ? (
                     <img
-                      src={book.coverUrl}
+                      src={book.coverUrl.replace(/^http:/, "https:")}
                       alt=""
                       loading="lazy"
                       decoding="async"

@@ -98,7 +98,7 @@ export function validateBookInput(
     if (body.coverUrl === null || body.coverUrl === "") {
       result.coverUrl = null
     } else if (typeof body.coverUrl === "string" && body.coverUrl.length <= MAX_URL_LENGTH && isValidUrl(body.coverUrl)) {
-      result.coverUrl = body.coverUrl
+      result.coverUrl = body.coverUrl.replace(/^http:/, "https:")
     } else {
       throw new Error("URL de couverture invalide")
     }

@@ -253,7 +253,7 @@ export default function AddBook() {
                 className="card card-interactive flex w-full gap-3 p-3 text-left"
               >
                 {book.coverUrl ? (
-                  <img src={book.coverUrl} alt="" loading="lazy" decoding="async" className="h-20 w-14 shrink-0 rounded-lg object-cover" />
+                  <img src={book.coverUrl.replace(/^http:/, "https:")} alt="" loading="lazy" decoding="async" className="h-20 w-14 shrink-0 rounded-lg object-cover" />
                 ) : (
                   <div className="flex h-20 w-14 shrink-0 items-center justify-center rounded-lg bg-stone-100 text-stone-300">
                     ?
@@ -280,7 +280,7 @@ export default function AddBook() {
             {selectedBook && (
               <div className="mt-4 flex gap-3 rounded-2xl bg-stone-50/70 p-3 ring-1 ring-stone-100">
                 {selectedBook.coverUrl && (
-                  <img src={selectedBook.coverUrl} alt="" className="h-24 w-16 rounded-lg object-cover shadow-sm" />
+                  <img src={selectedBook.coverUrl.replace(/^http:/, "https:")} alt="" className="h-24 w-16 rounded-lg object-cover shadow-sm" />
                 )}
                 <div>
                   <p className="font-medium text-stone-900">{selectedBook.title}</p>

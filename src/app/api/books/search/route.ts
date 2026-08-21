@@ -164,7 +164,7 @@ export async function GET(request: Request) {
         title: volumeInfo.title || "Sans titre",
         authors: volumeInfo.authors || ["Auteur inconnu"],
         description: volumeInfo.description || null,
-        coverUrl: volumeInfo.imageLinks?.thumbnail || volumeInfo.imageLinks?.smallThumbnail || null,
+        coverUrl: (volumeInfo.imageLinks?.thumbnail || volumeInfo.imageLinks?.smallThumbnail || null)?.replace(/^http:/, "https:") ?? null,
         pageCount: volumeInfo.pageCount || null,
         publishedDate: volumeInfo.publishedDate || null,
         isbn: foundIsbn,

@@ -149,7 +149,7 @@ export default async function BooksPage({
               >
                 {book.coverUrl ? (
                   <img
-                    src={book.coverUrl}
+                    src={book.coverUrl.replace(/^http:/, "https:")}
                     alt=""
                     loading="lazy"
                     decoding="async"

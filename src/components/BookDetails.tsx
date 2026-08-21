@@ -402,7 +402,7 @@ export function BookDetails({ book }: BookDetailsProps) {
           <div className="flex flex-col gap-6 p-5 sm:flex-row sm:p-6">
             {book.coverUrl ? (
               <img
-                src={book.coverUrl}
+                src={book.coverUrl.replace(/^http:/, "https:")}
                 alt=""
                 className="mx-auto h-56 w-40 shrink-0 rounded-xl object-cover sm:mx-0"
               />
