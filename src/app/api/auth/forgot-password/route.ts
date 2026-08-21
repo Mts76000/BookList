@@ -4,7 +4,6 @@ import { Resend } from "resend"
 import { prisma } from "@/lib/prisma"
 import { getClientIp, rateLimit } from "@/lib/rate-limit"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
 const fromEmail = process.env.RESEND_FROM_EMAIL || "noreply@booklist.app"
 const appUrl = process.env.NEXTAUTH_URL || "http://localhost:3000"
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -51,6 +50,7 @@ export async function POST(request: Request) {
     const resetUrl = `${appUrl}/auth/reset-password?token=${token}`
 
     if (process.env.RESEND_API_KEY) {
+      const resend = new Resend(process.env.RESEND_API_KEY)
       await resend.emails.send({
         from: fromEmail,
         to: email,
