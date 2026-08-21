@@ -6,9 +6,10 @@ interface BookCoverProps {
   coverUrl?: string | null
   alt?: string
   className?: string
+  variant?: "small" | "large"
 }
 
-export function BookCover({ coverUrl, alt, className }: BookCoverProps) {
+export function BookCover({ coverUrl, alt, className, variant = "small" }: BookCoverProps) {
   const [status, setStatus] = useState<"loading" | "loaded" | "error">(() =>
     coverUrl ? "loading" : "error"
   )
@@ -28,6 +29,11 @@ export function BookCover({ coverUrl, alt, className }: BookCoverProps) {
   }
 
   const secureUrl = coverUrl.replace(/^http:/, "https:")
+  const isOpenLibrary = secureUrl.includes("covers.openlibrary.org")
+  const sizedUrl =
+    variant === "small" && isOpenLibrary
+      ? secureUrl.replace(/-L\.jpg$/i, "-M.jpg")
+      : secureUrl
 
   return (
     <div className={`relative overflow-hidden ${className ?? ""}`}>
@@ -35,9 +41,9 @@ export function BookCover({ coverUrl, alt, className }: BookCoverProps) {
         <div className="absolute inset-0 z-10 animate-pulse bg-stone-200" />
       )}
       <img
-        src={secureUrl}
+        src={sizedUrl}
         alt={alt ?? ""}
-        loading="lazy"
+        loading={variant === "large" ? "eager" : "lazy"}
         decoding="async"
         onLoad={() => setStatus("loaded")}
         onError={() => setStatus("error")}

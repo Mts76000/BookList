@@ -405,6 +405,7 @@ export function BookDetails({ book }: BookDetailsProps) {
               coverUrl={book.coverUrl}
               alt={book.title}
               className="mx-auto h-56 w-40 shrink-0 rounded-2xl shadow-sm sm:mx-0"
+              variant="large"
             />
 
             <div className="flex-1">
