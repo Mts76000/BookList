@@ -252,7 +252,7 @@ async function main() {
   for (const bookData of books) {
     const { status, ...rest } = bookData
     await prisma.book.upsert({
-      where: { isbn: rest.isbn! },
+      where: { userId_isbn: { userId: user.id, isbn: rest.isbn! } },
       update: {},
       create: {
         ...rest,
