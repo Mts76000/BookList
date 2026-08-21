@@ -1,8 +1,8 @@
 /// <reference lib="esnext" />
 /// <reference lib="webworker" />
 import { defaultCache } from "@serwist/turbopack/worker"
-import type { PrecacheEntry, SerwistGlobalConfig } from "serwist"
-import { Serwist } from "serwist"
+import type { PrecacheEntry, RuntimeCaching, SerwistGlobalConfig } from "serwist"
+import { NetworkOnly, Serwist } from "serwist"
 
 // Déclare `injectionPoint` pour TypeScript : c'est la chaîne remplacée
 // par le manifeste de précache réel au moment du build.
@@ -14,12 +14,17 @@ declare global {
 
 declare const self: ServiceWorkerGlobalScope
 
+const crossOriginImageCache: RuntimeCaching = {
+  matcher: ({ request, sameOrigin }) => !sameOrigin && request.destination === "image",
+  handler: new NetworkOnly(),
+}
+
 const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
   skipWaiting: true,
   clientsClaim: true,
   navigationPreload: true,
-  runtimeCaching: defaultCache,
+  runtimeCaching: [crossOriginImageCache, ...defaultCache],
   fallbacks: {
     entries: [
       {
