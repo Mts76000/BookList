@@ -33,13 +33,16 @@ export async function POST(request: Request) {
     }
 
     if (fields.isbn) {
-      const existing = await prisma.book.findFirst({
+      const existingMine = await prisma.book.findFirst({
+        where: { isbn: fields.isbn, userId: session.user.id },
+      })
+      if (existingMine) {
+        return NextResponse.json({ book: existingMine }, { status: 200 })
+      }
+      const existingOther = await prisma.book.findFirst({
         where: { isbn: fields.isbn },
       })
-      if (existing?.userId === session.user.id) {
-        return NextResponse.json({ book: existing }, { status: 200 })
-      }
-      if (existing) {
+      if (existingOther) {
         fields.isbn = null
       }
     }

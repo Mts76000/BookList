@@ -37,7 +37,7 @@ model Book {
   id              String    @id @default(cuid())
   title           String
   author          String
-  isbn            String?   @unique
+  isbn            String?
   description     String?
   coverUrl        String?
   pageCount       Int?
@@ -55,6 +55,7 @@ model Book {
   comments        Comment[]
   readingSessions ReadingSession[]
   
+  @@unique([userId, isbn])
   @@index([userId])
   @@index([userRating])
   @@index([status])
