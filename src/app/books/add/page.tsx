@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Navigation } from "@/components/Navigation"
@@ -35,6 +35,7 @@ export default function AddBook() {
   const [error, setError] = useState("")
   const [manualMode, setManualMode] = useState(false)
   const [isScannerOpen, setIsScannerOpen] = useState(false)
+  const [existingByIsbn, setExistingByIsbn] = useState<Map<string, string>>(new Map())
 
   const [manualBook, setManualBook] = useState({
     title: "",
@@ -81,6 +82,26 @@ export default function AddBook() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  useEffect(() => {
+    fetch("/api/books")
+      .then((res) => res.json())
+      .then((data) => {
+        const map = new Map<string, string>()
+        data.books?.forEach((book: { isbn?: string | null; id: string }) => {
+          if (book.isbn) map.set(book.isbn, book.id)
+        })
+        setExistingByIsbn(map)
+      })
+  }, [])
+
+  const selectBook = (book: BookSearchResult) => {
+    if (book.isbn && existingByIsbn.has(book.isbn)) {
+      router.push(`/books/${existingByIsbn.get(book.isbn)}`)
+      return
+    }
+    setSelectedBook(book)
   }
 
   const handleSearch = async (e: React.FormEvent) => {
@@ -250,7 +271,7 @@ export default function AddBook() {
             {searchResults.map((book) => (
               <button
                 key={book.id}
-                onClick={() => setSelectedBook(book)}
+                onClick={() => selectBook(book)}
                 className="card card-interactive flex w-full gap-3 p-3 text-left"
               >
                 <BookCover

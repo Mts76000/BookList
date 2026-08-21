@@ -2,7 +2,7 @@
 /// <reference lib="webworker" />
 import { defaultCache } from "@serwist/turbopack/worker"
 import type { PrecacheEntry, RuntimeCaching, SerwistGlobalConfig } from "serwist"
-import { NetworkOnly, Serwist } from "serwist"
+import { CacheFirst, CacheableResponsePlugin, ExpirationPlugin, Serwist } from "serwist"
 
 // Déclare `injectionPoint` pour TypeScript : c'est la chaîne remplacée
 // par le manifeste de précache réel au moment du build.
@@ -16,7 +16,16 @@ declare const self: ServiceWorkerGlobalScope
 
 const crossOriginImageCache: RuntimeCaching = {
   matcher: ({ request, sameOrigin }) => !sameOrigin && request.destination === "image",
-  handler: new NetworkOnly(),
+  handler: new CacheFirst({
+    cacheName: "cross-origin-images",
+    plugins: [
+      new CacheableResponsePlugin({ statuses: [0, 200] }),
+      new ExpirationPlugin({
+        maxEntries: 200,
+        maxAgeSeconds: 30 * 24 * 60 * 60,
+      }),
+    ],
+  }),
 }
 
 const serwist = new Serwist({

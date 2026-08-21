@@ -32,6 +32,15 @@ export async function POST(request: Request) {
       )
     }
 
+    if (fields.isbn) {
+      const existing = await prisma.book.findFirst({
+        where: { isbn: fields.isbn, userId: session.user.id },
+      })
+      if (existing) {
+        return NextResponse.json({ book: existing }, { status: 200 })
+      }
+    }
+
     const book = await prisma.book.create({
       data: {
         title: fields.title!,
@@ -55,6 +64,28 @@ export async function POST(request: Request) {
     console.error("Book creation error:", error)
     return NextResponse.json(
       { error: "Failed to create book" },
+      { status: 500 }
+    )
+  }
+}
+
+export async function GET() {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const books = await prisma.book.findMany({
+      where: { userId: session.user.id },
+      select: { id: true, isbn: true },
+    })
+
+    return NextResponse.json({ books })
+  } catch (error) {
+    console.error("Books fetch error:", error)
+    return NextResponse.json(
+      { error: "Failed to fetch books" },
       { status: 500 }
     )
   }

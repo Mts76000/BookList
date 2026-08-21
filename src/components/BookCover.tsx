@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 interface BookCoverProps {
   coverUrl?: string | null
@@ -9,21 +9,35 @@ interface BookCoverProps {
   variant?: "small" | "large"
 }
 
-export function BookCover({ coverUrl, alt, className, variant = "small" }: BookCoverProps) {
-  const [status, setStatus] = useState<"loading" | "loaded" | "error">(() =>
-    coverUrl ? "loading" : "error"
-  )
+export function BookCover({
+  coverUrl,
+  alt,
+  className,
+  variant = "small",
+}: BookCoverProps) {
+  const [error, setError] = useState(!coverUrl)
+  const imgRef = useRef<HTMLImageElement | null>(null)
+
+  const validateImage = (img: HTMLImageElement) => {
+    if (img.naturalWidth < 20 || img.naturalHeight < 20) {
+      setError(true)
+    }
+  }
 
   useEffect(() => {
-    setStatus(coverUrl ? "loading" : "error")
+    setError(!coverUrl)
+    const img = imgRef.current
+    if (img && img.complete) {
+      validateImage(img)
+    }
   }, [coverUrl])
 
-  if (!coverUrl || status === "error") {
+  if (error || !coverUrl) {
     return (
       <div
-        className={`relative flex items-center justify-center overflow-hidden bg-stone-100 text-stone-300 ${className ?? ""}`}
+        className={`relative flex items-center justify-center overflow-hidden bg-stone-100 text-stone-500 ${className ?? ""}`}
       >
-        <BookIcon className="h-8 w-8" />
+        <BookIcon className="h-10 w-10" />
       </div>
     )
   }
@@ -36,22 +50,16 @@ export function BookCover({ coverUrl, alt, className, variant = "small" }: BookC
       : secureUrl
 
   return (
-    <div className={`relative overflow-hidden ${className ?? ""}`}>
-      {status === "loading" && (
-        <div className="absolute inset-0 z-10 animate-pulse bg-stone-200" />
-      )}
-      <img
-        src={sizedUrl}
-        alt={alt ?? ""}
-        loading={variant === "large" ? "eager" : "lazy"}
-        decoding="async"
-        onLoad={() => setStatus("loaded")}
-        onError={() => setStatus("error")}
-        className={`h-full w-full object-cover transition-opacity duration-300 ${
-          status === "loaded" ? "opacity-100" : "opacity-0"
-        }`}
-      />
-    </div>
+    <img
+      ref={imgRef}
+      src={sizedUrl}
+      alt={alt ?? ""}
+      loading={variant === "large" ? "eager" : "lazy"}
+      decoding="async"
+      onLoad={(e) => validateImage(e.currentTarget as HTMLImageElement)}
+      onError={() => setError(true)}
+      className={`object-cover ${className ?? ""}`}
+    />
   )
 }
 
