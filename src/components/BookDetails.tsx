@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { BookCover } from "@/components/BookCover"
 
 interface Comment {
   id: string
@@ -400,19 +401,11 @@ export function BookDetails({ book }: BookDetailsProps) {
           </div>
         ) : (
           <div className="flex flex-col gap-6 p-5 sm:flex-row sm:p-6">
-            {book.coverUrl ? (
-              <img
-                src={book.coverUrl.replace(/^http:/, "https:")}
-                alt=""
-                className="mx-auto h-56 w-40 shrink-0 rounded-xl object-cover sm:mx-0"
-              />
-            ) : (
-              <div className="mx-auto flex h-56 w-40 shrink-0 items-center justify-center rounded-2xl bg-stone-100 text-stone-300 shadow-sm sm:mx-0">
-                <svg className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
-                </svg>
-              </div>
-            )}
+            <BookCover
+              coverUrl={book.coverUrl}
+              alt={book.title}
+              className="mx-auto h-56 w-40 shrink-0 rounded-2xl shadow-sm sm:mx-0"
+            />
 
             <div className="flex-1">
               <span className={`badge ${STATUS_STYLES[book.status]}`}>

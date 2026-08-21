@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { Navigation } from "@/components/Navigation"
 import { ContributionGraph } from "@/components/ContributionGraph"
+import { BookCover } from "@/components/BookCover"
 import { AddReadingActivity } from "@/components/AddReadingActivity"
 import { Onboarding } from "@/components/Onboarding"
 
@@ -205,19 +206,11 @@ export default async function Dashboard() {
                   href={`/books/${book.id}`}
                   className="card card-interactive flex gap-4 p-4"
                 >
-                  {book.coverUrl ? (
-                    <img
-                      src={book.coverUrl.replace(/^http:/, "https:")}
-                      alt=""
-                      loading="lazy"
-                      decoding="async"
-                      className="h-24 w-16 shrink-0 rounded-xl object-cover shadow-md"
-                    />
-                  ) : (
-                    <div className="flex h-24 w-16 shrink-0 items-center justify-center rounded-xl bg-stone-100 text-stone-400 shadow-sm">
-                      <BookIcon className="h-7 w-7" />
-                    </div>
-                  )}
+                  <BookCover
+                    coverUrl={book.coverUrl}
+                    alt={book.title}
+                    className="h-24 w-16 shrink-0 rounded-xl shadow-md"
+                  />
                   <div className="min-w-0 flex-1">
                     <h3 className="truncate font-medium text-stone-900">{book.title}</h3>
                     <p className="truncate text-sm text-stone-500">{book.author}</p>

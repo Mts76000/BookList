@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Navigation } from "@/components/Navigation"
 import { BarcodeScanner } from "@/components/BarcodeScanner"
+import { BookCover } from "@/components/BookCover"
 
 const STATUS_OPTIONS: { value: "TO_READ" | "READING" | "FINISHED"; label: string }[] = [
   { value: "TO_READ", label: "À lire" },
@@ -252,13 +253,11 @@ export default function AddBook() {
                 onClick={() => setSelectedBook(book)}
                 className="card card-interactive flex w-full gap-3 p-3 text-left"
               >
-                {book.coverUrl ? (
-                  <img src={book.coverUrl.replace(/^http:/, "https:")} alt="" loading="lazy" decoding="async" className="h-20 w-14 shrink-0 rounded-lg object-cover" />
-                ) : (
-                  <div className="flex h-20 w-14 shrink-0 items-center justify-center rounded-lg bg-stone-100 text-stone-300">
-                    ?
-                  </div>
-                )}
+                <BookCover
+                  coverUrl={book.coverUrl}
+                  alt={book.title}
+                  className="h-20 w-14 shrink-0 rounded-lg"
+                />
                 <div className="min-w-0">
                   <p className="font-medium text-stone-900 line-clamp-2">{book.title}</p>
                   <p className="text-sm text-stone-500">{book.authors.join(", ")}</p>
@@ -279,9 +278,11 @@ export default function AddBook() {
 
             {selectedBook && (
               <div className="mt-4 flex gap-3 rounded-2xl bg-stone-50/70 p-3 ring-1 ring-stone-100">
-                {selectedBook.coverUrl && (
-                  <img src={selectedBook.coverUrl.replace(/^http:/, "https:")} alt="" className="h-24 w-16 rounded-lg object-cover shadow-sm" />
-                )}
+                <BookCover
+                  coverUrl={selectedBook.coverUrl}
+                  alt={selectedBook.title}
+                  className="h-24 w-16 rounded-lg shadow-sm"
+                />
                 <div>
                   <p className="font-medium text-stone-900">{selectedBook.title}</p>
                   <p className="text-sm text-stone-500">{selectedBook.authors.join(", ")}</p>
