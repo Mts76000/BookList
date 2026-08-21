@@ -30,7 +30,7 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https: http://books.google.com https://books.google.com",
       "font-src 'self' data:",
-      "connect-src 'self' https://www.googleapis.com",
+      "connect-src 'self' https://www.googleapis.com https://books.google.com https://covers.openlibrary.org https://archive.org",
       "media-src 'self' blob:",
       "frame-ancestors 'none'",
     ].join("; "),
