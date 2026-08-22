@@ -1,6 +1,12 @@
 import type { NextConfig } from "next";
 import { withSerwist } from "@serwist/turbopack";
 
+// `unsafe-eval` n'est nécessaire qu'en développement : React s'en sert pour
+// reconstruire les stacks d'erreur serveur dans le navigateur. Ni React ni
+// Next.js n'en ont besoin en production (cf. doc Next.js sur la CSP), donc on
+// ne l'autorise pas en prod pour réduire la surface d'attaque XSS.
+const isDev = process.env.NODE_ENV === "development";
+
 const securityHeaders = [
   {
     key: "X-Frame-Options",
@@ -26,7 +32,7 @@ const securityHeaders = [
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https: http://books.google.com https://books.google.com",
       "font-src 'self' data:",
