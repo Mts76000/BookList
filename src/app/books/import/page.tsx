@@ -79,7 +79,7 @@ export default function ImportBooks() {
       <Navigation />
       <main className="animate-fade-in-up mx-auto max-w-lg px-4 py-6 sm:px-6 sm:py-8">
         <header className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight text-stone-900">
+          <h1 className="font-serif text-2xl text-stone-900">
             Importer des livres
           </h1>
           <p className="mt-1 text-sm text-stone-500">
@@ -110,20 +110,20 @@ export default function ImportBooks() {
           </div>
 
           {error && (
-            <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+            <div className="mt-4 rounded-[--radius-sm] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
               {error}
             </div>
           )}
 
           {result && (
             <div className="mt-4 space-y-2">
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+              <div className="rounded-[--radius-sm] border border-moss-200 bg-moss-50 px-4 py-3 text-sm text-moss-700">
                 {result.imported} livre{result.imported !== 1 ? "s" : ""} importé
                 {result.imported !== 1 ? "s" : ""}
                 {result.failed > 0 && `, ${result.failed} ligne(s) ignorée(s)`}
               </div>
               {result.errors.length > 0 && (
-                <div className="max-h-48 overflow-y-auto rounded-2xl border border-orange-200 bg-orange-50 px-4 py-3 text-xs text-orange-800">
+                <div className="max-h-48 overflow-y-auto rounded-[--radius-sm] border border-orange-200 bg-orange-50 px-4 py-3 text-xs text-orange-800">
                   {result.errors.map((e, i) => (
                     <p key={i}>
                       Ligne {e.line} : {e.message}

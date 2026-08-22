@@ -82,10 +82,10 @@ export function ProfileView({
   const initials = (name || email || "?").charAt(0).toUpperCase()
 
   const stats = [
-    { label: "Livres lus", value: totalBooks, accent: "bg-blue-500" },
-    { label: "Pages lues", value: totalPagesRead, accent: "bg-violet-500" },
-    { label: "Note moyenne", value: averageRating > 0 ? averageRating.toFixed(1) : "—", accent: "bg-sky-500" },
-    { label: "Commentaires", value: commentsCount, accent: "bg-emerald-500" },
+    { label: "Livres lus", value: totalBooks },
+    { label: "Pages lues", value: totalPagesRead },
+    { label: "Note moyenne", value: averageRating > 0 ? averageRating.toFixed(1) : "—" },
+    { label: "Commentaires", value: commentsCount },
   ]
 
   return (
@@ -111,7 +111,7 @@ export function ProfileView({
             className={`mt-4 rounded-xl px-4 py-3 text-sm ${
               isError
                 ? "border border-red-200 bg-red-50 text-red-600"
-                : "border border-emerald-200 bg-emerald-50 text-emerald-700"
+                : "border border-moss-200 bg-moss-50 text-moss-700"
             }`}
           >
             {message}
@@ -171,15 +171,14 @@ export function ProfileView({
       <div className="mt-4 grid grid-cols-2 gap-3">
         {stats.map((stat) => (
           <div key={stat.label} className="card p-4">
-            <div className={`mb-2 h-1.5 w-8 rounded-full ${stat.accent}`} />
-            <p className="text-xl font-semibold tabular-nums text-stone-900">{stat.value}</p>
+            <p className="font-serif text-xl text-stone-900 tabular-nums">{stat.value}</p>
             <p className="mt-0.5 text-xs text-stone-500">{stat.label}</p>
           </div>
         ))}
       </div>
 
       <div className="card mt-4 p-5 sm:p-6">
-        <h3 className="text-sm font-medium text-stone-900">Détails</h3>
+        <h3 className="font-serif text-base text-stone-900">Détails</h3>
         <dl className="mt-3 space-y-2 text-sm text-stone-500">
           {topAuthor && (
             <div className="flex justify-between">
@@ -197,7 +196,7 @@ export function ProfileView({
 
         {pagesPerYear.length > 0 && (
           <>
-            <h3 className="mt-5 text-sm font-medium text-stone-900">Pages par année</h3>
+            <h3 className="mt-5 font-serif text-base text-stone-900">Pages par année</h3>
             <dl className="mt-3 space-y-2 text-sm text-stone-500">
               {pagesPerYear.map(({ year, pages }) => (
                 <div key={year} className="flex justify-between">

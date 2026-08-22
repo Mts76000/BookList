@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma"
 import { Navigation } from "@/components/Navigation"
 import { BooksFilter } from "@/components/BooksFilter"
 import { BookCover } from "@/components/BookCover"
+import { uniqueGenres } from "@/lib/genres"
 
 const BOOKS_PER_PAGE = 12
 
@@ -16,10 +17,10 @@ const STATUS_LABELS: Record<string, string> = {
   FINISHED: "Terminé",
 }
 
-const STATUS_STYLES: Record<string, string> = {
-  TO_READ: "bg-stone-100 text-stone-600",
-  READING: "bg-blue-100 text-blue-700",
-  FINISHED: "bg-emerald-100 text-emerald-800",
+const STATUS_DOT: Record<string, string> = {
+  TO_READ: "bg-stone-400",
+  READING: "bg-accent-500",
+  FINISHED: "bg-moss-500",
 }
 
 async function getBooks(
@@ -83,15 +84,7 @@ async function getGenres(userId: string) {
     select: { genre: true },
   })
 
-  const genres = new Set<string>()
-  books.forEach((book) => {
-    book.genre?.split(",").forEach((g) => {
-      const trimmed = g.trim()
-      if (trimmed) genres.add(trimmed)
-    })
-  })
-
-  return Array.from(genres).sort()
+  return uniqueGenres(books)
 }
 
 export default async function BooksPage({
@@ -128,7 +121,7 @@ export default async function BooksPage({
       <main className="animate-fade-in-up mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-stone-900">Mes livres</h1>
+            <h1 className="font-serif text-2xl text-stone-900 sm:text-3xl">Votre étagère</h1>
             <p className="mt-1 text-sm text-stone-500">
               {total} livre{total !== 1 ? "s" : ""} dans votre bibliothèque
             </p>
@@ -141,61 +134,40 @@ export default async function BooksPage({
         <BooksFilter sortBy={sortBy} genre={genre} status={status} genres={genres} />
 
         {books.length > 0 ? (
-          <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
             {books.map((book) => (
-              <Link
-                key={book.id}
-                href={`/books/${book.id}`}
-                className="card card-interactive flex gap-4 p-4"
-              >
-                <BookCover
-                  coverUrl={book.coverUrl}
-                  alt={book.title}
-                  className="h-24 w-16 shrink-0 rounded-lg"
-                />
-                <div className="min-w-0 flex-1">
-                  <h3 className="font-medium text-stone-900 line-clamp-2">{book.title}</h3>
-                  <p className="mt-0.5 text-sm text-stone-500">{book.author}</p>
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[book.status]}`}
-                    >
-                      {STATUS_LABELS[book.status]}
+              <Link key={book.id} href={`/books/${book.id}`} className="group block">
+                <div className="relative">
+                  <BookCover
+                    coverUrl={book.coverUrl}
+                    alt={book.title}
+                    tactile
+                    className="aspect-[2/3] w-full rounded-[--radius-sm]"
+                  />
+                  {book.userRating && (
+                    <span className="absolute bottom-2 right-2 inline-flex items-center gap-0.5 rounded-full bg-stone-900/85 px-2 py-0.5 text-[11px] font-medium text-stone-50 backdrop-blur-sm">
+                      <svg className="h-3 w-3 text-amber-300" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                      {book.userRating}
                     </span>
-                    {book.genre && (
-                      <span className="rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-600">
-                        {book.genre.split(",")[0].trim()}
-                      </span>
-                    )}
-                    {book.userRating && (
-                      <span className="inline-flex items-center gap-0.5 text-xs font-medium text-amber-600">
-                        <svg className="h-3.5 w-3.5 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                        {book.userRating}/5
-                      </span>
-                    )}
-                    {book.pageCount && (
-                      <span className="text-xs text-stone-400">{book.pageCount} p.</span>
-                    )}
-                    {(book.userStartDate || book.userEndDate) && (
-                      <span className="text-xs text-stone-400">
-                        {book.userStartDate
-                          ? new Date(book.userStartDate).toLocaleDateString("fr-FR")
-                          : "?"}
-                        {" — "}
-                        {book.userEndDate
-                          ? new Date(book.userEndDate).toLocaleDateString("fr-FR")
-                          : "?"}
-                      </span>
-                    )}
+                  )}
+                </div>
+                <div className="mt-2.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className={`status-dot ${STATUS_DOT[book.status]}`} />
+                    <span className="text-[11px] font-medium text-stone-500">{STATUS_LABELS[book.status]}</span>
                   </div>
+                  <h3 className="mt-1 font-medium text-stone-900 line-clamp-2 transition-colors group-hover:text-accent-700">
+                    {book.title}
+                  </h3>
+                  <p className="mt-0.5 truncate text-sm text-stone-500">{book.author}</p>
                 </div>
               </Link>
             ))}
           </div>
         ) : (
-          <div className="rounded-3xl border border-dashed border-stone-300 bg-white px-6 py-12 text-center">
+          <div className="rounded-[--radius-lg] border border-dashed border-stone-300 bg-(--surface) px-6 py-12 text-center">
             <p className="font-medium text-stone-900">Aucun livre trouvé</p>
             <p className="mt-1 text-sm text-stone-500">
               {genre ? "Essayez un autre filtre ou ajoutez un livre." : "Commencez par ajouter votre première lecture."}
@@ -269,7 +241,7 @@ function PaginationLink({
   return (
     <Link
       href={`/books?${query.toString()}`}
-      className="rounded-full border border-stone-200 bg-white px-4 py-2 text-sm font-medium text-stone-700 shadow-sm transition hover:border-stone-300 hover:bg-stone-50 hover:shadow-md"
+      className="rounded-full border border-stone-200 bg-(--surface) px-4 py-2 text-sm font-medium text-stone-700 shadow-sm transition hover:border-stone-300 hover:bg-stone-50 hover:shadow-md"
     >
       {label}
     </Link>

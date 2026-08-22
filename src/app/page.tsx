@@ -2,35 +2,28 @@ import { getServerSession } from "next-auth"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { authOptions } from "@/lib/auth"
+import { SITE_NAME, SITE_DESCRIPTION, SITE_URL } from "@/lib/site"
 
 const FEATURES = [
   {
+    index: "01",
     title: "Suivi de lecture",
     description: "Gardez une trace de tous les livres que vous avez lus, avec vos notes et vos avis personnels.",
-    icon: BookIcon,
-    bg: "bg-blue-100",
-    color: "text-blue-600",
   },
   {
+    index: "02",
     title: "Scan de code-barres",
     description: "Ajoutez un livre en un instant en scannant son ISBN directement avec l'appareil photo.",
-    icon: BarcodeIcon,
-    bg: "bg-violet-100",
-    color: "text-violet-600",
   },
   {
+    index: "03",
     title: "Statistiques de lecture",
     description: "Visualisez votre activité jour par jour et suivez vos objectifs de lecture au fil du temps.",
-    icon: ChartIcon,
-    bg: "bg-emerald-100",
-    color: "text-emerald-600",
   },
   {
+    index: "04",
     title: "Application installable",
     description: "Installez BookList sur votre téléphone comme une vraie app, avec un accès hors ligne.",
-    icon: DeviceIcon,
-    bg: "bg-amber-100",
-    color: "text-amber-600",
   },
 ]
 
@@ -39,6 +32,31 @@ const STEPS = [
   { title: "Notez", description: "Ajoutez votre avis, votre note et les dates de lecture." },
   { title: "Suivez", description: "Consultez vos stats et découvrez vos habitudes de lecture." },
 ]
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      name: SITE_NAME,
+      url: SITE_URL,
+      description: SITE_DESCRIPTION,
+    },
+    {
+      "@type": "WebApplication",
+      name: SITE_NAME,
+      applicationCategory: "LifestyleApplication",
+      operatingSystem: "Any",
+      description: SITE_DESCRIPTION,
+      url: SITE_URL,
+      offers: {
+        "@type": "Offer",
+        price: "0",
+        priceCurrency: "EUR",
+      },
+    },
+  ],
+}
 
 export default async function Home() {
   const session = await getServerSession(authOptions)
@@ -50,8 +68,8 @@ export default async function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-stone-50">
       <header className="glass sticky top-0 z-50 border-b border-stone-200/60">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6">
-          <span className="text-lg font-semibold tracking-tight text-stone-900">BookList</span>
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
+          <span className="font-serif text-lg font-medium tracking-tight text-stone-900">BookList</span>
           <Link
             href="/auth/signin"
             className="text-sm font-medium text-stone-600 transition-colors duration-200 hover:text-stone-900"
@@ -62,99 +80,94 @@ export default async function Home() {
       </header>
 
       <main>
-        <section className="relative">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-x-0 -top-40 -z-10 flex justify-center blur-3xl"
-          >
-            <div className="aspect-square w-[46rem] rounded-full bg-[conic-gradient(from_140deg,theme(colors.sky.200),theme(colors.violet.200),theme(colors.emerald.100),theme(colors.sky.200))] opacity-40" />
-          </div>
-
-          <div className="mx-auto max-w-3xl px-4 pb-12 pt-20 text-center sm:px-6 sm:pb-16 sm:pt-32">
-            <div className="animate-fade-in-up mx-auto mb-6 inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-white/80 px-4 py-1.5 text-xs font-medium text-stone-500 shadow-sm">
-              Votre bibliothèque, réinventée
+        <section className="mx-auto max-w-6xl px-4 pb-16 pt-16 sm:px-6 sm:pb-24 sm:pt-24">
+          <div className="grid items-center gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:gap-8">
+            <div>
+              <div className="animate-fade-in-up mb-6 inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-(--surface) px-4 py-1.5 text-xs font-medium text-stone-500">
+                Votre bibliothèque, réinventée
+              </div>
+              <h1
+                className="animate-fade-in-up font-serif text-5xl leading-[1.05] text-balance text-stone-900 sm:text-6xl lg:text-7xl"
+                style={{ animationDelay: "80ms" }}
+              >
+                Retrouvez le plaisir de lire, sans perdre le fil.
+              </h1>
+              <p
+                className="animate-fade-in-up mt-6 max-w-md text-lg text-stone-500"
+                style={{ animationDelay: "160ms" }}
+              >
+                BookList vous aide à suivre vos lectures, noter vos coups de cœur et
+                visualiser votre évolution au fil du temps.
+              </p>
+              <div
+                className="animate-fade-in-up mt-10 flex flex-col items-start gap-3 sm:flex-row"
+                style={{ animationDelay: "240ms" }}
+              >
+                <Link href="/auth/signup" className="btn-primary w-full sm:w-auto">
+                  Créer un compte gratuit
+                </Link>
+                <Link href="/auth/signin" className="btn-secondary w-full sm:w-auto">
+                  J&apos;ai déjà un compte
+                </Link>
+              </div>
             </div>
-            <h1
-              className="animate-fade-in-up text-5xl font-semibold tracking-tight text-balance text-stone-900 sm:text-7xl"
-              style={{ animationDelay: "80ms" }}
-            >
-              Retrouvez le plaisir de lire,
-              <br className="hidden sm:block" /> sans perdre le fil.
-            </h1>
-            <p
-              className="animate-fade-in-up mx-auto mt-6 max-w-xl text-lg text-stone-500"
-              style={{ animationDelay: "160ms" }}
-            >
-              BookList vous aide à suivre vos lectures, noter vos coups de cœur et
-              visualiser votre évolution au fil du temps.
-            </p>
-            <div
-              className="animate-fade-in-up mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row"
-              style={{ animationDelay: "240ms" }}
-            >
-              <Link href="/auth/signup" className="btn-primary w-full sm:w-auto">
-                Créer un compte gratuit
-              </Link>
-              <Link href="/auth/signin" className="btn-secondary w-full sm:w-auto">
-                J&apos;ai déjà un compte
-              </Link>
+
+            <div className="animate-fade-in-up relative mx-auto h-72 w-full max-w-sm sm:h-80" style={{ animationDelay: "200ms" }}>
+              <div className="absolute inset-0 flex items-end justify-center gap-3 sm:gap-4">
+                <div className="h-[70%] w-16 -rotate-3 rounded-[--radius-sm] bg-stone-800 shadow-[0_2px_2px_rgba(36,29,21,0.1),0_20px_30px_-16px_rgba(36,29,21,0.45)] sm:w-20" />
+                <div className="h-[92%] w-16 rotate-2 rounded-[--radius-sm] bg-accent-500 shadow-[0_2px_2px_rgba(36,29,21,0.1),0_24px_32px_-16px_rgba(171,79,39,0.4)] sm:w-20" />
+                <div className="h-[60%] w-16 rotate-1 rounded-[--radius-sm] bg-moss-500 shadow-[0_2px_2px_rgba(36,29,21,0.1),0_18px_28px_-16px_rgba(36,29,21,0.4)] sm:w-20" />
+                <div className="h-[80%] w-16 -rotate-2 rounded-[--radius-sm] bg-stone-300 shadow-[0_2px_2px_rgba(36,29,21,0.08),0_20px_28px_-16px_rgba(36,29,21,0.3)] sm:w-20" />
+              </div>
+              <div className="absolute -right-2 top-2 rounded-[--radius-sm] border border-stone-200 bg-(--surface) px-3 py-2 text-xs shadow-[0_10px_24px_-14px_rgba(36,29,21,0.4)] sm:right-4">
+                <p className="font-serif text-lg text-stone-900">128</p>
+                <p className="text-stone-500">pages cette semaine</p>
+              </div>
             </div>
           </div>
         </section>
 
-        <section className="mx-auto max-w-5xl px-4 pb-20 sm:px-6 sm:pb-28">
-          <div className="grid gap-4 sm:grid-cols-2">
+        <section className="border-y border-stone-200/70 bg-(--surface)">
+          <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6 sm:py-20">
             {FEATURES.map((feature) => (
-              <div key={feature.title} className="card card-interactive p-6 sm:p-7">
-                <div
-                  className={`flex h-11 w-11 items-center justify-center rounded-2xl shadow-sm ${feature.bg} ${feature.color}`}
-                >
-                  <feature.icon className="h-5 w-5" />
-                </div>
-                <h2 className="mt-5 font-semibold tracking-tight text-stone-900">{feature.title}</h2>
-                <p className="mt-2 text-sm leading-relaxed text-stone-500">{feature.description}</p>
+              <div
+                key={feature.index}
+                className="flex flex-col gap-2 border-b border-stone-200 py-7 first:pt-0 last:border-0 last:pb-0 sm:flex-row sm:items-baseline sm:gap-8"
+              >
+                <span className="font-serif text-sm text-stone-300 sm:w-10">{feature.index}</span>
+                <h2 className="font-serif text-xl text-stone-900 sm:w-56 sm:shrink-0">{feature.title}</h2>
+                <p className="text-sm leading-relaxed text-stone-500">{feature.description}</p>
               </div>
             ))}
           </div>
         </section>
 
-        <section className="border-y border-stone-200/70 bg-white">
-          <div className="mx-auto max-w-5xl px-4 py-20 sm:px-6 sm:py-28">
-            <h2 className="text-center text-3xl font-semibold tracking-tight text-stone-900 sm:text-4xl">
-              Comment ça marche ?
-            </h2>
-            <div className="mt-14 grid gap-10 sm:grid-cols-3">
-              {STEPS.map((step, i) => (
-                <div key={step.title} className="text-center">
-                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-blue-500 text-xl font-semibold text-white shadow-[0_8px_24px_-8px_rgba(59,130,246,0.4)]">
-                    {i + 1}
-                  </div>
-                  <h3 className="mt-5 font-semibold tracking-tight text-stone-900">{step.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-stone-500">{step.description}</p>
+        <section className="mx-auto max-w-4xl px-4 py-20 sm:px-6 sm:py-28">
+          <h2 className="font-serif text-3xl text-stone-900 sm:text-4xl">Comment ça marche ?</h2>
+          <div className="relative mt-14 grid gap-10 sm:grid-cols-3">
+            <div className="absolute left-0 right-0 top-[13px] hidden h-px bg-stone-200 sm:block" />
+            {STEPS.map((step, i) => (
+              <div key={step.title} className="relative">
+                <div className="relative z-10 mb-4 inline-flex h-7 w-7 items-center justify-center rounded-full bg-stone-50 font-serif text-sm text-stone-900 ring-1 ring-stone-300">
+                  {i + 1}
                 </div>
-              ))}
-            </div>
+                <h3 className="font-serif text-lg text-stone-900">{step.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-stone-500">{step.description}</p>
+              </div>
+            ))}
           </div>
         </section>
 
-        <section className="relative overflow-hidden bg-stone-900">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-x-0 top-0 flex justify-center blur-3xl"
-          >
-            <div className="aspect-square w-[36rem] translate-y-[-40%] rounded-full bg-gradient-to-tr from-sky-800 via-violet-800 to-transparent opacity-40" />
-          </div>
+        <section className="noise-overlay relative overflow-hidden bg-stone-900">
           <div className="relative mx-auto max-w-3xl px-4 py-20 text-center sm:px-6 sm:py-28">
-            <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-              Prêt à commencer ?
-            </h2>
-            <p className="mx-auto mt-4 max-w-md text-stone-300">
+            <h2 className="font-serif text-3xl text-stone-50 sm:text-4xl">Prêt à commencer ?</h2>
+            <p className="mx-auto mt-4 max-w-md text-stone-400">
               Rejoignez BookList et donnez à vos lectures la place qu&apos;elles méritent.
             </p>
             <div className="mt-8">
               <Link
                 href="/auth/signup"
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-medium tracking-tight text-stone-900 shadow-[0_8px_24px_-8px_rgba(0,0,0,0.5)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-[0_16px_32px_-10px_rgba(0,0,0,0.6)]"
+                className="inline-flex items-center justify-center gap-2 rounded-[--radius-sm] bg-stone-50 px-6 py-3 text-sm font-medium tracking-tight text-stone-900 shadow-[0_8px_24px_-8px_rgba(0,0,0,0.5)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:bg-accent-100 hover:shadow-[0_16px_32px_-10px_rgba(0,0,0,0.6)]"
               >
                 Créer mon compte
               </Link>
@@ -164,42 +177,15 @@ export default async function Home() {
       </main>
 
       <footer className="border-t border-stone-200/70 bg-stone-50">
-        <div className="mx-auto max-w-5xl px-4 py-8 text-center text-xs text-stone-400 sm:px-6">
+        <div className="mx-auto max-w-6xl px-4 py-8 text-center text-xs text-stone-400 sm:px-6">
           BookList — votre suivi de lecture personnel
         </div>
       </footer>
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
     </div>
-  )
-}
-
-function BookIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
-    </svg>
-  )
-}
-
-function BarcodeIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M4 5.25v13.5m3-13.5v13.5m4.5-13.5v13.5M15 5.25v13.5m1.5-13.5v13.5m3-13.5v13.5M4 5.25h16.5M4 18.75h16.5" />
-    </svg>
-  )
-}
-
-function ChartIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
-    </svg>
-  )
-}
-
-function DeviceIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
-    </svg>
   )
 }

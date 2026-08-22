@@ -1,9 +1,16 @@
+import type { Metadata } from "next"
 import { getServerSession } from "next-auth"
 import { redirect } from "next/navigation"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { Navigation } from "@/components/Navigation"
 import { ProfileView } from "@/components/ProfileView"
+import { topGenres } from "@/lib/genres"
+
+export const metadata: Metadata = {
+  title: "Profil",
+  robots: { index: false, follow: false },
+}
 
 async function getProfileData(userId: string) {
   const [user, totalBooks, totalPagesRead, averageRating, commentsCount, topAuthor, booksForStats] =
@@ -39,7 +46,6 @@ async function getProfileData(userId: string) {
       }),
     ])
 
-  const genreCounts = new Map<string, number>()
   const pagesByYear = new Map<number, number>()
 
   for (const book of booksForStats) {
@@ -47,18 +53,9 @@ async function getProfileData(userId: string) {
       const year = new Date(book.userEndDate).getFullYear()
       pagesByYear.set(year, (pagesByYear.get(year) || 0) + book.pageCount)
     }
-
-    if (book.genre) {
-      for (const g of book.genre.split(",")) {
-        const trimmed = g.trim()
-        if (trimmed) {
-          genreCounts.set(trimmed, (genreCounts.get(trimmed) || 0) + 1)
-        }
-      }
-    }
   }
 
-  const favoriteGenre = Array.from(genreCounts.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] || null
+  const favoriteGenre = topGenres(booksForStats, 1)[0] || null
   const pagesPerYear = Array.from(pagesByYear.entries())
     .sort(([a], [b]) => b - a)
     .map(([year, pages]) => ({ year, pages }))
@@ -89,7 +86,7 @@ export default async function Profile() {
       <Navigation />
       <main className="animate-fade-in-up mx-auto max-w-lg px-4 py-6 sm:px-6 sm:py-8">
         <header className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight text-stone-900">Profil</h1>
+          <h1 className="font-serif text-2xl text-stone-900">Profil</h1>
           <p className="mt-1 text-sm text-stone-500">Votre compte et vos statistiques</p>
         </header>
         <ProfileView

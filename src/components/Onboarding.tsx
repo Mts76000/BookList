@@ -27,8 +27,13 @@ export function Onboarding() {
   const [isOpen, setIsOpen] = useState(false)
   const [step, setStep] = useState(0)
 
+  // `session` est chargée de façon asynchrone côté client (NextAuth) : elle vaut
+  // `undefined` puis se peuple après un appel réseau. On ne peut pas dériver
+  // `isOpen` directement au rendu sans provoquer un flash du modal à chaque
+  // changement de page ; l'effet ne se déclenche donc qu'une fois la session connue.
   useEffect(() => {
     if (session?.user && !session.user.hasSeenOnboarding) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsOpen(true)
     }
   }, [session])
@@ -59,7 +64,7 @@ export function Onboarding() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-stone-900/30 p-4 backdrop-blur-sm sm:items-center">
-      <div className="animate-fade-in-up w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl ring-1 ring-stone-900/5">
+      <div className="animate-fade-in-up w-full max-w-sm rounded-[--radius-lg] bg-(--surface) p-6 shadow-2xl ring-1 ring-stone-900/5">
         <div className="mb-4 flex justify-between text-xs font-medium text-stone-400">
           <span>Étape {step + 1} / {STEPS.length}</span>
           <button onClick={handleClose} className="text-stone-500 hover:text-stone-900">
@@ -67,14 +72,14 @@ export function Onboarding() {
           </button>
         </div>
 
-        <h2 className="text-xl font-semibold text-stone-900">{STEPS[step].title}</h2>
+        <h2 className="font-serif text-xl text-stone-900">{STEPS[step].title}</h2>
         <p className="mt-2 text-sm leading-relaxed text-stone-500">{STEPS[step].description}</p>
 
         {step === 1 && (
           <Link
             href="/books/add"
             onClick={handleClose}
-            className="mt-5 block rounded-xl bg-stone-900 px-4 py-3 text-center text-sm font-medium text-white transition hover:bg-stone-800"
+            className="mt-5 block rounded-[--radius-sm] bg-stone-900 px-4 py-3 text-center text-sm font-medium text-stone-50 transition hover:bg-accent-600"
           >
             Ajouter mon premier livre
           </Link>
@@ -84,7 +89,7 @@ export function Onboarding() {
           <Link
             href="/profile"
             onClick={handleClose}
-            className="mt-5 block rounded-xl bg-stone-900 px-4 py-3 text-center text-sm font-medium text-white transition hover:bg-stone-800"
+            className="mt-5 block rounded-[--radius-sm] bg-stone-900 px-4 py-3 text-center text-sm font-medium text-stone-50 transition hover:bg-accent-600"
           >
             Voir mon profil
           </Link>

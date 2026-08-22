@@ -187,7 +187,7 @@ export default function AddBook() {
       <Navigation />
       <main className="animate-fade-in-up mx-auto max-w-lg px-4 py-6 sm:px-6 sm:py-8">
         <header className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight text-stone-900">
+          <h1 className="font-serif text-2xl text-stone-900">
             Ajouter un livre
           </h1>
           <p className="mt-1 text-sm text-stone-500">Recherche, scan ou saisie manuelle</p>
@@ -214,7 +214,7 @@ export default function AddBook() {
                   <div className="w-full border-t border-stone-200" />
                 </div>
                 <div className="relative flex justify-center text-xs">
-                  <span className="bg-white px-2 text-stone-400">ou</span>
+                  <span className="bg-(--surface) px-2 text-stone-400">ou</span>
                 </div>
               </div>
 
@@ -298,7 +298,7 @@ export default function AddBook() {
             </h2>
 
             {selectedBook && (
-              <div className="mt-4 flex gap-3 rounded-2xl bg-stone-50/70 p-3 ring-1 ring-stone-100">
+              <div className="mt-4 flex gap-3 rounded-[--radius-sm] bg-stone-50/70 p-3 ring-1 ring-stone-100">
                 <BookCover
                   coverUrl={selectedBook.coverUrl}
                   alt={selectedBook.title}
@@ -366,14 +366,14 @@ export default function AddBook() {
                       key={option.value}
                       type="button"
                       onClick={() => setManualBook({ ...manualBook, status: option.value })}
-                      className={`rounded-xl px-3 py-2 text-sm font-medium transition ${
+                      className={`rounded-[--radius-sm] px-3 py-2 text-sm font-medium transition ${
                         manualBook.status === option.value
                           ? option.value === "TO_READ"
-                            ? "bg-stone-800 text-white shadow-md"
+                            ? "bg-stone-800 text-stone-50 shadow-md"
                             : option.value === "READING"
-                              ? "bg-blue-600 text-white shadow-md"
-                              : "bg-emerald-600 text-white shadow-md"
-                          : "bg-white text-stone-600 ring-1 ring-stone-200 hover:ring-stone-300"
+                              ? "bg-accent-600 text-stone-50 shadow-md"
+                              : "bg-moss-600 text-stone-50 shadow-md"
+                          : "bg-(--surface) text-stone-600 ring-1 ring-stone-200 hover:ring-stone-300"
                       }`}
                     >
                       {option.label}
@@ -412,7 +412,7 @@ export default function AddBook() {
               </p>
 
               {error && (
-                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                <div className="rounded-[--radius-sm] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
                   {error}
                 </div>
               )}

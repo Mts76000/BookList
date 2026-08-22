@@ -3,6 +3,7 @@
 import { useSession, signOut } from "next-auth/react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { motion } from "motion/react"
 
 const navItems = [
   { href: "/dashboard", label: "Accueil", icon: HomeIcon },
@@ -25,17 +26,17 @@ export function Navigation() {
 
   return (
     <>
-      {/* Mobile top bar */}
-      <header className="sticky top-0 z-40 border-b border-stone-200/60 bg-white sm:hidden">
+      {/* Barre mobile haute */}
+      <header className="glass sticky top-0 z-40 border-b border-stone-200/70 sm:hidden">
         <div className="flex h-14 items-center justify-between px-4">
-          <Link href="/dashboard" className="text-lg font-semibold tracking-tight text-stone-900">
+          <Link href="/dashboard" className="font-serif text-lg font-medium tracking-tight text-stone-900">
             BookList
           </Link>
         </div>
       </header>
 
-      {/* Mobile bottom tab bar */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-stone-200/60 bg-white sm:hidden">
+      {/* Barre mobile basse */}
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-stone-200/70 bg-(--surface) sm:hidden">
         <div className="mx-auto grid max-w-lg grid-cols-4">
           {navItems.map((item) => {
             const active = isActive(item.href)
@@ -45,10 +46,10 @@ export function Navigation() {
                 key={item.href}
                 href={item.href}
                 className={`relative flex flex-col items-center gap-1 py-2.5 text-[10px] font-medium transition-colors duration-200 ${
-                  active ? "text-stone-900" : "text-stone-400"
+                  active ? "text-accent-600" : "text-stone-400"
                 }`}
               >
-                <Icon className={`h-5 w-5 transition-transform duration-200 ${active ? "-translate-y-0.5 text-stone-900" : "text-stone-400"}`} />
+                <Icon className={`h-5 w-5 transition-transform duration-200 ${active ? "-translate-y-0.5" : ""}`} />
                 {item.label}
               </Link>
             )
@@ -56,11 +57,11 @@ export function Navigation() {
         </div>
       </nav>
 
-      {/* Desktop left sidebar */}
-      <nav className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-stone-200/70 bg-white sm:flex">
+      {/* Sidebar desktop */}
+      <nav className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-stone-200/70 bg-(--background-soft) sm:flex">
         <Link
           href="/dashboard"
-          className="flex h-16 items-center px-6 text-lg font-semibold tracking-tight text-stone-900"
+          className="flex h-16 items-center px-6 font-serif text-lg font-medium tracking-tight text-stone-900"
         >
           BookList
         </Link>
@@ -73,17 +74,22 @@ export function Navigation() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`relative flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ease-out ${
-                  active
-                    ? "bg-stone-100 text-stone-900"
-                    : "text-stone-500 hover:bg-stone-100/60 hover:text-stone-900"
+                className={`relative flex items-center gap-3 rounded-[--radius-sm] px-3 py-2.5 text-sm font-medium transition-colors duration-200 ${
+                  active ? "text-stone-900" : "text-stone-500 hover:text-stone-900"
                 }`}
               >
                 {active && (
-                  <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-blue-500" />
+                  <motion.span
+                    layoutId="nav-active-pill"
+                    className="absolute inset-0 rounded-[--radius-sm] bg-(--surface) shadow-[0_1px_2px_rgba(36,29,21,0.04),0_6px_16px_-8px_rgba(36,29,21,0.25)]"
+                    transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                  />
                 )}
-                <Icon className={`h-5 w-5 shrink-0 ${active ? "text-stone-900" : ""}`} />
-                {item.label}
+                {active && (
+                  <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-accent-500" />
+                )}
+                <Icon className="relative h-5 w-5 shrink-0" />
+                <span className="relative">{item.label}</span>
               </Link>
             )
           })}
@@ -92,7 +98,7 @@ export function Navigation() {
         <div className="border-t border-stone-200/70 p-3">
           <button
             onClick={() => signOut({ callbackUrl: "/auth/signin" })}
-            className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium text-stone-500 transition-colors duration-200 hover:bg-red-50 hover:text-red-600"
+            className="flex w-full items-center gap-3 rounded-[--radius-sm] px-3 py-2.5 text-sm font-medium text-stone-500 transition-colors duration-200 hover:bg-red-50 hover:text-red-600"
           >
             <LogoutIcon className="h-5 w-5 shrink-0" />
             Déconnexion

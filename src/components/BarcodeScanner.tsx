@@ -23,7 +23,10 @@ export function BarcodeScanner({ onDetected, onClose }: BarcodeScannerProps) {
     let localControls: IScannerControls | null = null
     hasDecodedRef.current = false
 
+    // `navigator.mediaDevices` n'est disponible que côté client, une fois monté :
+    // cette vérification ne peut pas être déplacée hors de l'effet.
     if (!navigator.mediaDevices?.getUserMedia) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setError("La caméra n'est pas disponible sur cet appareil ou ce navigateur.")
       setIsStarting(false)
       return
@@ -153,21 +156,19 @@ export function BarcodeScanner({ onDetected, onClose }: BarcodeScannerProps) {
     setRetryKey((key) => key + 1)
   }
 
-  // Rotation automatique selon l'orientation du téléphone (iOS Safari ou autre).
+  // Rotation automatique selon l'orientation du téléphone.
   // Si le flux caméra est livré en paysage alors que le téléphone est tenu
   // en portrait, l'image se retourne automatiquement pour correspondre.
+  // `screen.orientation` remplace l'ancienne API `window.orientation`, dépréciée.
   useEffect(() => {
     const applyOrientation = () => {
-      const angle =
-        typeof window !== "undefined" && "orientation" in window
-          ? (window as Window & { orientation: number }).orientation
-          : 0
-      setRotation(angle === 90 ? 90 : angle === -90 || angle === 270 ? 270 : 0)
+      const angle = typeof screen !== "undefined" ? (screen.orientation?.angle ?? 0) : 0
+      setRotation(angle === 90 ? 90 : angle === 270 ? 270 : 0)
     }
 
     applyOrientation()
-    window.addEventListener("orientationchange", applyOrientation)
-    return () => window.removeEventListener("orientationchange", applyOrientation)
+    screen.orientation?.addEventListener("change", applyOrientation)
+    return () => screen.orientation?.removeEventListener("change", applyOrientation)
   }, [])
 
   return (
@@ -213,7 +214,9 @@ export function BarcodeScanner({ onDetected, onClose }: BarcodeScannerProps) {
 
           {!error && (
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <div className="h-72 w-32 rounded-2xl border-2 border-white/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.45)]" />
+              {/* Un code-barres ISBN (EAN-13) est toujours horizontal : le cadre doit
+                  donc être large et bas (paysage), jamais haut et étroit (portrait). */}
+              <div className="h-24 w-72 rounded-[--radius-sm] border-2 border-white/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.45)] sm:h-28 sm:w-80" />
             </div>
           )}
         </div>

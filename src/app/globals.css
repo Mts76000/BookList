@@ -1,25 +1,92 @@
 @import "tailwindcss";
 
+/*
+  Système de design "Carnet de lecture".
+  On redéfinit la palette stone (neutres) sur une base crème/encre chaude au lieu
+  du gris froid par défaut, et on ajoute deux familles de couleur propres au produit
+  (accent terracotta, vert moss) pour remplacer les couleurs SaaS génériques
+  (bleu/violet/émeraude/sky) utilisées auparavant pour les stats et les statuts.
+  Un seul accent porte l'action ; le vert sert uniquement au statut "terminé".
+*/
+@theme {
+  --color-stone-50: #f8f3ea;
+  --color-stone-100: #f0e7d6;
+  --color-stone-200: #e3d5bc;
+  --color-stone-300: #cebb9b;
+  --color-stone-400: #b0a081;
+  --color-stone-500: #8a7a63;
+  --color-stone-600: #6b5d49;
+  --color-stone-700: #504536;
+  --color-stone-800: #372e23;
+  --color-stone-900: #241d15;
+  --color-stone-950: #17120c;
+
+  --color-accent-50: #fbeee6;
+  --color-accent-100: #f5dac8;
+  --color-accent-200: #e9b892;
+  --color-accent-300: #dc9569;
+  --color-accent-400: #c8703f;
+  --color-accent-500: #ab4f27;
+  --color-accent-600: #93401e;
+  --color-accent-700: #79331a;
+  --color-accent-800: #5f2a18;
+  --color-accent-900: #4a2315;
+
+  --color-moss-50: #eef1e7;
+  --color-moss-100: #dbe3cc;
+  --color-moss-200: #b9c8a1;
+  --color-moss-300: #93a878;
+  --color-moss-400: #6d8757;
+  --color-moss-500: #4f6a41;
+  --color-moss-600: #3f5535;
+  --color-moss-700: #33452c;
+  --color-moss-800: #2a3824;
+  --color-moss-900: #212c1c;
+
+  --color-amber-50: #fbf3e2;
+  --color-amber-100: #f4e3bd;
+  --color-amber-300: #e0b465;
+  --color-amber-400: #cf9843;
+  --color-amber-500: #b9812f;
+  --color-amber-600: #986a27;
+
+  --font-serif: var(--font-fraunces);
+}
+
+@theme inline {
+  --font-sans: var(--font-geist);
+}
+
 :root {
-  --background: #fafaf9;
-  --foreground: #1c1917;
-  --muted: #78716c;
-  --border: #e7e5e4;
-  --accent: #1c1917;
-  --accent-hover: #292524;
-  --surface: #ffffff;
-  --ring: #93c5fd;
+  --background: #f8f3ea;
+  --background-soft: #efe4cf;
+  --foreground: #241d15;
+  --muted: #857a63;
+  --border: #e3d5bc;
+  --surface: #fffcf5;
+  --accent: #ab4f27;
+  --accent-hover: #93401e;
+  --accent-soft: #f5dac8;
+  --ring: #dc9569;
   --ease-apple: cubic-bezier(0.16, 1, 0.3, 1);
+  --radius-sm: 0.75rem;
+  --radius-md: 1.125rem;
+  --radius-lg: 1.75rem;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
-    var(--font-inter), system-ui, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-feature-settings: "kern" 1, "liga" 1;
+}
+
+h1, h2, h3,
+.font-display {
+  font-family: var(--font-serif), Georgia, serif;
+  letter-spacing: -0.01em;
 }
 
 html {
@@ -27,13 +94,22 @@ html {
 }
 
 ::selection {
-  background: #cfe4ff;
+  background: var(--accent-soft);
   color: var(--foreground);
 }
 
 *:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 .line-clamp-2 {
@@ -67,7 +143,7 @@ html {
 
 @layer components {
   .input-field {
-    @apply w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 text-base text-stone-900 placeholder:text-stone-400 shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all duration-200 ease-out focus:border-stone-900 focus:outline-none focus:ring-4 focus:ring-stone-900/5;
+    @apply w-full rounded-[--radius-sm] border border-stone-200 bg-(--surface) px-4 py-3 text-base text-stone-900 placeholder:text-stone-400 shadow-[0_1px_2px_rgba(36,29,21,0.03)] transition-all duration-200 ease-out focus:border-accent-400 focus:outline-none focus:ring-4 focus:ring-accent-400/15;
   }
 
   .input-field[type="date"] {
@@ -78,26 +154,48 @@ html {
   }
 
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-full bg-stone-900 px-6 py-3 text-sm font-medium tracking-tight text-white shadow-[0_1px_2px_rgba(0,0,0,0.04),0_8px_20px_-8px_rgba(0,0,0,0.35)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:bg-stone-800 hover:shadow-[0_1px_2px_rgba(0,0,0,0.04),0_16px_28px_-10px_rgba(0,0,0,0.4)] active:translate-y-0 active:shadow-none disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-[--radius-sm] bg-stone-900 px-6 py-3 text-sm font-medium tracking-tight text-stone-50 shadow-[0_1px_2px_rgba(36,29,21,0.08),0_10px_24px_-10px_rgba(36,29,21,0.55)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:bg-accent-600 hover:shadow-[0_1px_2px_rgba(36,29,21,0.08),0_16px_28px_-10px_rgba(171,79,39,0.45)] active:translate-y-0 active:shadow-none disabled:pointer-events-none disabled:opacity-50;
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-full border border-stone-200 bg-white px-6 py-3 text-sm font-medium tracking-tight text-stone-800 shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-stone-300 hover:bg-stone-50 hover:shadow-md active:translate-y-0 disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-[--radius-sm] border border-stone-300 bg-transparent px-6 py-3 text-sm font-medium tracking-tight text-stone-700 transition-all duration-300 ease-out hover:border-stone-400 hover:bg-stone-100 active:translate-y-0 disabled:pointer-events-none disabled:opacity-50;
+  }
+
+  .btn-text {
+    @apply inline-flex items-center gap-1 text-sm font-medium text-stone-600 underline decoration-stone-300 decoration-1 underline-offset-4 transition-colors duration-200 hover:text-accent-600 hover:decoration-accent-400;
   }
 
   .card {
-    @apply rounded-3xl border border-stone-200/70 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.02),0_12px_28px_-16px_rgba(0,0,0,0.12)];
+    @apply rounded-[--radius-md] border border-stone-200/80 bg-(--surface) shadow-[0_1px_1px_rgba(36,29,21,0.03),0_10px_24px_-18px_rgba(36,29,21,0.35)];
   }
 
   .card-interactive {
-    @apply transition-all duration-300 ease-out hover:-translate-y-1 hover:border-stone-300 hover:shadow-[0_1px_2px_rgba(0,0,0,0.03),0_20px_36px_-16px_rgba(0,0,0,0.18)];
+    @apply transition-all duration-300 ease-out hover:-translate-y-1 hover:border-stone-300 hover:shadow-[0_1px_2px_rgba(36,29,21,0.04),0_18px_32px_-16px_rgba(36,29,21,0.3)];
   }
 
   .glass {
-    @apply bg-white/70 backdrop-blur-xl backdrop-saturate-150 supports-[backdrop-filter]:bg-white/60;
+    @apply bg-(--background)/75 backdrop-blur-xl backdrop-saturate-150 supports-[backdrop-filter]:bg-(--background)/60;
   }
 
   .badge {
-    @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium tracking-tight;
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium tracking-tight;
+  }
+
+  .status-dot {
+    @apply inline-block h-1.5 w-1.5 shrink-0 rounded-full;
+  }
+
+  .noise-overlay {
+    position: relative;
+  }
+
+  .noise-overlay::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.05;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27120%27%20height%3D%27120%27%3E%3Cfilter%20id%3D%27n%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.9%27%20numOctaves%3D%272%27%20stitchTiles%3D%27stitch%27%2F%3E%3C%2Ffilter%3E%3Crect%20width%3D%27100%25%27%20height%3D%27100%25%27%20filter%3D%27url(%23n)%27%2F%3E%3C%2Fsvg%3E");
   }
 }

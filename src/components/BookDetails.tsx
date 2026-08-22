@@ -50,8 +50,14 @@ const STATUS_LABELS: Record<string, string> = {
 
 const STATUS_STYLES: Record<string, string> = {
   TO_READ: "bg-stone-100 text-stone-600",
-  READING: "bg-blue-100 text-blue-700",
-  FINISHED: "bg-emerald-100 text-emerald-800",
+  READING: "bg-accent-50 text-accent-700",
+  FINISHED: "bg-moss-100 text-moss-800",
+}
+
+const STATUS_DOT: Record<string, string> = {
+  TO_READ: "bg-stone-400",
+  READING: "bg-accent-500",
+  FINISHED: "bg-moss-500",
 }
 
 export function BookDetails({ book }: BookDetailsProps) {
@@ -241,7 +247,7 @@ export function BookDetails({ book }: BookDetailsProps) {
             </button>
             <button
               onClick={() => setConfirmDelete(false)}
-              className="rounded-xl border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-700 transition hover:bg-red-50"
+              className="rounded-xl border border-red-200 bg-(--surface) px-4 py-2 text-sm font-medium text-red-700 transition hover:bg-red-50"
             >
               Annuler
             </button>
@@ -324,14 +330,14 @@ export function BookDetails({ book }: BookDetailsProps) {
                     key={option.value}
                     type="button"
                     onClick={() => setEditForm({ ...editForm, status: option.value })}
-                    className={`rounded-xl px-3 py-2 text-sm font-medium transition ${
+                    className={`rounded-[--radius-sm] px-3 py-2 text-sm font-medium transition ${
                       editForm.status === option.value
                         ? option.value === "TO_READ"
-                          ? "bg-stone-800 text-white shadow-md"
+                          ? "bg-stone-800 text-stone-50 shadow-md"
                           : option.value === "READING"
-                            ? "bg-blue-600 text-white shadow-md"
-                            : "bg-emerald-600 text-white shadow-md"
-                        : "bg-white text-stone-600 ring-1 ring-stone-200 hover:ring-stone-300"
+                            ? "bg-accent-600 text-stone-50 shadow-md"
+                            : "bg-moss-600 text-stone-50 shadow-md"
+                        : "bg-(--surface) text-stone-600 ring-1 ring-stone-200 hover:ring-stone-300"
                     }`}
                   >
                     {option.label}
@@ -404,15 +410,17 @@ export function BookDetails({ book }: BookDetailsProps) {
             <BookCover
               coverUrl={book.coverUrl}
               alt={book.title}
-              className="mx-auto h-56 w-40 shrink-0 rounded-2xl shadow-sm sm:mx-0"
+              className="mx-auto h-56 w-40 shrink-0 rounded-[--radius-sm] sm:mx-0"
               variant="large"
+              tactile
             />
 
             <div className="flex-1">
               <span className={`badge ${STATUS_STYLES[book.status]}`}>
+                <span className={`status-dot ${STATUS_DOT[book.status]}`} />
                 {STATUS_LABELS[book.status]}
               </span>
-              <h1 className="mt-2 text-xl font-semibold text-stone-900 sm:text-2xl">{book.title}</h1>
+              <h1 className="mt-2 font-serif text-xl text-stone-900 sm:text-2xl">{book.title}</h1>
               <p className="mt-1 text-stone-500">{book.author}</p>
 
               {book.genre && (
@@ -508,7 +516,7 @@ export function BookDetails({ book }: BookDetailsProps) {
 
       {!isEditing && (
         <section className="card mt-6 p-5 sm:p-6">
-          <h2 className="text-lg font-semibold text-stone-900">Notes personnelles</h2>
+          <h2 className="font-serif text-lg text-stone-900">Notes personnelles</h2>
           <p className="mt-1 text-sm text-stone-500">
             Optionnel — conservez ici vos réflexions sur ce livre. Votre note est déjà enregistrée.
           </p>

@@ -1,8 +1,14 @@
+import type { Metadata } from "next"
 import { getServerSession } from "next-auth"
 import Link from "next/link"
 import { authOptions } from "@/lib/auth"
 import { Navigation } from "@/components/Navigation"
 import { InstallGuide } from "@/components/InstallGuide"
+
+export const metadata: Metadata = {
+  title: "Installer l'application",
+  robots: { index: false, follow: false },
+}
 
 export default async function InstallPage() {
   const session = await getServerSession(authOptions)
@@ -12,9 +18,9 @@ export default async function InstallPage() {
       {session ? (
         <Navigation />
       ) : (
-        <header className="border-b border-stone-200/80 bg-white">
+        <header className="border-b border-stone-200/80 bg-(--surface)">
           <div className="mx-auto flex max-w-lg items-center px-4 py-4 sm:px-6">
-            <Link href="/" className="text-lg font-semibold tracking-tight text-stone-900">
+            <Link href="/" className="font-serif text-lg text-stone-900">
               BookList
             </Link>
           </div>
@@ -33,7 +39,7 @@ export default async function InstallPage() {
           </Link>
         )}
 
-        <h1 className="mb-2 text-2xl font-semibold tracking-tight text-stone-900">
+        <h1 className="mb-2 font-serif text-2xl text-stone-900">
           Installer BookList
         </h1>
         <p className="mb-6 text-sm text-stone-500">

@@ -22,7 +22,11 @@ export function InstallGuide() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [isInstalled, setIsInstalled] = useState(false)
 
+  // `navigator`/`matchMedia` n'existent pas côté serveur : on rend une valeur par
+  // défaut au SSR puis on détecte la vraie plateforme après montage, pour éviter
+  // un mismatch d'hydratation entre le rendu serveur et le premier rendu client.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPlatform(detectPlatform())
 
     const isStandalone =
@@ -54,7 +58,7 @@ export function InstallGuide() {
   if (isInstalled) {
     return (
       <div className="card p-5 text-center sm:p-6">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-600 text-white shadow-sm">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-moss-600 text-white shadow-sm">
           <CheckIcon className="h-6 w-6" />
         </div>
         <p className="mt-3 font-medium text-stone-900">BookList est déjà installée</p>
@@ -79,14 +83,14 @@ export function InstallGuide() {
         </div>
       )}
 
-      <div className="mb-4 flex gap-1 rounded-2xl bg-stone-100 p-1">
+      <div className="mb-4 flex gap-1 rounded-[--radius-sm] bg-stone-100 p-1">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setPlatform(tab.key)}
-            className={`flex-1 rounded-xl px-2 py-1.5 text-xs font-medium transition ${
+            className={`flex-1 rounded-[--radius-sm] px-2 py-1.5 text-xs font-medium transition ${
               platform === tab.key
-                ? "bg-white text-stone-900 shadow-sm"
+                ? "bg-(--surface) text-stone-900 shadow-sm"
                 : "text-stone-500 hover:text-stone-700"
             }`}
           >

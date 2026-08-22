@@ -1,19 +1,28 @@
+import type { Metadata } from "next"
 import { getServerSession } from "next-auth"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { authOptions } from "@/lib/auth"
+
+// Page privée et personnalisée par utilisateur : aucune valeur à être indexée.
+export const metadata: Metadata = {
+  title: "Accueil",
+  robots: { index: false, follow: false },
+}
 import { prisma } from "@/lib/prisma"
 import { Navigation } from "@/components/Navigation"
 import { ContributionGraph } from "@/components/ContributionGraph"
 import { BookCover } from "@/components/BookCover"
 import { AddReadingActivity } from "@/components/AddReadingActivity"
 import { Onboarding } from "@/components/Onboarding"
+import { topGenres as getTopGenres } from "@/lib/genres"
 
 async function getDashboardData(userId: string) {
   const currentYear = new Date().getFullYear()
 
   const [
     books,
+    currentlyReading,
     totalBooks,
     user,
     totalPagesRead,
@@ -28,6 +37,11 @@ async function getDashboardData(userId: string) {
       where: { userId },
       orderBy: { userEndDate: "desc" },
       take: 5,
+    }),
+    prisma.book.findMany({
+      where: { userId, status: "READING" },
+      orderBy: { userStartDate: "desc" },
+      take: 2,
     }),
     prisma.book.count({ where: { userId } }),
     prisma.user.findUnique({
@@ -72,25 +86,11 @@ async function getDashboardData(userId: string) {
     }),
   ])
 
-  const genreCounts = new Map<string, number>()
-  for (const book of allBooks) {
-    if (book.genre) {
-      for (const g of book.genre.split(",")) {
-        const trimmed = g.trim()
-        if (trimmed) {
-          genreCounts.set(trimmed, (genreCounts.get(trimmed) || 0) + 1)
-        }
-      }
-    }
-  }
-
-  const topGenres = Array.from(genreCounts.entries())
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 3)
-    .map(([genre]) => genre)
+  const topGenres = getTopGenres(allBooks, 3)
 
   return {
     books,
+    currentlyReading,
     totalBooks: totalBooks + (user?.initialBooksRead || 0),
     totalPagesRead: totalPagesRead._sum.pageCount || 0,
     readingActivities,
@@ -118,26 +118,62 @@ export default async function Dashboard() {
       <main className="animate-fade-in-up mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
         <header className="mb-8">
           <p className="text-sm font-medium text-stone-500">Bonjour</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-stone-900 sm:text-3xl">
+          <h1 className="mt-1 text-2xl font-medium tracking-tight text-stone-900 sm:text-3xl">
             {firstName}
           </h1>
-          <p className="mt-1 text-stone-500">Votre suivi de lecture</p>
         </header>
+
+        {data.currentlyReading.length > 0 && (
+          <section className="mb-8">
+            <h2 className="mb-3 text-sm font-medium text-stone-500">En ce moment</h2>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {data.currentlyReading.map((book) => (
+                <Link
+                  key={book.id}
+                  href={`/books/${book.id}`}
+                  className="card card-interactive flex gap-5 p-5"
+                >
+                  <BookCover
+                    coverUrl={book.coverUrl}
+                    alt={book.title}
+                    tactile
+                    className="h-32 w-[5.5rem] shrink-0 rounded-[--radius-sm]"
+                  />
+                  <div className="flex min-w-0 flex-1 flex-col justify-center">
+                    <span className="badge w-fit bg-accent-50 text-accent-700">
+                      <span className="status-dot bg-accent-500" />
+                      En cours
+                    </span>
+                    <h3 className="mt-2 truncate font-serif text-lg text-stone-900">{book.title}</h3>
+                    <p className="truncate text-sm text-stone-500">{book.author}</p>
+                    {book.userStartDate && (
+                      <p className="mt-2 text-xs text-stone-400">
+                        Commencé le {new Date(book.userStartDate).toLocaleDateString("fr-FR")}
+                      </p>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <section className="mb-8">
+          <AddReadingActivity />
+        </section>
 
         <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
           {[
-            { label: "Livres lus", value: data.totalBooks, accent: "bg-blue-500" },
-            { label: "Pages lues", value: data.totalPagesRead, accent: "bg-violet-500" },
-            { label: "Cette année", value: data.booksThisYear, accent: "bg-emerald-500" },
+            { label: "Livres lus", value: data.totalBooks },
+            { label: "Pages lues", value: data.totalPagesRead },
+            { label: "Cette année", value: data.booksThisYear },
             {
               label: "Note moyenne",
               value: data.averageRating > 0 ? data.averageRating.toFixed(1) : "—",
-              accent: "bg-sky-500",
             },
           ].map((stat) => (
             <div key={stat.label} className="card p-4 sm:p-5">
-              <div className={`mb-3 h-1.5 w-8 rounded-full ${stat.accent}`} />
-              <p className="text-2xl font-semibold tabular-nums text-stone-900 sm:text-3xl">
+              <p className="font-serif text-2xl text-stone-900 tabular-nums sm:text-3xl">
                 {stat.value}
               </p>
               <p className="mt-1 text-xs text-stone-500 sm:text-sm">{stat.label}</p>
@@ -152,17 +188,13 @@ export default async function Dashboard() {
           <ContributionGraph activities={data.readingActivities} />
         </section>
 
-        <section className="mb-8">
-          <AddReadingActivity />
-        </section>
-
         {(data.topAuthors.length > 0 || data.topGenres.length > 0) && (
           <section className="mb-8">
-            <h2 className="mb-3 text-sm font-medium text-stone-900">Vos tendances</h2>
+            <h2 className="mb-3 text-sm font-medium text-stone-500">Vos tendances</h2>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {data.topAuthors[0] && (
                 <div className="card flex items-center gap-4 p-4">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-stone-900 text-white shadow-sm">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[--radius-sm] bg-stone-900 text-stone-50">
                     <PenIcon className="h-5 w-5" />
                   </div>
                   <div className="min-w-0">
@@ -174,7 +206,7 @@ export default async function Dashboard() {
               )}
               {data.topGenres[0] && (
                 <div className="card flex items-center gap-4 p-4">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-stone-900 text-white shadow-sm">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[--radius-sm] bg-stone-900 text-stone-50">
                     <TagIcon className="h-5 w-5" />
                   </div>
                   <div className="min-w-0">
@@ -189,7 +221,7 @@ export default async function Dashboard() {
 
         <section>
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-stone-900">Lectures récentes</h2>
+            <h2 className="text-lg font-medium text-stone-900">Lectures récentes</h2>
             <Link
               href="/books"
               className="text-sm font-medium text-stone-600 transition hover:text-stone-900"
@@ -209,7 +241,7 @@ export default async function Dashboard() {
                   <BookCover
                     coverUrl={book.coverUrl}
                     alt={book.title}
-                    className="h-24 w-16 shrink-0 rounded-xl shadow-md"
+                    className="h-24 w-16 shrink-0 rounded-[--radius-sm]"
                   />
                   <div className="min-w-0 flex-1">
                     <h3 className="truncate font-medium text-stone-900">{book.title}</h3>
@@ -238,7 +270,7 @@ export default async function Dashboard() {
               ))}
             </div>
           ) : (
-            <div className="rounded-3xl border border-dashed border-stone-300 bg-white px-6 py-12 text-center">
+            <div className="rounded-[--radius-lg] border border-dashed border-stone-300 bg-(--surface) px-6 py-12 text-center">
               <BookIcon className="mx-auto h-10 w-10 text-stone-300" />
               <p className="mt-4 font-medium text-stone-900">Aucun livre pour l&apos;instant</p>
               <p className="mt-1 text-sm text-stone-500">
@@ -255,7 +287,7 @@ export default async function Dashboard() {
 
       <Link
         href="/books/add"
-        className="fixed bottom-24 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-stone-900 text-white shadow-[0_8px_24px_-6px_rgba(0,0,0,0.45)] transition-all duration-300 ease-out hover:-translate-y-1 hover:bg-stone-800 hover:shadow-[0_12px_32px_-8px_rgba(0,0,0,0.5)] active:translate-y-0 active:shadow-none sm:bottom-8 sm:right-8"
+        className="fixed bottom-24 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-stone-900 text-stone-50 shadow-[0_8px_24px_-6px_rgba(36,29,21,0.45)] transition-all duration-300 ease-out hover:-translate-y-1 hover:bg-accent-600 hover:shadow-[0_12px_32px_-8px_rgba(171,79,39,0.45)] active:translate-y-0 active:shadow-none sm:bottom-8 sm:right-8"
         aria-label="Ajouter un livre"
       >
         <PlusIcon className="h-6 w-6" />

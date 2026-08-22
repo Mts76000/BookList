@@ -49,10 +49,10 @@ export function ContributionGraph({ activities }: ContributionGraphProps) {
 
   const getColor = (pagesRead: number) => {
     if (pagesRead === 0) return "bg-stone-100"
-    if (pagesRead < 20) return "bg-sky-200"
-    if (pagesRead < 50) return "bg-sky-300"
-    if (pagesRead < 100) return "bg-sky-400"
-    return "bg-sky-500"
+    if (pagesRead < 20) return "bg-accent-100"
+    if (pagesRead < 50) return "bg-accent-200"
+    if (pagesRead < 100) return "bg-accent-400"
+    return "bg-accent-600"
   }
 
   const weeks: typeof days[] = []
@@ -89,7 +89,7 @@ export function ContributionGraph({ activities }: ContributionGraphProps) {
               onClick={() => setPeriodIndex(index)}
               className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${
                 index === periodIndex
-                  ? "bg-white text-stone-900 shadow-sm"
+                  ? "bg-(--surface) text-stone-900 shadow-sm"
                   : "text-stone-500 hover:text-stone-700"
               }`}
             >
@@ -156,10 +156,10 @@ export function ContributionGraph({ activities }: ContributionGraphProps) {
         <span>Moins</span>
         <div className="flex gap-[3px]">
           <div className="h-[11px] w-[11px] rounded-sm bg-stone-100" />
-          <div className="h-[11px] w-[11px] rounded-sm bg-sky-200" />
-          <div className="h-[11px] w-[11px] rounded-sm bg-sky-300" />
-          <div className="h-[11px] w-[11px] rounded-sm bg-sky-400" />
-          <div className="h-[11px] w-[11px] rounded-sm bg-sky-500" />
+          <div className="h-[11px] w-[11px] rounded-sm bg-accent-100" />
+          <div className="h-[11px] w-[11px] rounded-sm bg-accent-200" />
+          <div className="h-[11px] w-[11px] rounded-sm bg-accent-400" />
+          <div className="h-[11px] w-[11px] rounded-sm bg-accent-600" />
         </div>
         <span>Plus</span>
       </div>

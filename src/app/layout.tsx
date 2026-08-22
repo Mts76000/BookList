@@ -1,23 +1,63 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Geist, Fraunces } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "@/components/SessionProvider";
 import { DevServiceWorkerCleanup } from "@/components/DevServiceWorkerCleanup";
 import { SerwistProvider } from "@serwist/turbopack/react";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 
-const inter = Inter({
+const geist = Geist({
   subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-geist",
+});
+
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  variable: "--font-fraunces",
+  axes: ["opsz", "SOFT"],
+  style: ["normal", "italic"],
 });
 
 export const metadata: Metadata = {
-  title: "BookList - Suivez vos lectures",
-  description: "Application de suivi de livres personnelle avec statistiques et recommandations",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: `${SITE_NAME} — Suivez vos lectures`,
+    template: `%s · ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
+  keywords: [
+    "suivi de lecture",
+    "bibliothèque personnelle",
+    "tracker de livres",
+    "statistiques de lecture",
+    "scan ISBN",
+  ],
+  applicationName: SITE_NAME,
   manifest: "/manifest.json",
+  alternates: {
+    canonical: "/",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+  openGraph: {
+    type: "website",
+    locale: "fr_FR",
+    url: SITE_URL,
+    siteName: SITE_NAME,
+    title: `${SITE_NAME} — Suivez vos lectures`,
+    description: SITE_DESCRIPTION,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${SITE_NAME} — Suivez vos lectures`,
+    description: SITE_DESCRIPTION,
+  },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#fafaf9",
+  themeColor: "#f8f3ea",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -31,7 +71,7 @@ export default function RootLayout({
   return (
     <html
       lang="fr"
-      className={`${inter.variable} h-full antialiased`}
+      className={`${geist.variable} ${fraunces.variable} h-full antialiased`}
       data-scroll-behavior="smooth"
     >
       <body className="min-h-full flex flex-col">

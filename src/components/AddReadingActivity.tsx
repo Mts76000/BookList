@@ -50,7 +50,7 @@ export function AddReadingActivity() {
           className={`mt-4 rounded-xl px-4 py-3 text-sm ${
             isError
               ? "border border-red-200 bg-red-50 text-red-600"
-              : "border border-emerald-200 bg-emerald-50 text-emerald-700"
+              : "border border-moss-200 bg-moss-50 text-moss-700"
           }`}
         >
           {message}
