@@ -1,11 +1,11 @@
 {
   "name": "BookList - Suivez vos lectures",
   "short_name": "BookList",
-  "description": "Application de suivi de livres personnelle avec statistiques et recommandations",
+  "description": "Application de suivi de livres personnelle avec statistiques de lecture",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#4f46e5",
+  "background_color": "#f8f3ea",
+  "theme_color": "#ab4f27",
   "orientation": "portrait",
   "icons": [
     {
