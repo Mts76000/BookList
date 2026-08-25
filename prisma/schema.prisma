@@ -20,6 +20,8 @@ model User {
   resetToken    String?   @unique
   resetTokenExpiry DateTime?
   hasSeenOnboarding Boolean @default(false)
+  isAnonymized  Boolean   @default(false)
+  anonymizedAt  DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   books         Book[]

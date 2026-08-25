@@ -1,0 +1,2 @@
+ALTER TABLE "User" ADD COLUMN "isAnonymized" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "User" ADD COLUMN "anonymizedAt" TIMESTAMP(3);
