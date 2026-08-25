@@ -4,6 +4,7 @@ import "./globals.css";
 import { SessionProvider } from "@/components/SessionProvider";
 import { DevServiceWorkerCleanup } from "@/components/DevServiceWorkerCleanup";
 import { SerwistProvider } from "@serwist/turbopack/react";
+import { CookieConsent } from "@/components/CookieConsent";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 
 const geist = Geist({
@@ -34,12 +35,14 @@ export const metadata: Metadata = {
   ],
   applicationName: SITE_NAME,
   manifest: "/manifest.json",
-  alternates: {
-    canonical: "/",
-  },
   robots: {
     index: true,
     follow: true,
+  },
+  appleWebApp: {
+    capable: true,
+    title: SITE_NAME,
+    statusBarStyle: "default",
   },
   openGraph: {
     type: "website",
@@ -80,7 +83,10 @@ export default function RootLayout({
           swUrl="/serwist/sw.js"
           disable={process.env.NODE_ENV === "development"}
         >
-          <SessionProvider>{children}</SessionProvider>
+          <SessionProvider>
+            {children}
+            <CookieConsent />
+          </SessionProvider>
         </SerwistProvider>
       </body>
     </html>

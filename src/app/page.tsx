@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { getServerSession } from "next-auth"
 import { redirect } from "next/navigation"
 import Link from "next/link"
@@ -33,14 +34,29 @@ const STEPS = [
   { title: "Suivez", description: "Consultez vos stats et découvrez vos habitudes de lecture." },
 ]
 
+export const metadata: Metadata = {
+  title: `${SITE_NAME} — Suivez vos lectures`,
+  description: SITE_DESCRIPTION,
+  alternates: {
+    canonical: "/",
+  },
+}
+
 const jsonLd = {
   "@context": "https://schema.org",
   "@graph": [
+    {
+      "@type": "Organization",
+      name: SITE_NAME,
+      url: SITE_URL,
+      description: SITE_DESCRIPTION,
+    },
     {
       "@type": "WebSite",
       name: SITE_NAME,
       url: SITE_URL,
       description: SITE_DESCRIPTION,
+      publisher: { "@type": "Organization", name: SITE_NAME },
     },
     {
       "@type": "WebApplication",
@@ -177,8 +193,14 @@ export default async function Home() {
       </main>
 
       <footer className="border-t border-stone-200/70 bg-stone-50">
-        <div className="mx-auto max-w-6xl px-4 py-8 text-center text-xs text-stone-400 sm:px-6">
-          BookList — votre suivi de lecture personnel
+        <div className="mx-auto max-w-6xl px-4 py-8 text-center sm:px-6">
+          <div className="mb-4 flex flex-wrap items-center justify-center gap-4 text-xs text-stone-500">
+            <Link href="/mentions-legales" className="hover:text-stone-900">Mentions légales</Link>
+            <Link href="/politique-confidentialite" className="hover:text-stone-900">Confidentialité</Link>
+            <Link href="/conditions-utilisation" className="hover:text-stone-900">Conditions d&apos;utilisation</Link>
+            <Link href="/politique-cookies" className="hover:text-stone-900">Cookies</Link>
+          </div>
+          <p className="text-xs text-stone-400">BookList — votre suivi de lecture personnel</p>
         </div>
       </footer>
 
