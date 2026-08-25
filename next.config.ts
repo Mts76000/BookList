@@ -29,15 +29,26 @@ const securityHeaders = [
     value: "max-age=63072000; includeSubDomains; preload",
   },
   {
+    key: "Cross-Origin-Opener-Policy",
+    value: "same-origin",
+  },
+  {
+    key: "Cross-Origin-Resource-Policy",
+    value: "same-origin",
+  },
+  {
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
       `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob: https: http://books.google.com https://books.google.com",
+      "img-src 'self' data: blob: https: http://books.google.com",
       "font-src 'self' data:",
       "connect-src 'self' https://www.googleapis.com https://books.google.com https://covers.openlibrary.org https://archive.org",
       "media-src 'self' blob:",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
       "frame-ancestors 'none'",
     ].join("; "),
   },

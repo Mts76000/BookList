@@ -75,11 +75,19 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const { success } = rateLimit(`books-list:${getClientIp(request)}:${session.user.id}`, {
+      limit: 60,
+      windowMs: 60_000,
+    })
+    if (!success) {
+      return NextResponse.json({ error: "Trop de requêtes. Réessayez dans une minute." }, { status: 429 })
     }
 
     const books = await prisma.book.findMany({

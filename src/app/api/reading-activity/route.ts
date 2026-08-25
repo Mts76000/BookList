@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { Prisma } from "@prisma/client"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { getClientIp, rateLimit } from "@/lib/rate-limit"
 
 export async function POST(request: Request) {
   try {
@@ -11,17 +12,37 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    const { success } = rateLimit(`reading-activity:${getClientIp(request)}:${session.user.id}`, {
+      limit: 120,
+      windowMs: 60_000,
+    })
+    if (!success) {
+      return NextResponse.json(
+        { error: "Trop de requêtes. Réessayez dans une minute." },
+        { status: 429 }
+      )
+    }
+
     const body = await request.json()
     const { pagesRead, date } = body
 
-    if (!pagesRead || pagesRead < 0) {
+    const parsedPages = Number(pagesRead)
+    if (
+      !Number.isFinite(parsedPages) ||
+      !Number.isInteger(parsedPages) ||
+      parsedPages < 0 ||
+      parsedPages > 100_000
+    ) {
       return NextResponse.json(
-        { error: "Invalid pages read value" },
+        { error: "Nombre de pages invalide" },
         { status: 400 }
       )
     }
 
     const activityDate = date ? new Date(date) : new Date()
+    if (Number.isNaN(activityDate.getTime())) {
+      return NextResponse.json({ error: "Date invalide" }, { status: 400 })
+    }
     activityDate.setHours(0, 0, 0, 0)
 
     const activity = await prisma.readingActivity.upsert({
@@ -32,12 +53,12 @@ export async function POST(request: Request) {
         },
       },
       update: {
-        pagesRead: pagesRead,
+        pagesRead: parsedPages,
       },
       create: {
         userId: session.user.id,
         date: activityDate,
-        pagesRead,
+        pagesRead: parsedPages,
       },
     })
 
@@ -56,6 +77,17 @@ export async function GET(request: Request) {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const { success } = rateLimit(`reading-activity-list:${getClientIp(request)}:${session.user.id}`, {
+      limit: 60,
+      windowMs: 60_000,
+    })
+    if (!success) {
+      return NextResponse.json(
+        { error: "Trop de requêtes. Réessayez dans une minute." },
+        { status: 429 }
+      )
     }
 
     const { searchParams } = new URL(request.url)

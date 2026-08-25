@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { getClientIp, rateLimit } from "@/lib/rate-limit"
 
 export async function POST(
   request: Request,
@@ -14,12 +15,24 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    const { success } = rateLimit(`comments:${getClientIp(request)}:${session.user.id}`, {
+      limit: 60,
+      windowMs: 60_000,
+    })
+    if (!success) {
+      return NextResponse.json(
+        { error: "Trop de commentaires. Réessayez dans une minute." },
+        { status: 429 }
+      )
+    }
+
     const body = await request.json()
     const { content } = body
 
-    if (typeof content !== "string" || !content.trim() || content.length > 5000) {
+    const trimmed = typeof content === "string" ? content.trim() : ""
+    if (!trimmed || trimmed.length > 5000) {
       return NextResponse.json(
-        { error: "Content is required" },
+        { error: "Le commentaire doit faire entre 1 et 5000 caractères" },
         { status: 400 }
       )
     }
@@ -34,7 +47,7 @@ export async function POST(
 
     const comment = await prisma.comment.create({
       data: {
-        content,
+        content: trimmed,
         bookId: id,
         userId: session.user.id,
       },

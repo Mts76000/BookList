@@ -60,7 +60,7 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -68,6 +68,17 @@ export async function DELETE(
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const { success } = rateLimit(`books-delete:${getClientIp(request)}:${session.user.id}`, {
+      limit: 30,
+      windowMs: 60_000,
+    })
+    if (!success) {
+      return NextResponse.json(
+        { error: "Trop de requêtes. Réessayez dans une minute." },
+        { status: 429 }
+      )
     }
 
     const book = await prisma.book.findFirst({
