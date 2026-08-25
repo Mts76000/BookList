@@ -55,6 +55,7 @@ export const authOptions: NextAuthOptions = {
   ],
   session: {
     strategy: "jwt",
+    maxAge: 24 * 60 * 60, // 1 jour
   },
   pages: {
     signIn: "/auth/signin",
@@ -65,6 +66,26 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id
         token.hasSeenOnboarding = user.hasSeenOnboarding
       }
+
+      // Vérifier que le compte n'a pas été supprimé/anonymisé entre-temps.
+      // Cela permet d'invalider une session active après une suppression.
+      if (token.id) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { isAnonymized: true, name: true, hasSeenOnboarding: true },
+        })
+
+        if (dbUser?.isAnonymized) {
+          token.isAnonymized = true
+          token.id = undefined
+        }
+
+        if (dbUser) {
+          token.name = dbUser.name ?? token.name
+          token.hasSeenOnboarding = dbUser.hasSeenOnboarding
+        }
+      }
+
       if (trigger === "update" && session?.name !== undefined) {
         token.name = session.name
       }

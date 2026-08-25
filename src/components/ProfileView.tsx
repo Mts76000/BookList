@@ -43,6 +43,7 @@ export function ProfileView({
   const [message, setMessage] = useState("")
   const [isError, setIsError] = useState(false)
   const [isSigningOut, setIsSigningOut] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -77,6 +78,28 @@ export function ProfileView({
   const handleSignOut = async () => {
     setIsSigningOut(true)
     await signOut({ callbackUrl: "/auth/signin" })
+  }
+
+  const handleDeleteAccount = async () => {
+    const confirmed = window.confirm(
+      "Cette action est irréversible. Votre compte sera anonymisé et votre bibliothèque, vos commentaires et votre activité seront supprimés. Continuer ?"
+    )
+    if (!confirmed) return
+
+    setIsDeleting(true)
+    setMessage("")
+    setIsError(false)
+
+    try {
+      const response = await fetch("/api/user/account", { method: "DELETE" })
+      if (!response.ok) throw new Error("Failed")
+
+      await signOut({ callbackUrl: "/" })
+    } catch {
+      setMessage("Erreur lors de la suppression du compte")
+      setIsError(true)
+      setIsDeleting(false)
+    }
   }
 
   const initials = (name || email || "?").charAt(0).toUpperCase()
@@ -224,6 +247,21 @@ export function ProfileView({
         </div>
         <ChevronRightIcon className="h-4 w-4 shrink-0 text-stone-400" />
       </Link>
+
+      <div className="card mt-4 border-red-200 p-5 sm:p-6">
+        <h3 className="font-serif text-base text-red-800">Zone de danger</h3>
+        <p className="mt-1 text-sm text-stone-500">
+          Cette action supprime votre bibliothèque, vos commentaires et votre activité, puis
+          anonymise votre compte.
+        </p>
+        <button
+          onClick={handleDeleteAccount}
+          disabled={isDeleting}
+          className="mt-4 w-full rounded-[--radius-sm] border border-red-200 bg-red-50 px-6 py-3 text-sm font-medium text-red-700 transition hover:bg-red-100 disabled:opacity-50"
+        >
+          {isDeleting ? "Suppression en cours..." : "Supprimer mon compte"}
+        </button>
+      </div>
 
       <button
         onClick={handleSignOut}
