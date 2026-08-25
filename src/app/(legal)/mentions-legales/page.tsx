@@ -16,22 +16,16 @@ export default function MentionsLegalesPage() {
       <section className="mt-8">
         <h2 className="font-serif text-xl text-stone-900">Éditeur du site</h2>
         <p className="mt-2 text-stone-600">
-          Le site BookList est édité par [Nom et prénom du responsable de publication].
+          Le site BookList est édité par Mathis Lamotte.
           <br />
           Email : <a href="mailto:contact@mathis-lamotte.fr" className="btn-text">contact@mathis-lamotte.fr</a>
-          <br />
-          Siège social : [Adresse complète]
         </p>
       </section>
 
       <section className="mt-8">
         <h2 className="font-serif text-xl text-stone-900">Hébergement</h2>
         <p className="mt-2 text-stone-600">
-          Le site est hébergé par [Nom de l&apos;hébergeur].
-          <br />
-          Adresse : [Adresse de l&apos;hébergeur]
-          <br />
-          Téléphone : [Numéro de contact]
+          Le site est hébergé par Hostinger.
         </p>
       </section>
 

@@ -21,7 +21,7 @@ export default function PolitiqueConfidentialitePage() {
       <section className="mt-8">
         <h2 className="font-serif text-xl text-stone-900">Responsable du traitement</h2>
         <p className="mt-2 text-stone-600">
-          Le responsable du traitement est [Nom du responsable], joignable à{" "}
+          Le responsable du traitement est Mathis Lamotte, joignable à{" "}
           <a href="mailto:contact@mathis-lamotte.fr" className="btn-text">contact@mathis-lamotte.fr</a>.
         </p>
       </section>
