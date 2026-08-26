@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 import { getClientIp, rateLimit } from "@/lib/rate-limit"
+import { sendNewUserNotificationEmail } from "@/lib/email"
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -64,6 +65,11 @@ export async function POST(request: Request) {
         name: name || null,
         initialBooksRead: safeInitialBooksRead,
       }
+    })
+
+    // Notifier l'admin en arrière-plan (ne bloque pas l'inscription)
+    sendNewUserNotificationEmail(user.email).catch((error) => {
+      console.error("Admin notification error:", error)
     })
 
     return NextResponse.json(
