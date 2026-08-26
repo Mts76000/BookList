@@ -87,11 +87,13 @@ export default function RootLayout({
           <SessionProvider>
             {children}
             <CookieConsent />
-            <Script
-              strategy="beforeInteractive"
-              src="https://stats.mathis-lamotte.fr/script.js"
-              data-website-id="47678d3d-1e98-4a9e-b597-c09329015fdf"
-            />
+            {process.env.NODE_ENV === "production" && process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID && (
+              <Script
+                strategy="beforeInteractive"
+                src="https://stats.mathis-lamotte.fr/script.js"
+                data-website-id={process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID}
+              />
+            )}
           </SessionProvider>
         </SerwistProvider>
       </body>
