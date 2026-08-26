@@ -38,6 +38,11 @@ export default function PolitiqueCookiesPage() {
             <strong>Préférences</strong> : mémorisent votre choix concernant la bannière de cookies.
           </li>
           <li>
+            <strong>Mesure d&apos;audience</strong> : nous utilisons Umami, un outil d&apos;analytics respectueux
+            de la vie privée et auto-hébergé, pour comprendre l&apos;utilisation du site. Il est chargé via
+            un script externe.
+          </li>
+          <li>
             <strong>Service worker (PWA)</strong> : permet le fonctionnement hors ligne de
             l&apos;application. Ce n&apos;est pas un cookie, mais un stockage local.
           </li>
@@ -47,8 +52,9 @@ export default function PolitiqueCookiesPage() {
       <section className="mt-8">
         <h2 className="font-serif text-xl text-stone-900">Cookies tiers et suivi</h2>
         <p className="mt-2 text-stone-600">
-          BookList n&apos;utilise pas de cookies de publicité, de réseaux sociaux ou d&apos;analytics tiers.
-          Aucune donnée n&apos;est transmise à des fins de tracking commercial.
+          Nous utilisons Umami, un outil d&apos;analytics auto-hébergé et respectueux de la vie privée,
+          pour mesurer l&apos;audience. BookList n&apos;utilise pas de cookies de publicité ou de réseaux
+          sociaux.
         </p>
       </section>
 

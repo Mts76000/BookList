@@ -6,6 +6,7 @@ import { withSerwist } from "@serwist/turbopack";
 // Next.js n'en ont besoin en production (cf. doc Next.js sur la CSP), donc on
 // ne l'autorise pas en prod pour réduire la surface d'attaque XSS.
 const isDev = process.env.NODE_ENV === "development";
+const UMAMI_ORIGIN = "https://umami-587uoxmh6bswbfvi2ihyi2zz.72.61.109.246.sslip.io";
 
 const securityHeaders = [
   {
@@ -40,11 +41,11 @@ const securityHeaders = [
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
-      `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
+      `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} ${UMAMI_ORIGIN}`,
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob: https: http://books.google.com",
+      `img-src 'self' data: blob: https: http://books.google.com ${UMAMI_ORIGIN}`,
       "font-src 'self' data:",
-      "connect-src 'self' https://www.googleapis.com https://books.google.com https://covers.openlibrary.org https://archive.org",
+      `connect-src 'self' https://www.googleapis.com https://books.google.com https://covers.openlibrary.org https://archive.org ${UMAMI_ORIGIN}`,
       "media-src 'self' blob:",
       "object-src 'none'",
       "base-uri 'self'",
