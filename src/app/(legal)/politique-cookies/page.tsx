@@ -39,8 +39,8 @@ export default function PolitiqueCookiesPage() {
           </li>
           <li>
             <strong>Mesure d&apos;audience</strong> : nous utilisons Umami, un outil d&apos;analytics respectueux
-            de la vie privée et auto-hébergé, pour comprendre l&apos;utilisation du site. Il est chargé via
-            un script externe.
+            de la vie privée et auto-hébergé (stats.mathis-lamotte.fr), pour comprendre l&apos;utilisation
+            du site.
           </li>
           <li>
             <strong>Service worker (PWA)</strong> : permet le fonctionnement hors ligne de

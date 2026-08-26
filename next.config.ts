@@ -6,7 +6,7 @@ import { withSerwist } from "@serwist/turbopack";
 // Next.js n'en ont besoin en production (cf. doc Next.js sur la CSP), donc on
 // ne l'autorise pas en prod pour réduire la surface d'attaque XSS.
 const isDev = process.env.NODE_ENV === "development";
-const UMAMI_ORIGIN = "https://umami-587uoxmh6bswbfvi2ihyi2zz.72.61.109.246.sslip.io";
+const UMAMI_ORIGIN = "https://stats.mathis-lamotte.fr";
 
 const securityHeaders = [
   {

@@ -89,7 +89,7 @@ export default function RootLayout({
             <CookieConsent />
             <Script
               strategy="beforeInteractive"
-              src="https://umami-587uoxmh6bswbfvi2ihyi2zz.72.61.109.246.sslip.io/script.js"
+              src="https://stats.mathis-lamotte.fr/script.js"
               data-website-id="47678d3d-1e98-4a9e-b597-c09329015fdf"
             />
           </SessionProvider>
