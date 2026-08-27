@@ -87,7 +87,16 @@ npm run test:integration  # tests d'intégration (base de test requise)
 npm run test:e2e          # parcours Playwright
 ```
 
-`npm run check` doit passer avant tout commit ou déploiement.
+`npm run check` doit passer avant tout commit ou déploiement. Attention : il ne lance que les
+tests unitaires — les tests d'intégration et Playwright sont à lancer séparément, et la CI,
+elle, les exécute.
+
+En local, Playwright réutilise un serveur déjà démarré sur le port 3000
+(`reuseExistingServer`). Si ce serveur tourne depuis un moment, les limiteurs de débit de
+l'inscription et de la connexion, qui gardent leur compteur en mémoire, peuvent avoir été
+épuisés par les essais précédents : les tests échouent alors sur un « Trop de tentatives »
+sans rapport avec le code. Couper le serveur avant de lancer la suite suffit à repartir
+d'un compteur vide.
 
 ## Déploiement
 

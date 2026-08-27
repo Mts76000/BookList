@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Navigation } from "@/components/navigation";
 import { BarcodeScanner } from "@/components/barcode-scanner";
 import { BookCover } from "@/components/book-cover";
 import { Button } from "@/components/ui/button";
@@ -170,8 +169,7 @@ export default function AddBookPage() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 pb-24 sm:pb-8 sm:pl-60">
-      <Navigation />
+    <>
       <main
         id="main-content"
         className="animate-fade-in-up mx-auto max-w-lg px-4 py-6 sm:px-6 sm:py-8"
@@ -400,7 +398,7 @@ export default function AddBookPage() {
           onClose={() => setIsScannerOpen(false)}
         />
       )}
-    </div>
+    </>
   );
 }
 

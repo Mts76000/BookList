@@ -3,7 +3,6 @@ import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { book, comment } from "@/drizzle/schema";
 import { requireAuthPage } from "@/lib/permissions";
-import { Navigation } from "@/components/navigation";
 import { BookDetails } from "@/components/book-details";
 
 export default async function BookDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -24,14 +23,13 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
   if (!entry) notFound();
 
   return (
-    <div className="min-h-screen bg-stone-50 pb-24 sm:pb-8 sm:pl-60">
-      <Navigation />
+    <>
       <main
         id="main-content"
         className="animate-fade-in-up mx-auto max-w-3xl px-4 py-6 sm:px-6 sm:py-8"
       >
         <BookDetails book={entry} />
       </main>
-    </div>
+    </>
   );
 }

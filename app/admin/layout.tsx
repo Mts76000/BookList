@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { requireRole, ForbiddenError, UnauthorizedError } from "@/lib/permissions";
 import { AdminNav } from "@/app/admin/admin-nav";
+import { Footer } from "@/components/footer";
 
 /**
  * Vérification autoritaire de l'accès au back-office, pour tout le segment /admin.
@@ -18,7 +19,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <div className="bg-background-soft min-h-screen">
+    <div className="bg-background-soft flex min-h-screen flex-col">
       <header className="bg-card border-b border-stone-200/70">
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-4 sm:px-6">
           <div className="flex items-center justify-between">
@@ -36,9 +37,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </div>
       </header>
 
-      <main id="main-content" className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+      <main id="main-content" className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">
         {children}
       </main>
+
+      <Footer />
     </div>
   );
 }

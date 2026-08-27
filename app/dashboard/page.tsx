@@ -5,7 +5,6 @@ import { db } from "@/lib/db";
 import { book, readingActivity } from "@/drizzle/schema";
 import { requireAuthPage } from "@/lib/permissions";
 import { getReadingStats } from "@/lib/reading-stats";
-import { Navigation } from "@/components/navigation";
 import { ContributionGraph } from "@/components/contribution-graph";
 import { BookCover } from "@/components/book-cover";
 import { AddReadingActivity } from "@/components/add-reading-activity";
@@ -57,8 +56,7 @@ export default async function DashboardPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-stone-50 pb-24 sm:pb-8 sm:pl-60">
-      <Navigation />
+    <>
       <Onboarding hasSeenOnboarding={user.hasSeenOnboarding} />
 
       <main
@@ -230,7 +228,7 @@ export default async function DashboardPage() {
       >
         <PlusIcon className="h-6 w-6" />
       </Link>
-    </div>
+    </>
   );
 }
 

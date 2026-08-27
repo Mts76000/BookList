@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Navigation } from "@/components/navigation";
 import { Button, buttonClasses } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { apiFetch } from "@/lib/api-client";
@@ -58,8 +57,7 @@ export default function ImportBooksPage() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 pb-24 sm:pb-8 sm:pl-60">
-      <Navigation />
+    <>
       <main
         id="main-content"
         className="animate-fade-in-up mx-auto max-w-lg px-4 py-6 sm:px-6 sm:py-8"
@@ -129,6 +127,6 @@ export default function ImportBooksPage() {
           )}
         </div>
       </main>
-    </div>
+    </>
   );
 }

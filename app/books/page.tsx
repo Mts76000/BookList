@@ -4,7 +4,6 @@ import { db } from "@/lib/db";
 import { book } from "@/drizzle/schema";
 import { requireAuthPage } from "@/lib/permissions";
 import { uniqueGenres } from "@/lib/genres";
-import { Navigation } from "@/components/navigation";
 import { BooksFilter } from "@/components/books-filter";
 import { BookCover } from "@/components/book-cover";
 import { buttonClasses } from "@/components/ui/button";
@@ -93,8 +92,7 @@ export default async function BooksPage({
   const totalPages = Math.max(1, Math.ceil(total / BOOKS_PER_PAGE));
 
   return (
-    <div className="min-h-screen bg-stone-50 pb-24 sm:pb-8 sm:pl-60">
-      <Navigation />
+    <>
       <main
         id="main-content"
         className="animate-fade-in-up mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8"
@@ -189,7 +187,7 @@ export default async function BooksPage({
           </nav>
         )}
       </main>
-    </div>
+    </>
   );
 }
 

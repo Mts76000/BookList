@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AppShell } from "@/components/app-shell";
 
 // Un layout plutôt qu'un export par page : certaines pages de ce segment (ajout, import)
 // sont des Client Components, qui ne peuvent pas exporter `metadata` eux-mêmes.
@@ -9,5 +10,5 @@ export const metadata: Metadata = {
 };
 
 export default function BooksLayout({ children }: { children: React.ReactNode }) {
-  return children;
+  return <AppShell>{children}</AppShell>;
 }
