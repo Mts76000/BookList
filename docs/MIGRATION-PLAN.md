@@ -22,7 +22,7 @@ Merge dans `main` uniquement après validation.
 | Admin                 | Périmètre complet : liste/fiche utilisateur, actions de gestion, statistiques globales, consultation de l'audit log.                                                                                            |
 | Scope métier          | Tout BookList est porté, rien n'est abandonné.                                                                                                                                                                  |
 
-## Phase 0 — Socle (fait)
+## Phase 0 — Socle ✅
 
 - `BookList-v2/` = clone du repo BookList, branche `feat/migration-starter-template`,
   contenu remplacé par la template. Les anciens commits restent dans l'historique.
@@ -31,7 +31,7 @@ Merge dans `main` uniquement après validation.
   la template (5434 dev / 5433 test) pour cohabiter avec BookList v1 sur 5432, `npm install`,
   `npm run check` au vert.
 
-## Phase 1 — Design system
+## Phase 1 — Design system ✅
 
 - `app/globals.css` : palette crème/terracotta + Fraunces/Geist de BookList, exposée sous
   les tokens de la template (`--color-primary`, `--color-card`, `--radius-*`…), plus les
@@ -41,7 +41,7 @@ Merge dans `main` uniquement après validation.
   pagination, google-button, turnstile-widget) au rendu BookList.
 - `app/layout.tsx` : polices, métadonnées, JSON-LD et manifest de BookList.
 
-## Phase 2 — Schéma Drizzle
+## Phase 2 — Schéma Drizzle ✅
 
 - `drizzle/schema/books.ts` : `book`, `comment`, `reading_activity`, `reading_session`,
   enum `book_status` (`TO_READ | READING | FINISHED`), avec les index et contraintes
@@ -51,7 +51,7 @@ Merge dans `main` uniquement après validation.
 - Génération de la migration, `db:push` local, port du seed `prisma/seed.ts` vers
   `drizzle/seed.ts` (même compte de démo, mêmes données de démonstration).
 
-## Phase 3 — Auth
+## Phase 3 — Auth ✅
 
 - `lib/auth.ts` : vérificateur bcrypt custom, Google OAuth, vérification email, Turnstile.
 - `proxy.ts` : préfixes protégés `/dashboard`, `/books`, `/profile`, `/admin`.
@@ -60,7 +60,7 @@ Merge dans `main` uniquement après validation.
   depuis les anciennes URLs `/auth/*` pour ne casser aucun lien existant.
 - Suppression de compte : anonymisation, en transaction, tracée dans l'audit log.
 
-## Phase 4 — API métier au format template
+## Phase 4 — API métier au format template ✅
 
 Toutes les routes réécrites avec `apiSuccess` / `apiError` / `withApiErrorHandling`,
 `requireAuth()`, `validateBody()` (Zod) et le rate limiting de la template :
@@ -69,7 +69,7 @@ Toutes les routes réécrites avec `apiSuccess` / `apiError` / `withApiErrorHand
 `/api/user/account`. Les validations maison de `src/lib/validation.ts` deviennent des
 schémas Zod. Les appels `fetch` côté client sont adaptés à la nouvelle enveloppe de réponse.
 
-## Phase 5 — Pages et composants métier
+## Phase 5 — Pages et composants métier ✅
 
 - Pages : accueil, `dashboard`, `books`, `books/[id]`, `books/add`, `books/import`,
   `profile`, `install`, `~offline`.
@@ -80,7 +80,7 @@ schémas Zod. Les appels `fetch` côté client sont adaptés à la nouvelle enve
   conditions, cookies) remplacent les trois pages génériques de la template.
 - Serwist réintégré (`next.config.ts`, `app/sw.ts`, route `serwist/[path]`).
 
-## Phase 6 — Back-office admin
+## Phase 6 — Back-office admin ✅
 
 - `app/admin/` protégé par `requireRole("admin")` côté serveur (le middleware ne fait que la
   vérification optimiste de cookie).
@@ -93,7 +93,7 @@ schémas Zod. Les appels `fetch` côté client sont adaptés à la nouvelle enve
   propre rôle ni supprimer son propre compte depuis l'admin.
 - Écran de consultation de l'audit log, filtrable par utilisateur et par action.
 
-## Phase 7 — Migration des données
+## Phase 7 — Migration des données ✅ (script prêt et testé)
 
 - Script `drizzle/migrate-from-booklist-v1.ts` : lit l'ancienne base (`LEGACY_DATABASE_URL`),
   écrit dans la nouvelle en transaction, idempotent, et produit un rapport de comptage
