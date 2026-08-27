@@ -2,7 +2,7 @@ import Link from "next/link";
 import { and, asc, count, desc, eq, ilike, or, type SQL } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { book } from "@/drizzle/schema";
-import { requireAuth } from "@/lib/permissions";
+import { requireAuthPage } from "@/lib/permissions";
 import { uniqueGenres } from "@/lib/genres";
 import { Navigation } from "@/components/navigation";
 import { BooksFilter } from "@/components/books-filter";
@@ -59,7 +59,7 @@ export default async function BooksPage({
 }: {
   searchParams: Promise<BooksSearchParams>;
 }) {
-  const session = await requireAuth();
+  const session = await requireAuthPage("/books");
   const params = await searchParams;
 
   const sortBy = params.sort || "date";

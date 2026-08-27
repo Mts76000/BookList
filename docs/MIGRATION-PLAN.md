@@ -118,7 +118,7 @@ schémas Zod. Les appels `fetch` côté client sont adaptés à la nouvelle enve
 - **Prérequis : un dump `pg_dump` de la prod fourni par Mathis.** Rapport de migration
   présenté avant toute exécution en production.
 
-## Phase 8 — Tests, sécurité, documentation
+## Phase 8 — Tests, sécurité, documentation ✅
 
 - Tests unitaires BookList portés (`csv`, `genres`, validation) + nouveaux tests sur le
   mapping ETL et les permissions admin.
@@ -126,6 +126,14 @@ schémas Zod. Les appels `fetch` côté client sont adaptés à la nouvelle enve
 - `next.config.ts` : la CSP de BookList (Google Books, ZXing, Turnstile, Umami) fusionnée
   avec la configuration de la template.
 - `README.md`, `AGENTS.md` projet, `CHANGELOG.md` mis à jour.
+
+## Reste à faire avant la bascule
+
+- Fournir un dump `pg_dump` de la production pour rejouer l'ETL en conditions réelles.
+- Créer un client Google OAuth pour le domaine BookList (celui hérité du starter a d'autres
+  URLs de redirection) et une clé Turnstile pour ce domaine.
+- Renseigner les variables d'environnement de production dans Coolify, dont
+  `NEXT_PUBLIC_UMAMI_WEBSITE_ID` et `CRON_SECRET`.
 
 ## Phase 9 — Bascule
 

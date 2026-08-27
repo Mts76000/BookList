@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { requireAuth } from "@/lib/permissions";
+import { requireAuthPage } from "@/lib/permissions";
 import { getReadingStats } from "@/lib/reading-stats";
 import { AccountView } from "@/app/account/account-view";
 
@@ -15,7 +15,7 @@ export const metadata: Metadata = {
  * navigation suivante, même si l'état client n'est pas encore à jour.
  */
 export default async function AccountPage() {
-  const session = await requireAuth();
+  const session = await requireAuthPage("/account");
   const stats = await getReadingStats(session.user.id, session.user.initialBooksRead);
 
   return (
@@ -23,7 +23,7 @@ export default async function AccountPage() {
       stats={stats}
       userName={session.user.name}
       initialBooksRead={session.user.initialBooksRead}
-      memberSince={new Date(session.user.createdAt)}
+      memberSince={new Date(session.user.createdAt).toLocaleDateString("fr-FR")}
     />
   );
 }

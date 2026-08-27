@@ -2,12 +2,12 @@ import { notFound } from "next/navigation";
 import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { book, comment } from "@/drizzle/schema";
-import { requireAuth } from "@/lib/permissions";
+import { requireAuthPage } from "@/lib/permissions";
 import { Navigation } from "@/components/navigation";
 import { BookDetails } from "@/components/book-details";
 
 export default async function BookDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const session = await requireAuth();
+  const session = await requireAuthPage();
   const { id } = await params;
 
   const entry = await db.query.book.findFirst({

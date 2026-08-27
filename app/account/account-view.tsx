@@ -76,7 +76,9 @@ interface AccountViewProps {
   userName: string;
   /** Livres lus avant l'inscription, saisis à l'onboarding et comptés dans le total. */
   initialBooksRead: number;
-  memberSince: Date;
+  /** Déjà formatée côté serveur : formater une date ici produit un rendu différent de
+   *  celui du serveur (locale et fuseau du processus Node), et casse l'hydratation. */
+  memberSince: string;
 }
 
 export function AccountView({ stats, userName, initialBooksRead, memberSince }: AccountViewProps) {
@@ -209,7 +211,7 @@ export function AccountView({ stats, userName, initialBooksRead, memberSince }: 
       <SectionCard
         icon={<ChartBar size={18} aria-hidden="true" />}
         title="Vos statistiques"
-        description={`Membre depuis le ${memberSince.toLocaleDateString("fr-FR")}.`}
+        description={`Membre depuis le ${memberSince}.`}
       >
         <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {[

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { book, readingActivity } from "@/drizzle/schema";
-import { requireAuth } from "@/lib/permissions";
+import { requireAuthPage } from "@/lib/permissions";
 import { getReadingStats } from "@/lib/reading-stats";
 import { Navigation } from "@/components/navigation";
 import { ContributionGraph } from "@/components/contribution-graph";
@@ -23,7 +23,7 @@ function formatDate(value: Date | null): string {
 }
 
 export default async function DashboardPage() {
-  const session = await requireAuth();
+  const session = await requireAuthPage("/dashboard");
   const user = session.user;
 
   const [recentBooks, currentlyReading, activities, stats] = await Promise.all([

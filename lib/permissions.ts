@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { auth, type Session } from "@/lib/auth";
 
 export class UnauthorizedError extends Error {
@@ -34,6 +35,25 @@ export async function requireRole(role: "admin"): Promise<Session> {
   const session = await requireAuth();
   if (session.user.role !== role) throw new ForbiddenError();
   return session;
+}
+
+/**
+ * Variante de requireAuth() destinée aux pages (Server Components) : redirige vers la
+ * connexion au lieu de lever, en conservant le chemin demandé pour y revenir ensuite.
+ *
+ * Sans elle, chaque page protégée doit envelopper requireAuth() dans un try/catch, et celle
+ * qui l'oublie affiche une page d'erreur générique à un visiteur simplement déconnecté —
+ * typiquement après la révocation d'une session à distance.
+ */
+export async function requireAuthPage(redirectTo?: string): Promise<Session> {
+  try {
+    return await requireAuth();
+  } catch (err) {
+    if (err instanceof UnauthorizedError) {
+      redirect(redirectTo ? `/login?redirectTo=${encodeURIComponent(redirectTo)}` : "/login");
+    }
+    throw err;
+  }
 }
 
 /**
