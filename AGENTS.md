@@ -39,6 +39,11 @@ starter sans validation explicite :
 3. **Serwist plutôt que le service worker minimal du starter.** BookList a besoin d'un vrai
    cache hors-ligne et d'une page `~offline`.
 
+**Pas de redirections depuis les URLs de la v1.** Quand le socle fournit déjà une page pour
+un contenu, on écrit ce contenu dans la page du socle et l'ancienne URL disparaît, sans bloc
+`redirects()` : `/mentions-legales` devient `app/legal/notice`, `/auth/signin` devient
+`/login`, `/profile` devient `/account`. La rupture d'URL est assumée.
+
 Autres adaptations projet : `lib/umami.ts` pointe sur l'instance self-hosted
 `stats.mathis-lamotte.fr`, et `lib/env.ts` ajoute `GOOGLE_BOOKS_API_KEY` (optionnelle) pour
 la recherche de livres.

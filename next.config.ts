@@ -70,16 +70,6 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
-  // Les URLs d'authentification de BookList v1 restent valides : elles sont dans des
-  // favoris, des emails de réinitialisation déjà envoyés et l'historique des navigateurs.
-  async redirects() {
-    return [
-      { source: "/auth/signin", destination: "/login", permanent: true },
-      { source: "/auth/signup", destination: "/register", permanent: true },
-      { source: "/auth/forgot-password", destination: "/forgot-password", permanent: true },
-      { source: "/auth/reset-password", destination: "/reset-password", permanent: true },
-    ];
-  },
   images: {
     remotePatterns: [
       // Google account avatars (better-auth Google OAuth profile images)
