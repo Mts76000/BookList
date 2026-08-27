@@ -1,72 +1,63 @@
 import type { NextConfig } from "next";
-import { withSerwist } from "@serwist/turbopack";
 
-// `unsafe-eval` n'est nécessaire qu'en développement : React s'en sert pour
-// reconstruire les stacks d'erreur serveur dans le navigateur. Ni React ni
-// Next.js n'en ont besoin en production (cf. doc Next.js sur la CSP), donc on
-// ne l'autorise pas en prod pour réduire la surface d'attaque XSS.
-const isDev = process.env.NODE_ENV === "development";
-const UMAMI_ORIGIN = "https://stats.mathis-lamotte.fr";
+// CSP whitelist rationale:
+// - 'self' + inline styles/scripts: Next.js/Tailwind require these for hydration.
+// - analytics.umami.is: self-hosted-compatible Umami analytics script (lib/umami.ts).
+// - challenges.cloudflare.com: Turnstile widget + its iframe challenge.
+// - accounts.google.com: Google OAuth (better-auth socialProviders.google).
+// - The Buy Me a Coffee button (components/buy-me-a-coffee.tsx) is a plain outbound link,
+//   not an embedded script/iframe, so it needs no CSP allowance.
+// - 'unsafe-eval' in script-src: non-production only. React dev mode (`next dev`, which
+//   also backs the "test" env used by Playwright's webServer — see playwright.config.ts)
+//   uses eval() to reconstruct callstacks across environments (Fast Refresh, component
+//   stacks); it never does in a production build, so this is left out of the prod CSP.
+const scriptSrc = [
+  "'self'",
+  "'unsafe-inline'",
+  process.env.NODE_ENV !== "production" ? "'unsafe-eval'" : null,
+  "https://analytics.umami.is",
+  "https://challenges.cloudflare.com",
+]
+  .filter(Boolean)
+  .join(" ");
+
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  `script-src ${scriptSrc}`,
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: https://lh3.googleusercontent.com",
+  "font-src 'self' data:",
+  "connect-src 'self' https://analytics.umami.is",
+  "frame-src https://challenges.cloudflare.com https://accounts.google.com",
+  "frame-ancestors 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+].join("; ");
 
 const securityHeaders = [
-  {
-    key: "X-Frame-Options",
-    value: "DENY",
-  },
-  {
-    key: "X-Content-Type-Options",
-    value: "nosniff",
-  },
-  {
-    key: "Referrer-Policy",
-    value: "strict-origin-when-cross-origin",
-  },
+  { key: "Content-Security-Policy", value: contentSecurityPolicy },
+  { key: "X-Frame-Options", value: "DENY" },
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
   {
     key: "Permissions-Policy",
-    value: "camera=(self), microphone=(), geolocation=()",
-  },
-  {
-    key: "Strict-Transport-Security",
-    value: "max-age=63072000; includeSubDomains; preload",
-  },
-  {
-    key: "Cross-Origin-Opener-Policy",
-    value: "same-origin",
-  },
-  {
-    key: "Cross-Origin-Resource-Policy",
-    value: "same-origin",
-  },
-  {
-    key: "Content-Security-Policy",
-    value: [
-      "default-src 'self'",
-      `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} ${UMAMI_ORIGIN}`,
-      "style-src 'self' 'unsafe-inline'",
-      `img-src 'self' data: blob: https: http://books.google.com ${UMAMI_ORIGIN}`,
-      "font-src 'self' data:",
-      `connect-src 'self' https://www.googleapis.com https://books.google.com https://covers.openlibrary.org https://archive.org ${UMAMI_ORIGIN}`,
-      "media-src 'self' blob:",
-      "object-src 'none'",
-      "base-uri 'self'",
-      "form-action 'self'",
-      "frame-ancestors 'none'",
-    ].join("; "),
+    value: "camera=(), microphone=(), geolocation=()",
   },
 ];
 
 const nextConfig: NextConfig = {
-  output: 'standalone',
-  turbopack: {},
-  allowedDevOrigins: ['127.0.0.1', 'localhost'],
+  // Lean production image for the multi-stage Dockerfile (see Dockerfile).
+  output: "standalone",
   async headers() {
-    return [
-      {
-        source: "/:path*",
-        headers: securityHeaders,
-      },
-    ];
+    return [{ source: "/:path*", headers: securityHeaders }];
+  },
+  images: {
+    remotePatterns: [
+      // Google account avatars (better-auth Google OAuth profile images)
+      { protocol: "https", hostname: "lh3.googleusercontent.com" },
+    ],
   },
 };
 
-export default withSerwist(nextConfig);
+export default nextConfig;

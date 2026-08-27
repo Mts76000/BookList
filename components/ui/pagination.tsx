@@ -1,0 +1,35 @@
+"use client";
+
+interface PaginationProps {
+  page: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+}
+
+export function Pagination({ page, totalPages, onPageChange }: PaginationProps) {
+  if (totalPages <= 1) return null;
+
+  return (
+    <nav aria-label="Pagination" className="flex items-center justify-center gap-2">
+      <button
+        type="button"
+        onClick={() => onPageChange(page - 1)}
+        disabled={page <= 1}
+        className="border-border text-foreground hover:bg-muted rounded-md border px-3 py-1.5 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        Précédent
+      </button>
+      <span className="text-muted-foreground text-sm" aria-current="page">
+        Page {page} sur {totalPages}
+      </span>
+      <button
+        type="button"
+        onClick={() => onPageChange(page + 1)}
+        disabled={page >= totalPages}
+        className="border-border text-foreground hover:bg-muted rounded-md border px-3 py-1.5 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        Suivant
+      </button>
+    </nav>
+  );
+}

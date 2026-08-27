@@ -4,51 +4,118 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+
+env:
+  NODE_ENV: test
 
 jobs:
-  build:
+  lint-typecheck:
     runs-on: ubuntu-latest
-
-    env:
-      DATABASE_URL: "postgresql://booklist:booklist_password@localhost:5432/booklist"
-      NEXTAUTH_SECRET: "ci-secret"
-      NEXTAUTH_URL: "http://localhost:3000"
-
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: booklist
-          POSTGRES_PASSWORD: booklist_password
-          POSTGRES_DB: booklist
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U booklist"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: "npm"
+          cache: npm
+      - run: npm ci
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
 
-      - name: Install dependencies
-        run: npm ci
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # --audit-level=high: blocks on exploitable vulnerabilities. A known moderate
+      # dev-only advisory (esbuild via drizzle-kit's local migration tooling, not shipped
+      # to production) is accepted — see `npm audit` output for details if this changes.
+      - run: npm audit --audit-level=high
 
-      - name: Lint
-        run: npm run lint
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # Full-history scan via the gitleaks CLI directly, not gitleaks-action: the action
+      # always computes a commit range from the push event's before/after SHAs (no way to
+      # override), which breaks on a repo's very first push (before-SHA has no parent to
+      # diff against) — exactly the situation every project created from this template
+      # starts from. A plain `gitleaks detect` scans the whole history unconditionally.
+      - name: Install gitleaks
+        run: |
+          curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.24.3/gitleaks_8.24.3_linux_x64.tar.gz | tar xz gitleaks
+          sudo mv gitleaks /usr/local/bin/gitleaks
+      - run: gitleaks detect --redact -v --source .
 
-      - name: Apply database migrations
-        run: npx prisma migrate deploy
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: booklist_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Copy .env.test
+        run: cp .env.test.example .env.test
+      - run: npm run test:coverage
+      - run: npm run test:integration
 
-      - name: Run unit tests
-        run: npm test
-
-      - name: Build
-        run: npm run build
+  e2e:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: booklist_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Copy .env.test
+        run: cp .env.test.example .env.test
+      - run: npm run db:migrate
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
