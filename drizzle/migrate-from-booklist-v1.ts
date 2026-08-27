@@ -7,6 +7,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import { createLocalAccountIssuer } from "better-auth/db";
 import * as schema from "./schema";
+import { sql } from "drizzle-orm";
 
 /**
  * Migration des données de BookList v1 (NextAuth + Prisma) vers le schéma v2 (better-auth +
@@ -23,7 +24,7 @@ import * as schema from "./schema";
  */
 
 /** Comptes promus administrateurs à la migration. */
-const ADMIN_EMAILS = (process.env.MIGRATION_ADMIN_EMAILS ?? "contact@mathis-lamotte.fr")
+const ADMIN_EMAILS = (process.env.MIGRATION_ADMIN_EMAILS ?? "lamottemathis@gmail.com")
   .split(",")
   .map((email) => email.trim().toLowerCase())
   .filter(Boolean);
@@ -80,12 +81,60 @@ interface LegacyActivity {
 
 export interface MigrationReport {
   users: number;
+  /** Comptes absorbés par un autre parce que leurs adresses ne différaient que par la casse. */
+  merged: { from: string; into: string }[];
   accounts: number;
   books: number;
   comments: number;
   activities: number;
   admins: string[];
   anonymized: number;
+}
+
+/**
+ * Regroupe les comptes v1 par adresse normalisée en minuscules.
+ *
+ * better-auth cherche un utilisateur par son adresse mise en minuscules : deux comptes v1
+ * qui ne différaient que par la casse désignent donc la même personne, et l'un des deux
+ * serait devenu injoignable après migration, avec ses livres. On les fusionne.
+ *
+ * Le compte conservé est celui dont l'adresse était déjà en minuscules — c'est celle par
+ * laquelle la personne se connectera — et à défaut le plus ancien. Les autres lui sont
+ * rattachés : leur identifiant est redirigé, et leurs livres, notes et jours de lecture
+ * suivent.
+ */
+export function mergeUsersByEmail<T extends { id: string; email: string; createdAt: Date }>(
+  rows: T[],
+): {
+  primaryUsers: T[];
+  /** Identifiant du compte absorbé → identifiant du compte qui le remplace. */
+  redirectedUserIds: Map<string, string>;
+  merged: { from: string; into: string }[];
+} {
+  const byNormalizedEmail = new Map<string, T[]>();
+  for (const row of rows) {
+    const key = row.email.toLowerCase();
+    byNormalizedEmail.set(key, [...(byNormalizedEmail.get(key) ?? []), row]);
+  }
+
+  const primaryUsers: T[] = [];
+  const redirectedUserIds = new Map<string, string>();
+  const merged: { from: string; into: string }[] = [];
+
+  for (const [normalized, group] of byNormalizedEmail) {
+    const primary =
+      group.find((row) => row.email === normalized) ??
+      [...group].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())[0];
+    primaryUsers.push({ ...primary, email: normalized });
+
+    for (const absorbed of group) {
+      if (absorbed.id === primary.id) continue;
+      redirectedUserIds.set(absorbed.id, primary.id);
+      merged.push({ from: absorbed.email, into: normalized });
+    }
+  }
+
+  return { primaryUsers, redirectedUserIds, merged };
 }
 
 export async function migrateFromV1(options: { dryRun?: boolean } = {}): Promise<MigrationReport> {
@@ -129,14 +178,20 @@ export async function migrateFromV1(options: { dryRun?: boolean } = {}): Promise
       ),
     ]);
 
-    const admins = users.rows
-      .filter((row) => ADMIN_EMAILS.includes(row.email.toLowerCase()))
+    const { primaryUsers, redirectedUserIds, merged } = mergeUsersByEmail(users.rows);
+
+    /** Redirige un identifiant d'utilisateur vers le compte qui l'a absorbé, s'il y a lieu. */
+    const ownerOf = (userId: string) => redirectedUserIds.get(userId) ?? userId;
+
+    const admins = primaryUsers
+      .filter((row) => ADMIN_EMAILS.includes(row.email))
       .map((row) => row.email);
-    const anonymized = users.rows.filter((row) => row.isAnonymized).length;
+    const anonymized = primaryUsers.filter((row) => row.isAnonymized).length;
 
     const report: MigrationReport = {
-      users: users.rows.length,
-      accounts: users.rows.filter((row) => !row.isAnonymized).length,
+      users: primaryUsers.length,
+      merged,
+      accounts: primaryUsers.filter((row) => !row.isAnonymized).length,
       books: books.rows.length,
       comments: comments.rows.length,
       activities: activities.rows.length,
@@ -147,7 +202,7 @@ export async function migrateFromV1(options: { dryRun?: boolean } = {}): Promise
     if (options.dryRun) return report;
 
     await db.transaction(async (tx) => {
-      for (const row of users.rows) {
+      for (const row of primaryUsers) {
         await tx
           .insert(schema.user)
           .values({
@@ -158,7 +213,7 @@ export async function migrateFromV1(options: { dryRun?: boolean } = {}): Promise
             // Les comptes migrés sont considérés comme vérifiés : ils existaient avant que la
             // vérification d'email soit obligatoire, et les bloquer reviendrait à les exclure.
             emailVerified: true,
-            role: ADMIN_EMAILS.includes(row.email.toLowerCase()) ? "admin" : "user",
+            role: ADMIN_EMAILS.includes(row.email) ? "admin" : "user",
             initialBooksRead: row.initialBooksRead,
             hasSeenOnboarding: row.hasSeenOnboarding,
             isAnonymized: row.isAnonymized,
@@ -205,6 +260,13 @@ export async function migrateFromV1(options: { dryRun?: boolean } = {}): Promise
       }
 
       for (const row of books.rows) {
+        // Un livre déjà migré est ignoré : c'est ce qui rend le script rejouable.
+        const alreadyMigrated = await tx.query.book.findFirst({
+          where: eq(schema.book.id, row.id),
+          columns: { id: true },
+        });
+        if (alreadyMigrated) continue;
+
         await tx
           .insert(schema.book)
           .values({
@@ -222,11 +284,13 @@ export async function migrateFromV1(options: { dryRun?: boolean } = {}): Promise
             userStartDate: row.userStartDate,
             userEndDate: row.userEndDate,
             status: row.status,
-            userId: row.userId,
+            userId: ownerOf(row.userId),
             createdAt: row.createdAt,
             updatedAt: row.updatedAt,
           })
-          .onConflictDoNothing({ target: schema.book.id });
+          // Après fusion, deux comptes peuvent apporter le même ISBN : le second est ignoré
+          // plutôt que de violer l'unicité (userId, isbn).
+          .onConflictDoNothing({ target: [schema.book.userId, schema.book.isbn] });
       }
 
       for (const row of comments.rows) {
@@ -236,7 +300,7 @@ export async function migrateFromV1(options: { dryRun?: boolean } = {}): Promise
             id: row.id,
             content: row.content,
             bookId: row.bookId,
-            userId: row.userId,
+            userId: ownerOf(row.userId),
             createdAt: row.createdAt,
             updatedAt: row.updatedAt,
           })
@@ -244,6 +308,15 @@ export async function migrateFromV1(options: { dryRun?: boolean } = {}): Promise
       }
 
       for (const row of activities.rows) {
+        // Vérifié avant l'insertion : le conflit ci-dessous porte sur (userId, date) et non
+        // sur l'identifiant, donc sans ce garde-fou une relance additionnerait les pages une
+        // seconde fois.
+        const alreadyMigrated = await tx.query.readingActivity.findFirst({
+          where: eq(schema.readingActivity.id, row.id),
+          columns: { id: true },
+        });
+        if (alreadyMigrated) continue;
+
         await tx
           .insert(schema.readingActivity)
           .values({
@@ -251,9 +324,16 @@ export async function migrateFromV1(options: { dryRun?: boolean } = {}): Promise
             pagesRead: row.pagesRead,
             // La v1 stockait un timestamp ramené à minuit ; la v2 stocke un jour civil.
             date: row.date,
-            userId: row.userId,
+            userId: ownerOf(row.userId),
           })
-          .onConflictDoNothing({ target: schema.readingActivity.id });
+          // Si les deux comptes fusionnés ont lu le même jour, les pages s'additionnent —
+          // les perdre reviendrait à amputer l'historique de lecture.
+          .onConflictDoUpdate({
+            target: [schema.readingActivity.userId, schema.readingActivity.date],
+            set: {
+              pagesRead: sql`${schema.readingActivity.pagesRead} + ${row.pagesRead}`,
+            },
+          });
       }
     });
 
@@ -273,6 +353,9 @@ if (isMain) {
         dryRun ? "\n--- Simulation (aucune écriture) ---" : "\n--- Migration terminée ---",
       );
       console.log(`Utilisateurs      : ${report.users} (dont ${report.anonymized} anonymisé(s))`);
+      for (const { from, into } of report.merged) {
+        console.log(`  fusion          : ${from} → ${into}`);
+      }
       console.log(`Moyens de connexion: ${report.accounts}`);
       console.log(`Livres            : ${report.books}`);
       console.log(`Notes             : ${report.comments}`);

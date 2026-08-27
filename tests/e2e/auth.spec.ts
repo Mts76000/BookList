@@ -34,7 +34,9 @@ test.describe("Inscription, vérification, connexion, déconnexion", () => {
     await page.getByLabel("Mot de passe", { exact: true }).fill("password123");
     await page.getByRole("button", { name: "Se connecter" }).click();
 
-    await expect(page).toHaveURL(/^http:\/\/[^/]+\/$/);
+    // La racine redirige un visiteur connecté vers le tableau de bord : attendre « / »
+    // rend le test dépendant du moment où l'URL est observée.
+    await expect(page).toHaveURL(/\/dashboard/);
 
     await page.goto("/account");
     await expect(page.getByText(email)).toBeVisible();
@@ -107,7 +109,7 @@ test.describe("Révocation de session à distance", () => {
     await pageA.getByLabel("Email").fill(email);
     await pageA.getByLabel("Mot de passe", { exact: true }).fill("password123");
     await pageA.getByRole("button", { name: "Se connecter" }).click();
-    await expect(pageA).toHaveURL(/^http:\/\/[^/]+\/$/);
+    await expect(pageA).toHaveURL(/\/dashboard/);
     await pageA.goto("/account");
 
     const contextB = await browser.newContext({ extraHTTPHeaders: { "x-forwarded-for": ip } });
@@ -118,7 +120,7 @@ test.describe("Révocation de session à distance", () => {
     await pageB.getByLabel("Email").fill(email);
     await pageB.getByLabel("Mot de passe", { exact: true }).fill("password123");
     await pageB.getByRole("button", { name: "Se connecter" }).click();
-    await expect(pageB).toHaveURL(/^http:\/\/[^/]+\/$/);
+    await expect(pageB).toHaveURL(/\/dashboard/);
     await pageB.goto("/account");
 
     // From session A, revoke every other session in the list.
