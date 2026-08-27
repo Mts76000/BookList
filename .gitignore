@@ -43,3 +43,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# dumps de base de données — contiennent des emails et des hashs de mots de passe,
+# ils ne doivent jamais entrer dans l'historique (le job gitleaks scanne tout le passé)
+*.sql
+*.dump
+*.sql.gz
+!drizzle/migrations/*.sql
