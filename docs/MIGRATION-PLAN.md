@@ -100,8 +100,20 @@ schémas Zod. Les appels `fetch` côté client sont adaptés à la nouvelle enve
   avant/après par table.
 - Mapping : `User` → `user` + `account` (provider `credential`, hash bcrypt conservé),
   `emailVerified = true`, `role = "user"` sauf `contact@mathis-lamotte.fr` promu `admin` ;
-  `Book`, `Comment`, `ReadingActivity`, `ReadingSession` repris à l'identique, identifiants
-  cuid conservés pour ne casser aucune URL.
+  `Book`, `Comment`, `ReadingActivity` repris à l'identique, identifiants cuid conservés pour
+  ne casser aucune URL.
+- **Piège vérifié en phase 2 :** la ligne `account` doit porter `issuer = "local:credential"`
+  (`createLocalAccountIssuer("credential")` de `better-auth/db`). Depuis better-auth 1.7 la
+  connexion cherche le compte par `(providerId, issuer, accountId)` : un `issuer` vide fait
+  échouer l'authentification avec un « User not found » trompeur alors que l'utilisateur
+  existe bien en base.
+- `ReadingActivity.date` passe d'un timestamp ramené à minuit à une vraie date civile : la
+  conversion prend la partie date en UTC.
+- La table `ReadingSession` de la v1 n'est reprise dans aucun schéma : elle n'est ni lue ni
+  écrite nulle part dans le code v1. L'ETL compte ses lignes et **échoue bruyamment** si elle
+  n'est pas vide, plutôt que de jeter des données en silence. Même raisonnement pour
+  `Book.userReadDate`, colonne morte côté code mais conservée dans le schéma v2 par
+  précaution.
 - Les comptes déjà anonymisés (`isAnonymized = true`) sont migrés tels quels.
 - **Prérequis : un dump `pg_dump` de la prod fourni par Mathis.** Rapport de migration
   présenté avant toute exécution en production.

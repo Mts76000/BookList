@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, index } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, integer, index } from "drizzle-orm/pg-core";
 
 // Schema shape follows better-auth's expected Drizzle adapter tables, cross-checked against
 // `npx @better-auth/cli generate` output for this project's better-auth version.
@@ -11,6 +11,16 @@ export const user = pgTable("user", {
   emailVerified: boolean("email_verified").notNull().default(false),
   image: text("image"),
   role: text("role").notNull().default("user"), // "user" | "admin"
+  // Champs métier BookList, exposés à better-auth via `user.additionalFields` (lib/auth.ts).
+  // Nombre de livres lus avant l'inscription, saisi à l'onboarding : il s'ajoute aux
+  // statistiques sans qu'on ait à créer autant de lignes `book` fictives.
+  initialBooksRead: integer("initial_books_read").notNull().default(0),
+  hasSeenOnboarding: boolean("has_seen_onboarding").notNull().default(false),
+  // Suppression de compte par anonymisation et non par suppression physique — dérogation
+  // assumée au socle, documentée dans AGENTS.md. La ligne survit, vidée de toute donnée
+  // personnelle, pour que les comptes déjà supprimés en v1 restent migrables tels quels.
+  isAnonymized: boolean("is_anonymized").notNull().default(false),
+  anonymizedAt: timestamp("anonymized_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at")
     .notNull()
