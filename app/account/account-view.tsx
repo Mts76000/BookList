@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  BookOpen,
+  ChartBar,
   Desktop,
   DeviceMobile,
   Download,
@@ -21,6 +23,8 @@ import { useToast } from "@/components/ui/toast";
 import { formatUserAgent, formatIp } from "@/lib/format-session";
 import { BuyMeACoffeeButton } from "@/components/buy-me-a-coffee";
 import { PwaInstallSection } from "@/components/pwa-install";
+import { apiFetch } from "@/lib/api-client";
+import type { ReadingStats } from "@/lib/reading-stats";
 
 interface SessionRow {
   id: string;
@@ -65,7 +69,17 @@ function SectionCard({
   );
 }
 
-export function AccountView() {
+interface AccountViewProps {
+  stats: ReadingStats;
+  /** Nom d'affichage, fourni par le serveur : la session client n'est pas encore chargée
+   *  au premier rendu, et le champ ne doit pas partir vide puis se remplir. */
+  userName: string;
+  /** Livres lus avant l'inscription, saisis à l'onboarding et comptés dans le total. */
+  initialBooksRead: number;
+  memberSince: Date;
+}
+
+export function AccountView({ stats, userName, initialBooksRead, memberSince }: AccountViewProps) {
   const router = useRouter();
   const { toast } = useToast();
   const { data: session, isPending } = useSession();
@@ -74,6 +88,10 @@ export function AccountView() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+  const [name, setName] = useState(userName);
+  const [initialBooks, setInitialBooks] = useState(String(initialBooksRead));
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   const [sessions, setSessions] = useState<SessionRow[] | null>(null);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
@@ -84,6 +102,25 @@ export function AccountView() {
       if (data) setSessions(data as SessionRow[]);
     });
   }, []);
+
+  async function handleSaveProfile(e: React.FormEvent) {
+    e.preventDefault();
+    setIsSavingProfile(true);
+    try {
+      const result = await apiFetch("/api/account", {
+        method: "PATCH",
+        json: { name, initialBooksRead: initialBooks },
+      });
+      if (!result.ok) {
+        toast(result.message, "error");
+        return;
+      }
+      toast("Profil mis à jour.", "success");
+      router.refresh();
+    } finally {
+      setIsSavingProfile(false);
+    }
+  }
 
   async function handleChangePassword(e: React.FormEvent) {
     e.preventDefault();
@@ -168,6 +205,105 @@ export function AccountView() {
           Se déconnecter
         </Button>
       </div>
+
+      <SectionCard
+        icon={<ChartBar size={18} aria-hidden="true" />}
+        title="Vos statistiques"
+        description={`Membre depuis le ${memberSince.toLocaleDateString("fr-FR")}.`}
+      >
+        <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          {[
+            { label: "Livres lus", value: stats.totalBooks },
+            { label: "Pages lues", value: stats.totalPagesRead },
+            {
+              label: "Note moyenne",
+              value: stats.averageRating > 0 ? stats.averageRating.toFixed(1) : "—",
+            },
+            { label: "Notes écrites", value: stats.commentsCount },
+          ].map((tile) => (
+            <div key={tile.label}>
+              <dt className="text-muted-foreground text-xs">{tile.label}</dt>
+              <dd className="font-serif text-2xl text-stone-900 tabular-nums">{tile.value}</dd>
+            </div>
+          ))}
+        </dl>
+
+        {(stats.topAuthors[0] || stats.topGenres[0]) && (
+          <dl className="mt-6 grid grid-cols-1 gap-4 border-t border-stone-100 pt-6 sm:grid-cols-2">
+            {stats.topAuthors[0] && (
+              <div>
+                <dt className="text-muted-foreground text-xs">Auteur le plus lu</dt>
+                <dd className="font-medium text-stone-900">
+                  {stats.topAuthors[0].author}{" "}
+                  <span className="text-muted-foreground text-sm">
+                    ({stats.topAuthors[0].count})
+                  </span>
+                </dd>
+              </div>
+            )}
+            {stats.topGenres[0] && (
+              <div>
+                <dt className="text-muted-foreground text-xs">Genre préféré</dt>
+                <dd className="font-medium text-stone-900">{stats.topGenres[0]}</dd>
+              </div>
+            )}
+          </dl>
+        )}
+
+        {stats.pagesPerYear.length > 0 && (
+          <div className="mt-6 border-t border-stone-100 pt-6">
+            <p className="text-muted-foreground mb-3 text-xs">Pages lues par année</p>
+            <ul className="space-y-2">
+              {stats.pagesPerYear.map((entry) => {
+                const max = Math.max(...stats.pagesPerYear.map((y) => y.pages));
+                return (
+                  <li key={entry.year} className="flex items-center gap-3">
+                    <span className="w-10 text-xs text-stone-500 tabular-nums">{entry.year}</span>
+                    <span className="h-2 flex-1 overflow-hidden rounded-full bg-stone-100">
+                      <span
+                        className="bg-accent-400 block h-full rounded-full"
+                        style={{ width: `${Math.max(2, (entry.pages / max) * 100)}%` }}
+                      />
+                    </span>
+                    <span className="text-muted-foreground w-16 text-right text-xs tabular-nums">
+                      {entry.pages}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+      </SectionCard>
+
+      <SectionCard
+        icon={<BookOpen size={18} aria-hidden="true" />}
+        title="Profil de lecture"
+        description="Votre nom d'affichage et les livres lus avant votre inscription."
+      >
+        <form onSubmit={handleSaveProfile} className="flex flex-col gap-4 sm:max-w-sm">
+          <Field
+            label="Nom"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            autoComplete="name"
+          />
+          <Field
+            label="Livres lus avant BookList"
+            type="number"
+            inputMode="numeric"
+            min={0}
+            helperText="Comptés dans votre total, sans avoir à les saisir un par un."
+            value={initialBooks}
+            onChange={(e) => setInitialBooks(e.target.value)}
+          />
+          <div>
+            <Button type="submit" isLoading={isSavingProfile}>
+              Enregistrer
+            </Button>
+          </div>
+        </form>
+      </SectionCard>
 
       <SectionCard
         icon={<Key size={18} aria-hidden="true" />}

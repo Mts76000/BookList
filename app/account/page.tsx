@@ -1,18 +1,29 @@
-import { redirect } from "next/navigation";
-import { requireAuth, UnauthorizedError } from "@/lib/permissions";
+import type { Metadata } from "next";
+import { requireAuth } from "@/lib/permissions";
+import { getReadingStats } from "@/lib/reading-stats";
 import { AccountView } from "@/app/account/account-view";
 
-// Server Component: the authoritative auth check for this page (proxy.ts only does a cheap
-// cookie-presence check — this is the real one, per the requireAuth()/requireRole() rule).
-// A session revoked server-side (see "Sessions actives") is rejected here on next navigation,
-// even if a client component's cached session state hasn't caught up yet.
-export default async function AccountPage() {
-  try {
-    await requireAuth();
-  } catch (err) {
-    if (err instanceof UnauthorizedError) redirect("/login");
-    throw err;
-  }
+// Page privée et personnalisée : rien à y indexer.
+export const metadata: Metadata = {
+  title: "Compte",
+  robots: { index: false, follow: false },
+};
 
-  return <AccountView />;
+/**
+ * Vérification d'accès autoritaire de cette page : `proxy.ts` ne fait qu'un contrôle
+ * optimiste de présence du cookie. Une session révoquée côté serveur est rejetée ici dès la
+ * navigation suivante, même si l'état client n'est pas encore à jour.
+ */
+export default async function AccountPage() {
+  const session = await requireAuth();
+  const stats = await getReadingStats(session.user.id, session.user.initialBooksRead);
+
+  return (
+    <AccountView
+      stats={stats}
+      userName={session.user.name}
+      initialBooksRead={session.user.initialBooksRead}
+      memberSince={new Date(session.user.createdAt)}
+    />
+  );
 }
