@@ -56,41 +56,6 @@ refuse de démarrer si `DATABASE_URL` ne contient pas « test ».
 
 ## Migration des données depuis BookList v1
 
-### 1. Récupérer un dump de la base de production
-
-La base v1 tourne dans un conteneur Docker géré par Coolify. En SSH sur le serveur :
-
-```bash
-# Repérer le conteneur Postgres de BookList v1
-docker ps --format "table {{.Names}}\t{{.Image}}" | grep postgres
-
-# Dump complet, sans les propriétaires ni les privilèges (ils n'existent pas en local)
-docker exec -t <nom-du-conteneur> \
-  pg_dump -U <utilisateur> -d <base> --no-owner --no-privileges \
-  | gzip > booklist-v1.sql.gz
-```
-
-L'utilisateur et le nom de la base figurent dans les variables d'environnement de la
-ressource Postgres sur Coolify (`POSTGRES_USER`, `POSTGRES_DB`). Rapatrier ensuite le
-fichier avec `scp serveur:booklist-v1.sql.gz .`.
-
-Coolify sait aussi produire ces sauvegardes tout seul, depuis l'onglet des backups de la
-ressource Postgres : déclencher une sauvegarde puis la télécharger revient au même.
-
-**Le dump contient des adresses e-mail et des empreintes de mots de passe.** Il ne doit
-jamais entrer dans le dépôt : `*.sql`, `*.sql.gz` et `*.dump` sont ignorés par Git, et le
-job `gitleaks` de la CI inspecte tout l'historique.
-
-### 2. Restaurer le dump en local
-
-```bash
-docker compose exec -T postgres psql -U postgres -c 'CREATE DATABASE booklist_v1;'
-gunzip -c booklist-v1.sql.gz \
-  | docker compose exec -T postgres psql -U postgres -d booklist_v1
-```
-
-### 3. Rejouer la migration
-
 Le script `drizzle/migrate-from-booklist-v1.ts` recopie les données de la base v1
 (NextAuth + Prisma) vers le schéma v2. Il lit `LEGACY_DATABASE_URL` et écrit dans
 `DATABASE_URL` ; l'ancienne base n'est jamais modifiée.
