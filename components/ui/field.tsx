@@ -5,12 +5,14 @@ import { Eye, EyeSlash } from "@phosphor-icons/react";
 
 interface FieldProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string;
+  /** Masque le libellé visuellement en le laissant lisible par les lecteurs d'écran. */
+  hideLabel?: boolean;
   error?: string;
   helperText?: string;
 }
 
 export const Field = forwardRef<HTMLInputElement, FieldProps>(
-  ({ label, error, helperText, id, className = "", type, ...props }, ref) => {
+  ({ label, hideLabel, error, helperText, id, className = "", type, ...props }, ref) => {
     const generatedId = useId();
     const inputId = id ?? generatedId;
     const errorId = `${inputId}-error`;
@@ -20,7 +22,10 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(
 
     return (
       <div className="flex flex-col gap-1.5">
-        <label htmlFor={inputId} className="text-sm font-medium tracking-tight text-stone-700">
+        <label
+          htmlFor={inputId}
+          className={hideLabel ? "sr-only" : "text-sm font-medium tracking-tight text-stone-700"}
+        >
           {label}
         </label>
         <div className="relative">

@@ -80,6 +80,11 @@
   --color-on-destructive: #ffffff;
   --color-ring: #dc9569;
 
+  /* Rayons du produit, volontairement absents du bloc @theme : les remonter y écraserait
+     `rounded-sm` / `rounded-md` / `rounded-lg` de Tailwind, dont les valeurs bien plus
+     petites sont attendues telles quelles par les composants (une pastille de 36px en
+     rounded-lg deviendrait un cercle). On les référence explicitement, en
+     `rounded-[var(--radius-md)]`, là où le rayon « carnet » est voulu. */
   --radius-sm: 0.75rem;
   --radius-md: 1.125rem;
   --radius-lg: 1.75rem;
@@ -106,9 +111,6 @@
   --color-destructive: var(--color-destructive);
   --color-on-destructive: var(--color-on-destructive);
   --color-ring: var(--color-ring);
-  --radius-sm: var(--radius-sm);
-  --radius-md: var(--radius-md);
-  --radius-lg: var(--radius-lg);
   --font-sans: var(--font-geist);
   --font-serif: var(--font-fraunces);
 }
