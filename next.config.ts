@@ -28,7 +28,11 @@ const bookCoverHosts = [
   "https://books.google.com",
   "https://books.googleusercontent.com",
   "https://covers.openlibrary.org",
+  // Open Library redirige ses couvertures vers des serveurs Internet Archive dont le
+  // sous-domaine change d'une image à l'autre (ia801601, ia601601...) : sans le joker,
+  // la CSP bloque la quasi-totalité des couvertures.
   "https://archive.org",
+  "https://*.archive.org",
 ].join(" ");
 
 const contentSecurityPolicy = [
@@ -79,6 +83,7 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "books.googleusercontent.com" },
       { protocol: "https", hostname: "covers.openlibrary.org" },
       { protocol: "https", hostname: "archive.org" },
+      { protocol: "https", hostname: "*.archive.org" },
     ],
   },
 };

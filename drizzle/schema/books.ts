@@ -8,6 +8,7 @@ import {
   index,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 import { user } from "@/drizzle/schema/auth";
 
 /**
@@ -123,3 +124,21 @@ export const readingActivity = pgTable(
     index("reading_activity_date_idx").on(table.date),
   ],
 );
+
+/**
+ * Relations déclarées pour l'API `db.query...with` de Drizzle. Sans elles, un `with:
+ * { comments: true }` échoue à l'exécution — et le typecheck ne l'aurait pas signalé.
+ */
+export const bookRelations = relations(book, ({ one, many }) => ({
+  user: one(user, { fields: [book.userId], references: [user.id] }),
+  comments: many(comment),
+}));
+
+export const commentRelations = relations(comment, ({ one }) => ({
+  book: one(book, { fields: [comment.bookId], references: [book.id] }),
+  user: one(user, { fields: [comment.userId], references: [user.id] }),
+}));
+
+export const readingActivityRelations = relations(readingActivity, ({ one }) => ({
+  user: one(user, { fields: [readingActivity.userId], references: [user.id] }),
+}));

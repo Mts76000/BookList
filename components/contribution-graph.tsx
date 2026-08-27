@@ -18,8 +18,8 @@ const PERIODS = [
   { label: "1 an", weeks: 52 },
 ] as const;
 
-/** Hauteur commune aux cases et aux étiquettes de jour, pour qu'elles restent alignées. */
-const CELL_HEIGHT = 14;
+/** Côté d'une case, partagé avec les étiquettes de jour pour qu'elles restent alignées. */
+const CELL_SIZE = 14;
 
 const MONTHS = [
   "Jan",
@@ -68,18 +68,26 @@ export function ContributionGraph({ activities }: ContributionGraphProps) {
     weeks.push(days.slice(i, i + 7));
   }
 
-  // Le nom du mois n'apparaît qu'à la semaine où il change, pas sur chaque colonne.
+  // Le nom du mois n'apparaît qu'à la semaine où il change — et seulement s'il reste assez
+  // de colonnes avant le suivant : une colonne fait 14px, un libellé environ 20px, donc deux
+  // mois trop rapprochés se chevaucheraient ("JuilAoû").
+  const MIN_WEEKS_BETWEEN_LABELS = 2;
+  let lastLabelIndex = -Infinity;
   const monthLabels = weeks.map((week, index) => {
     const current = new Date(week[0].date).getMonth();
-    if (index === 0) return MONTHS[current];
-    const previous = new Date(weeks[index - 1][0].date).getMonth();
-    return current !== previous ? MONTHS[current] : null;
+    const previous = index > 0 ? new Date(weeks[index - 1][0].date).getMonth() : null;
+    const isChange = index === 0 || current !== previous;
+    if (!isChange || index - lastLabelIndex < MIN_WEEKS_BETWEEN_LABELS) return null;
+    lastLabelIndex = index;
+    return MONTHS[current];
   });
 
   const totalPages = days.reduce((sum, d) => sum + d.pagesRead, 0);
   const activeDays = days.filter((d) => d.pagesRead > 0).length;
-  // Colonnes fluides : le graphe occupe toute la largeur disponible sans défilement.
-  const gridColumns = `repeat(${weeks.length}, minmax(0, 1fr))`;
+  // Colonnes à largeur fixe, et non en fractions de la largeur disponible : sur « 1 mois »
+  // il n'y a que quatre colonnes, qui s'étiraient alors sur tout l'écran et transformaient
+  // les cases en barres horizontales. Le conteneur défile pour la période « 1 an ».
+  const gridColumns = `repeat(${weeks.length}, ${CELL_SIZE}px)`;
 
   return (
     <div>
@@ -114,7 +122,7 @@ export function ContributionGraph({ activities }: ContributionGraphProps) {
               <div
                 key={i}
                 className="flex w-4 items-center text-[10px] text-stone-400"
-                style={{ height: `${CELL_HEIGHT}px` }}
+                style={{ height: `${CELL_SIZE}px` }}
               >
                 {day}
               </div>
@@ -146,8 +154,8 @@ export function ContributionGraph({ activities }: ContributionGraphProps) {
                   {week.map((day) => (
                     <div
                       key={day.date}
-                      className={`w-full rounded-[3px] ${colorFor(day.pagesRead)}`}
-                      style={{ height: `${CELL_HEIGHT}px` }}
+                      className={`rounded-[3px] ${colorFor(day.pagesRead)}`}
+                      style={{ height: `${CELL_SIZE}px`, width: `${CELL_SIZE}px` }}
                       title={`${new Date(day.date).toLocaleDateString("fr-FR")} : ${day.pagesRead} pages`}
                     />
                   ))}

@@ -23,6 +23,15 @@ const VARIANT_CLASSES: Record<Variant, string> = {
     "rounded-[var(--radius-sm)] bg-destructive px-6 py-3 text-on-destructive hover:opacity-90",
 };
 
+/**
+ * Classes d'un bouton, à appliquer à un élément qui ne peut pas en être un — typiquement un
+ * <Link> de navigation, qu'il ne faut pas transformer en <button> sous peine de perdre le
+ * clic milieu, l'ouverture en nouvel onglet et le menu contextuel du navigateur.
+ */
+export function buttonClasses(variant: Variant = "primary", className = ""): string {
+  return `${BASE_CLASSES} ${VARIANT_CLASSES[variant]} ${className}`;
+}
+
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ variant = "primary", isLoading, disabled, className = "", children, ...props }, ref) => {
     return (

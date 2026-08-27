@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { Button, buttonClasses } from "@/components/ui/button";
 
 const STEPS = [
   {
@@ -74,7 +74,7 @@ export function Onboarding({ hasSeenOnboarding }: OnboardingProps) {
           <Link
             href={current.action.href}
             onClick={close}
-            className="bg-primary text-on-primary hover:bg-accent-600 mt-5 block rounded-[var(--radius-sm)] px-4 py-3 text-center text-sm font-medium transition"
+            className={buttonClasses("primary", "mt-5 w-full")}
           >
             {current.action.label}
           </Link>
