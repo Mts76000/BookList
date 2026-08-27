@@ -54,6 +54,18 @@ npm run db:reset      # remise à zéro complète
 La base de test (`postgres-test`, port 5433) est séparée de la base de dev : `tests/setup.ts`
 refuse de démarrer si `DATABASE_URL` ne contient pas « test ».
 
+## Note sur l'override esbuild
+
+`package.json` force toutes les dépendances sur `esbuild@0.28.2`. Sans cela, `npm ci` échoue
+sur `Expected "0.18.20" but got "0.28.2"` : `drizzle-kit` tire `@esbuild-kit/esm-loader`
+(déprécié, fusionné dans `tsx`) qui embarque son propre esbuild, dont le script
+d'installation vérifie le binaire natif. Or les paquets de binaires (`@esbuild/linux-x64`…)
+sont partagés entre les versions, et la vérification échoue.
+
+L'erreur ne se manifeste qu'à l'installation propre — `npm install` incrémental y échappe —
+et donc surtout au build Docker. Cet override disparaîtra le jour où `drizzle-kit`
+abandonnera `@esbuild-kit`.
+
 ## Migration des données depuis BookList v1
 
 Le script `drizzle/migrate-from-booklist-v1.ts` recopie les données de la base v1
