@@ -139,6 +139,9 @@ test.describe("Back-office", () => {
 
     await page.getByRole("link", { name: "Utilisateurs", exact: true }).click();
     await expect(page).toHaveURL(/\/admin\/users/);
-    await expect(page.getByText(email)).toBeVisible();
+    // La liste rend deux fois chaque compte — en cartes sous `lg`, en tableau au-dessus —
+    // et le CSS n'en montre qu'un. On vise donc celui qui est réellement visible, sans
+    // supposer la largeur de la fenêtre de test.
+    await expect(page.getByText(email).filter({ visible: true })).toBeVisible();
   });
 });

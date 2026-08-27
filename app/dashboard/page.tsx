@@ -221,9 +221,11 @@ export default async function DashboardPage() {
         </section>
       </main>
 
+      {/* Réservé au desktop : sur mobile, la barre de navigation basse a déjà un onglet
+          « Ajouter », et ce bouton flottant venait recouvrir le pied de page. */}
       <Link
         href="/books/add"
-        className="bg-primary text-on-primary hover:bg-accent-600 fixed right-4 bottom-24 z-50 flex h-14 w-14 items-center justify-center rounded-full shadow-[0_8px_24px_-6px_rgba(36,29,21,0.45)] transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_12px_32px_-8px_rgba(171,79,39,0.45)] active:translate-y-0 active:shadow-none sm:right-8 sm:bottom-8"
+        className="bg-primary text-on-primary hover:bg-accent-600 fixed right-8 bottom-8 z-30 hidden h-14 w-14 items-center justify-center rounded-full shadow-[0_8px_24px_-6px_rgba(36,29,21,0.45)] transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_12px_32px_-8px_rgba(171,79,39,0.45)] active:translate-y-0 active:shadow-none sm:flex"
         aria-label="Ajouter un livre"
       >
         <PlusIcon className="h-6 w-6" />

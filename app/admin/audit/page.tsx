@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { and, count, desc, eq } from "drizzle-orm";
+import { count, desc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { auditLogs, user } from "@/drizzle/schema";
-import { Select } from "@/components/ui/select";
+import { auditActionLabel, isAdminAction } from "@/lib/audit-actions";
+import { AdminPageHeader } from "@/app/admin/admin-ui";
+import { AuditFilter } from "@/app/admin/audit/audit-filter";
 
 export const metadata: Metadata = {
   title: "Journal d'audit",
@@ -11,15 +13,6 @@ export const metadata: Metadata = {
 };
 
 const EVENTS_PER_PAGE = 50;
-
-/** Actions journalisées, avec un libellé lisible pour le filtre et le tableau. */
-const ACTION_LABELS: Record<string, string> = {
-  "user.change_password": "Changement de mot de passe",
-  "user.delete_account": "Suppression de compte",
-  "admin.change_role": "Changement de rôle (admin)",
-  "admin.delete_account": "Suppression de compte (admin)",
-  "admin.revoke_sessions": "Révocation de sessions (admin)",
-};
 
 function formatDateTime(value: Date): string {
   return new Date(value).toLocaleString("fr-FR");
@@ -34,9 +27,9 @@ export default async function AdminAuditPage({
   const action = params.action;
   const currentPage = Math.max(1, Number.parseInt(params.page || "1", 10) || 1);
 
-  const filters = and(action ? eq(auditLogs.action, action) : undefined);
+  const filters = action ? eq(auditLogs.action, action) : undefined;
 
-  const [events, [{ value: total }]] = await Promise.all([
+  const [events, [{ value: total }], actionCounts] = await Promise.all([
     db
       .select({
         id: auditLogs.id,
@@ -46,7 +39,6 @@ export default async function AdminAuditPage({
         metadata: auditLogs.metadata,
         ip: auditLogs.ip,
         createdAt: auditLogs.createdAt,
-        actorId: auditLogs.userId,
         actorEmail: user.email,
       })
       .from(auditLogs)
@@ -58,89 +50,144 @@ export default async function AdminAuditPage({
       .limit(EVENTS_PER_PAGE)
       .offset((currentPage - 1) * EVENTS_PER_PAGE),
     db.select({ value: count() }).from(auditLogs).where(filters),
+    // Le filtre ne propose que les actions réellement journalisées : lister des choix qui
+    // ne renvoient rien n'aide personne.
+    db
+      .select({ action: auditLogs.action, value: count() })
+      .from(auditLogs)
+      .groupBy(auditLogs.action)
+      .orderBy(desc(count())),
   ]);
 
   const totalPages = Math.max(1, Math.ceil(total / EVENTS_PER_PAGE));
+  const options = actionCounts.map((row) => ({
+    value: row.action,
+    label: auditActionLabel(row.action),
+    count: row.value,
+  }));
 
   return (
     <>
-      <h1 className="font-serif text-2xl text-stone-900">Journal d&apos;audit</h1>
-      <p className="mt-1 text-sm text-stone-500">
-        {total} événement{total !== 1 ? "s" : ""} enregistré{total !== 1 ? "s" : ""}.
-      </p>
+      <AdminPageHeader
+        title="Journal d'audit"
+        subtitle={`${total} événement${total !== 1 ? "s" : ""}${action ? ` pour « ${auditActionLabel(action)} »` : " enregistré(s)"}`}
+        breadcrumb={[{ href: "/admin", label: "Administration" }]}
+      />
 
-      <form method="get" className="mt-6 max-w-xs">
-        <Select label="Filtrer par action" name="action" defaultValue={action ?? ""}>
-          <option value="">Toutes les actions</option>
-          {Object.entries(ACTION_LABELS).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </Select>
-        <noscript>
-          <button type="submit" className="mt-2 text-sm underline">
-            Filtrer
-          </button>
-        </noscript>
-      </form>
+      <div className="mb-4">
+        <AuditFilter action={action} options={options} />
+      </div>
 
-      <div className="card mt-4 overflow-x-auto">
-        <table className="w-full min-w-[48rem] text-sm">
-          <thead>
-            <tr className="border-b border-stone-100 text-left text-xs text-stone-500">
-              <th scope="col" className="px-4 py-3 font-medium">
-                Date
-              </th>
-              <th scope="col" className="px-4 py-3 font-medium">
-                Action
-              </th>
-              <th scope="col" className="px-4 py-3 font-medium">
-                Auteur
-              </th>
-              <th scope="col" className="px-4 py-3 font-medium">
-                Cible
-              </th>
-              <th scope="col" className="px-4 py-3 font-medium">
-                IP
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-stone-100">
+      {events.length === 0 ? (
+        <div className="card px-6 py-12 text-center">
+          <p className="font-medium text-stone-900">Aucun événement</p>
+          <p className="mt-1 text-sm text-stone-500">
+            {action
+              ? "Aucun événement pour cette action."
+              : "Les actions sensibles apparaîtront ici au fur et à mesure."}
+          </p>
+        </div>
+      ) : (
+        <>
+          <ul className="flex flex-col gap-3 lg:hidden">
             {events.map((event) => {
               const targetEmail = (event.metadata as { email?: string } | null)?.email;
               return (
-                <tr key={event.id} className="hover:bg-stone-50/70">
-                  <td className="px-4 py-3 text-xs whitespace-nowrap text-stone-500">
-                    {formatDateTime(event.createdAt)}
-                  </td>
-                  <td className="px-4 py-3">{ACTION_LABELS[event.action] ?? event.action}</td>
-                  <td className="px-4 py-3 text-stone-600">
-                    {event.actorEmail ?? <span className="text-stone-400">compte supprimé</span>}
-                  </td>
-                  <td className="px-4 py-3">
-                    {event.entityType === "user" && event.entityId ? (
-                      <Link href={`/admin/users/${event.entityId}`} className="link">
-                        {targetEmail ?? event.entityId}
-                      </Link>
-                    ) : (
-                      <span className="text-stone-400">—</span>
+                <li key={event.id} className="card p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span
+                        className={`status-dot ${isAdminAction(event.action) ? "bg-accent-500" : "bg-stone-300"}`}
+                      />
+                      <span className="truncate font-medium text-stone-900">
+                        {auditActionLabel(event.action)}
+                      </span>
+                    </span>
+                    <time className="shrink-0 text-xs text-stone-400">
+                      {formatDateTime(event.createdAt)}
+                    </time>
+                  </div>
+                  <dl className="mt-2 space-y-1 text-xs text-stone-500">
+                    <div className="flex gap-2">
+                      <dt className="text-stone-400">Auteur</dt>
+                      <dd className="truncate">{event.actorEmail ?? "compte supprimé"}</dd>
+                    </div>
+                    {event.entityType === "user" && event.entityId && (
+                      <div className="flex gap-2">
+                        <dt className="text-stone-400">Cible</dt>
+                        <dd className="min-w-0 truncate">
+                          <Link href={`/admin/users/${event.entityId}`} className="link">
+                            {targetEmail ?? event.entityId}
+                          </Link>
+                        </dd>
+                      </div>
                     )}
-                  </td>
-                  <td className="px-4 py-3 text-xs text-stone-400">{event.ip ?? "—"}</td>
-                </tr>
+                  </dl>
+                </li>
               );
             })}
-            {events.length === 0 && (
-              <tr>
-                <td colSpan={5} className="px-4 py-10 text-center text-sm text-stone-400">
-                  Aucun événement.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+          </ul>
+
+          <div className="card hidden overflow-x-auto lg:block">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-stone-100 text-left text-xs tracking-wide text-stone-500 uppercase">
+                  <th scope="col" className="px-4 py-3 font-medium">
+                    Date
+                  </th>
+                  <th scope="col" className="px-4 py-3 font-medium">
+                    Action
+                  </th>
+                  <th scope="col" className="px-4 py-3 font-medium">
+                    Auteur
+                  </th>
+                  <th scope="col" className="px-4 py-3 font-medium">
+                    Cible
+                  </th>
+                  <th scope="col" className="px-4 py-3 font-medium">
+                    IP
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-stone-100">
+                {events.map((event) => {
+                  const targetEmail = (event.metadata as { email?: string } | null)?.email;
+                  return (
+                    <tr key={event.id} className="transition-colors hover:bg-stone-50/70">
+                      <td className="px-4 py-3 text-xs whitespace-nowrap text-stone-500">
+                        {formatDateTime(event.createdAt)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="flex items-center gap-2">
+                          <span
+                            className={`status-dot ${isAdminAction(event.action) ? "bg-accent-500" : "bg-stone-300"}`}
+                          />
+                          {auditActionLabel(event.action)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-stone-600">
+                        {event.actorEmail ?? (
+                          <span className="text-stone-400">compte supprimé</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {event.entityType === "user" && event.entityId ? (
+                          <Link href={`/admin/users/${event.entityId}`} className="link">
+                            {targetEmail ?? event.entityId}
+                          </Link>
+                        ) : (
+                          <span className="text-stone-400">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-stone-400">{event.ip ?? "—"}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
 
       {totalPages > 1 && (
         <nav aria-label="Pagination" className="mt-6 flex items-center justify-between gap-3">

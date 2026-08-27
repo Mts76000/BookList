@@ -184,19 +184,24 @@ export function AccountView({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="border-border bg-card flex items-center justify-between rounded-xl border p-6">
-        <div className="flex items-center gap-4">
+      <div className="border-border bg-card flex flex-col items-start gap-4 rounded-xl border p-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-4">
           <span className="bg-primary text-on-primary flex size-12 shrink-0 items-center justify-center rounded-full text-base font-semibold">
             {initialsFrom(userName || userEmail)}
           </span>
-          <div>
-            <h1 className="text-card-foreground text-lg font-semibold tracking-tight">
+          <div className="min-w-0">
+            <h1 className="text-card-foreground truncate text-lg font-semibold tracking-tight">
               {userName || "Mon compte"}
             </h1>
-            <p className="text-muted-foreground text-sm">{userEmail}</p>
+            <p className="text-muted-foreground truncate text-sm">{userEmail}</p>
           </div>
         </div>
-        <Button type="button" variant="secondary" onClick={handleSignOut}>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={handleSignOut}
+          className="w-full shrink-0 sm:w-auto"
+        >
           <SignOut size={16} aria-hidden="true" />
           Se déconnecter
         </Button>

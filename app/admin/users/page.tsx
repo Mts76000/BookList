@@ -4,6 +4,8 @@ import { count, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { book, user } from "@/drizzle/schema";
 import { Field } from "@/components/ui/field";
+import { Button } from "@/components/ui/button";
+import { AdminPageHeader, RoleBadge, StatusBadge } from "@/app/admin/admin-ui";
 
 export const metadata: Metadata = {
   title: "Utilisateurs",
@@ -29,12 +31,10 @@ export default async function AdminUsersPage({
     ? or(ilike(user.email, `%${search}%`), ilike(user.name, `%${search}%`))
     : undefined;
 
-  // Comptage des livres par utilisateur, pré-agrégé puis joint : une jointure directe sur
-  // `book` multiplierait les lignes d'utilisateur et fausserait la pagination.
-  // À noter : une sous-requête corrélée écrite à la main dans un template `sql` ne convient
-  // pas ici — Drizzle y interpole les colonnes sans qualifier leur table, et la condition
-  // devient `"user_id" = "id"`, les deux résolus dans la portée de `book`, donc toujours
-  // fausse et un comptage systématiquement à zéro.
+  // Comptage des livres pré-agrégé puis joint : une jointure directe sur `book`
+  // multiplierait les lignes d'utilisateur et fausserait la pagination. Une sous-requête
+  // corrélée écrite à la main ne convient pas non plus — Drizzle y interpole les colonnes
+  // sans qualifier leur table, et la condition devient toujours fausse.
   const bookCounts = db
     .select({ userId: book.userId, value: count().as("value") })
     .from(book)
@@ -67,14 +67,14 @@ export default async function AdminUsersPage({
 
   return (
     <>
-      <h1 className="font-serif text-2xl text-stone-900">Utilisateurs</h1>
-      <p className="mt-1 text-sm text-stone-500">
-        {total} compte{total !== 1 ? "s" : ""}
-        {search ? ` correspondant à « ${search} »` : ""}
-      </p>
+      <AdminPageHeader
+        title="Utilisateurs"
+        subtitle={`${total} compte${total !== 1 ? "s" : ""}${search ? ` correspondant à « ${search} »` : ""}`}
+        breadcrumb={[{ href: "/admin", label: "Administration" }]}
+      />
 
       {/* Formulaire GET : la recherche reste dans l'URL, donc partageable et rechargeable. */}
-      <form method="get" className="mt-6 flex items-end gap-2">
+      <form method="get" className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end">
         <Field
           label="Rechercher un utilisateur"
           hideLabel
@@ -82,75 +82,113 @@ export default async function AdminUsersPage({
           name="q"
           defaultValue={search ?? ""}
           placeholder="Nom ou adresse e-mail…"
-          className="max-w-sm"
+          className="sm:max-w-sm"
         />
+        <div className="flex gap-2">
+          <Button type="submit" variant="secondary">
+            Rechercher
+          </Button>
+          {search && (
+            <Link href="/admin/users" className="link self-center text-sm">
+              Effacer
+            </Link>
+          )}
+        </div>
       </form>
 
-      <div className="card mt-4 overflow-x-auto">
-        <table className="w-full min-w-[46rem] text-sm">
-          <thead>
-            <tr className="border-b border-stone-100 text-left text-xs text-stone-500">
-              <th scope="col" className="px-4 py-3 font-medium">
-                Utilisateur
-              </th>
-              <th scope="col" className="px-4 py-3 font-medium">
-                Rôle
-              </th>
-              <th scope="col" className="px-4 py-3 font-medium">
-                État
-              </th>
-              <th scope="col" className="px-4 py-3 text-right font-medium">
-                Livres
-              </th>
-              <th scope="col" className="px-4 py-3 text-right font-medium">
-                Inscription
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-stone-100">
+      {rows.length === 0 ? (
+        <div className="card px-6 py-12 text-center">
+          <p className="font-medium text-stone-900">Aucun utilisateur ne correspond</p>
+          <p className="mt-1 text-sm text-stone-500">
+            {search ? "Essayez une autre recherche." : "Aucun compte n'existe encore."}
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* Cartes sur mobile : un tableau de cinq colonnes y serait illisible même avec un
+              défilement horizontal. */}
+          <ul className="flex flex-col gap-3 lg:hidden">
             {rows.map((entry) => (
-              <tr key={entry.id} className="hover:bg-stone-50/70">
-                <td className="px-4 py-3">
-                  <Link
-                    href={`/admin/users/${entry.id}`}
-                    className="font-medium text-stone-900 hover:underline"
-                  >
-                    {entry.isAnonymized ? "Compte supprimé" : entry.name}
-                  </Link>
-                  <p className="truncate text-xs text-stone-500">{entry.email}</p>
-                </td>
-                <td className="px-4 py-3">
-                  <span
-                    className={`badge ${entry.role === "admin" ? "bg-accent-50 text-accent-700" : "bg-stone-100 text-stone-600"}`}
-                  >
-                    {entry.role === "admin" ? "Admin" : "Utilisateur"}
-                  </span>
-                </td>
-                <td className="px-4 py-3">
-                  {entry.isAnonymized ? (
-                    <span className="badge bg-stone-100 text-stone-500">Supprimé</span>
-                  ) : entry.emailVerified ? (
-                    <span className="badge bg-moss-100 text-moss-800">Vérifié</span>
-                  ) : (
-                    <span className="badge bg-amber-100 text-amber-600">Non vérifié</span>
-                  )}
-                </td>
-                <td className="px-4 py-3 text-right tabular-nums">{entry.bookCount}</td>
-                <td className="px-4 py-3 text-right text-xs text-stone-400">
-                  {formatDate(entry.createdAt)}
-                </td>
-              </tr>
+              <li key={entry.id}>
+                <Link href={`/admin/users/${entry.id}`} className="card card-interactive block p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-stone-900">
+                        {entry.isAnonymized ? "Compte supprimé" : entry.name}
+                      </p>
+                      <p className="truncate text-xs text-stone-500">{entry.email}</p>
+                    </div>
+                    <StatusBadge
+                      isAnonymized={entry.isAnonymized}
+                      emailVerified={entry.emailVerified}
+                    />
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-stone-400">
+                    <RoleBadge role={entry.role} />
+                    <span>
+                      {entry.bookCount} livre{entry.bookCount !== 1 ? "s" : ""}
+                    </span>
+                    <span aria-hidden="true">·</span>
+                    <span>inscrit le {formatDate(entry.createdAt)}</span>
+                  </div>
+                </Link>
+              </li>
             ))}
-            {rows.length === 0 && (
-              <tr>
-                <td colSpan={5} className="px-4 py-10 text-center text-sm text-stone-400">
-                  Aucun utilisateur ne correspond.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+          </ul>
+
+          <div className="card hidden overflow-x-auto lg:block">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-stone-100 text-left text-xs tracking-wide text-stone-500 uppercase">
+                  <th scope="col" className="px-4 py-3 font-medium">
+                    Utilisateur
+                  </th>
+                  <th scope="col" className="px-4 py-3 font-medium">
+                    Rôle
+                  </th>
+                  <th scope="col" className="px-4 py-3 font-medium">
+                    État
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-right font-medium">
+                    Livres
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-right font-medium">
+                    Inscription
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-stone-100">
+                {rows.map((entry) => (
+                  <tr key={entry.id} className="transition-colors hover:bg-stone-50/70">
+                    <td className="px-4 py-3">
+                      <Link
+                        href={`/admin/users/${entry.id}`}
+                        className="font-medium text-stone-900 hover:underline"
+                      >
+                        {entry.isAnonymized ? "Compte supprimé" : entry.name}
+                      </Link>
+                      <p className="truncate text-xs text-stone-500">{entry.email}</p>
+                    </td>
+                    <td className="px-4 py-3">
+                      <RoleBadge role={entry.role} />
+                    </td>
+                    <td className="px-4 py-3">
+                      <StatusBadge
+                        isAnonymized={entry.isAnonymized}
+                        emailVerified={entry.emailVerified}
+                      />
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums">{entry.bookCount}</td>
+                    <td className="px-4 py-3 text-right text-xs text-stone-400">
+                      {formatDate(entry.createdAt)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
 
       {totalPages > 1 && (
         <nav aria-label="Pagination" className="mt-6 flex items-center justify-between gap-3">

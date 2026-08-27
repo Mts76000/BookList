@@ -23,6 +23,18 @@ import { sql } from "drizzle-orm";
  *   LEGACY_DATABASE_URL=postgres://… npx tsx drizzle/migrate-from-booklist-v1.ts [--dry-run]
  */
 
+/**
+ * Comptes à ne pas migrer du tout.
+ *
+ * La base v1 contient des comptes de test qui n'ont pas à exister dans la v2. Les écarter
+ * ici plutôt que de les supprimer après coup évite qu'ils réapparaissent si la migration est
+ * rejouée, et laisse la base v1 intacte.
+ */
+const SKIP_EMAILS = (process.env.MIGRATION_SKIP_EMAILS ?? "test@booklist.fr,test@gmail.com")
+  .split(",")
+  .map((email) => email.trim().toLowerCase())
+  .filter(Boolean);
+
 /** Comptes promus administrateurs à la migration. */
 const ADMIN_EMAILS = (process.env.MIGRATION_ADMIN_EMAILS ?? "lamottemathis@gmail.com")
   .split(",")
@@ -81,6 +93,8 @@ interface LegacyActivity {
 
 export interface MigrationReport {
   users: number;
+  /** Comptes volontairement écartés de la migration. */
+  skipped: string[];
   /** Comptes absorbés par un autre parce que leurs adresses ne différaient que par la casse. */
   merged: { from: string; into: string }[];
   accounts: number;
@@ -178,7 +192,13 @@ export async function migrateFromV1(options: { dryRun?: boolean } = {}): Promise
       ),
     ]);
 
-    const { primaryUsers, redirectedUserIds, merged } = mergeUsersByEmail(users.rows);
+    const kept = users.rows.filter((row) => !SKIP_EMAILS.includes(row.email.toLowerCase()));
+    const skipped = users.rows.filter((row) => SKIP_EMAILS.includes(row.email.toLowerCase()));
+    // Les identifiants écartés servent à filtrer aussi leurs livres, notes et activités :
+    // sans cela, les insertions échoueraient sur une clé étrangère inexistante.
+    const skippedUserIds = new Set(skipped.map((row) => row.id));
+
+    const { primaryUsers, redirectedUserIds, merged } = mergeUsersByEmail(kept);
 
     /** Redirige un identifiant d'utilisateur vers le compte qui l'a absorbé, s'il y a lieu. */
     const ownerOf = (userId: string) => redirectedUserIds.get(userId) ?? userId;
@@ -190,11 +210,12 @@ export async function migrateFromV1(options: { dryRun?: boolean } = {}): Promise
 
     const report: MigrationReport = {
       users: primaryUsers.length,
+      skipped: skipped.map((row) => row.email),
       merged,
       accounts: primaryUsers.filter((row) => !row.isAnonymized).length,
-      books: books.rows.length,
-      comments: comments.rows.length,
-      activities: activities.rows.length,
+      books: books.rows.filter((row) => !skippedUserIds.has(row.userId)).length,
+      comments: comments.rows.filter((row) => !skippedUserIds.has(row.userId)).length,
+      activities: activities.rows.filter((row) => !skippedUserIds.has(row.userId)).length,
       admins,
       anonymized,
     };
@@ -260,6 +281,8 @@ export async function migrateFromV1(options: { dryRun?: boolean } = {}): Promise
       }
 
       for (const row of books.rows) {
+        if (skippedUserIds.has(row.userId)) continue;
+
         // Un livre déjà migré est ignoré : c'est ce qui rend le script rejouable.
         const alreadyMigrated = await tx.query.book.findFirst({
           where: eq(schema.book.id, row.id),
@@ -294,6 +317,8 @@ export async function migrateFromV1(options: { dryRun?: boolean } = {}): Promise
       }
 
       for (const row of comments.rows) {
+        if (skippedUserIds.has(row.userId)) continue;
+
         await tx
           .insert(schema.comment)
           .values({
@@ -308,6 +333,8 @@ export async function migrateFromV1(options: { dryRun?: boolean } = {}): Promise
       }
 
       for (const row of activities.rows) {
+        if (skippedUserIds.has(row.userId)) continue;
+
         // Vérifié avant l'insertion : le conflit ci-dessous porte sur (userId, date) et non
         // sur l'identifiant, donc sans ce garde-fou une relance additionnerait les pages une
         // seconde fois.
@@ -355,6 +382,9 @@ if (isMain) {
       console.log(`Utilisateurs      : ${report.users} (dont ${report.anonymized} anonymisé(s))`);
       for (const { from, into } of report.merged) {
         console.log(`  fusion          : ${from} → ${into}`);
+      }
+      for (const email of report.skipped) {
+        console.log(`  écarté          : ${email}`);
       }
       console.log(`Moyens de connexion: ${report.accounts}`);
       console.log(`Livres            : ${report.books}`);
