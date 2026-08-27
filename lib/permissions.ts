@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth, type Session } from "@/lib/auth";
@@ -21,8 +22,18 @@ export class ForbiddenError extends Error {
  * Throws UnauthorizedError if there's no valid session — never check for a session
  * ad hoc elsewhere.
  */
+/**
+ * Lecture de la session, mémorisée pour la durée du rendu.
+ *
+ * Une même requête la consulte plusieurs fois — le layout pour vérifier l'accès, le pied de
+ * page pour savoir s'il affiche le lien d'administration — et chaque appel interrogerait
+ * sinon la base. `cache()` de React les regroupe en un seul, sans partager quoi que ce soit
+ * entre deux requêtes.
+ */
+const readSession = cache(async () => auth.api.getSession({ headers: await headers() }));
+
 export async function requireAuth(): Promise<Session> {
-  const session = await auth.api.getSession({ headers: await headers() });
+  const session = await readSession();
   if (!session) throw new UnauthorizedError();
   return session;
 }
@@ -62,5 +73,5 @@ export async function requireAuthPage(redirectTo?: string): Promise<Session> {
  * of throwing — use requireAuth() instead when the page/route actually requires a session.
  */
 export async function getOptionalSession(): Promise<Session | null> {
-  return auth.api.getSession({ headers: await headers() });
+  return readSession();
 }

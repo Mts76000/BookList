@@ -34,7 +34,9 @@ async function signUpAndLogIn(page: import("@playwright/test").Page, email: stri
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Mot de passe", { exact: true }).fill("password123");
   await page.getByRole("button", { name: "Se connecter" }).click();
-  await expect(page).toHaveURL(/^http:\/\/[^/]+\/$/);
+  // La racine redirige un visiteur connecté vers le tableau de bord : attendre « / » rend
+  // le test dépendant du moment où l'URL est observée.
+  await expect(page).toHaveURL(/\/dashboard/);
 }
 
 test.describe("Bibliothèque", () => {
@@ -100,6 +102,11 @@ test.describe("Back-office", () => {
     const email = uniqueEmail("e2e-nonadmin");
     await signUpAndLogIn(page, email);
 
+    await page.goto("/dashboard");
+    await expect(page.locator("footer").getByRole("link", { name: "Administration" })).toHaveCount(
+      0,
+    );
+
     const response = await page.goto("/admin");
 
     // 404 et non 403 : l'existence même du back-office n'est pas révélée.
@@ -119,6 +126,13 @@ test.describe("Back-office", () => {
     await client.connect();
     await client.query(`UPDATE "user" SET role = 'admin' WHERE email = $1`, [email]);
     await client.end();
+
+    // Le pied de page est le seul point d'entrée vers le back-office : la navigation ne le
+    // mentionne nulle part.
+    await page.goto("/dashboard");
+    await expect(
+      page.locator("footer").getByRole("link", { name: "Administration" }),
+    ).toBeVisible();
 
     await page.goto("/admin");
     await expect(page.getByRole("heading", { name: "Vue d'ensemble" })).toBeVisible();
