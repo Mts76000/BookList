@@ -1,38 +1,68 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { user } from "@/drizzle/schema";
+import { account, book, comment, readingActivity, session, user } from "@/drizzle/schema";
 import { requireAuth } from "@/lib/permissions";
-import { apiSuccess, withApiErrorHandling } from "@/lib/api-response";
+import { apiSuccess, apiError, withApiErrorHandling } from "@/lib/api-response";
 import { logAuditEvent, requestMetadata } from "@/lib/audit-log";
 
+/** Domaine de façade des comptes anonymisés — il n'existe pas, donc rien ne peut y être envoyé. */
+const ANONYMIZED_EMAIL_DOMAIN = "anonymized.booklist";
+
 /**
- * Deletes the current user's account.
+ * Supprime le compte de l'utilisateur courant, par **anonymisation** et non par suppression
+ * physique — dérogation assumée au défaut du socle, documentée dans AGENTS.md.
  *
- * Hard delete by default: this generic starter has no confirmed need for account
- * restoration (see CLAUDE.md's soft-vs-hard-delete rule — soft delete is never a default,
- * it must be justified per entity). Sessions and OAuth accounts cascade-delete via FK; this
- * project's audit_logs.userId is set to NULL on delete (see drizzle/schema/audit-log.ts) so
- * the audit trail survives with the user's email preserved in metadata.
+ * Le comportement vient de BookList v1 : la ligne `user` survit, vidée de toute donnée
+ * personnelle, avec `isAnonymized` / `anonymizedAt`. On la conserve pour que les comptes
+ * déjà supprimés en v1 restent migrables tels quels, et pour que l'adresse email libérée ne
+ * puisse pas être réutilisée pour rouvrir un compte se faisant passer pour l'ancien.
  *
- * If a future project needs restoration (e.g. GDPR-driven "undo delete" window), add a
- * `deletedAt` column to `user` and swap this hard delete for a soft delete + a scheduled
- * hard-delete cron — do not add it here speculatively.
+ * Les données métier (livres, notes, activité de lecture) et les moyens de connexion
+ * (sessions, comptes OAuth et mot de passe) sont, eux, bel et bien supprimés : ce qui reste
+ * ne permet ni de se reconnecter, ni de remonter à une personne.
  */
 export const DELETE = withApiErrorHandling(async (request: Request) => {
-  const session = await requireAuth();
+  const authSession = await requireAuth();
   const { ip, userAgent } = requestMetadata(request);
+  const userId = authSession.user.id;
+
+  const current = await db.query.user.findFirst({ where: eq(user.id, userId) });
+  if (!current) return apiError("NOT_FOUND", "Utilisateur introuvable.");
+  if (current.isAnonymized) return apiError("CONFLICT", "Ce compte est déjà supprimé.");
 
   await logAuditEvent({
-    userId: session.user.id,
+    userId,
     action: "user.delete_account",
     entityType: "user",
-    entityId: session.user.id,
-    metadata: { email: session.user.email },
+    entityId: userId,
+    metadata: { email: current.email },
     ip,
     userAgent,
   });
 
-  await db.delete(user).where(eq(user.id, session.user.id));
+  // Transaction : un compte à moitié anonymisé laisserait des données personnelles
+  // derrière lui tout en ayant l'air supprimé.
+  await db.transaction(async (tx) => {
+    await tx.delete(comment).where(eq(comment.userId, userId));
+    await tx.delete(readingActivity).where(eq(readingActivity.userId, userId));
+    await tx.delete(book).where(eq(book.userId, userId));
+    // Coupe tout moyen de se reconnecter : mots de passe et identités OAuth.
+    await tx.delete(account).where(eq(account.userId, userId));
+    await tx.delete(session).where(eq(session.userId, userId));
+    await tx
+      .update(user)
+      .set({
+        email: `deleted-${userId}@${ANONYMIZED_EMAIL_DOMAIN}`,
+        name: "Compte supprimé",
+        image: null,
+        emailVerified: false,
+        initialBooksRead: 0,
+        hasSeenOnboarding: false,
+        isAnonymized: true,
+        anonymizedAt: new Date(),
+      })
+      .where(eq(user.id, userId));
+  });
 
   return apiSuccess(null, "Compte supprimé.");
 });

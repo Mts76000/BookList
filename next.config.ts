@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 // CSP whitelist rationale:
 // - 'self' + inline styles/scripts: Next.js/Tailwind require these for hydration.
-// - analytics.umami.is: self-hosted-compatible Umami analytics script (lib/umami.ts).
+// - stats.mathis-lamotte.fr: self-hosted Umami analytics script (lib/umami.ts).
 // - challenges.cloudflare.com: Turnstile widget + its iframe challenge.
 // - accounts.google.com: Google OAuth (better-auth socialProviders.google).
 // - The Buy Me a Coffee button (components/buy-me-a-coffee.tsx) is a plain outbound link,
@@ -15,23 +15,39 @@ const scriptSrc = [
   "'self'",
   "'unsafe-inline'",
   process.env.NODE_ENV !== "production" ? "'unsafe-eval'" : null,
-  "https://analytics.umami.is",
+  "https://stats.mathis-lamotte.fr",
   "https://challenges.cloudflare.com",
 ]
   .filter(Boolean)
   .join(" ");
 
+// Hôtes des couvertures de livres. La v1 autorisait `img-src https:` en bloc ; on liste
+// ici les seules sources réellement utilisées par la recherche Google Books et par les
+// couvertures Open Library, pour ne pas rouvrir toute la surface HTTPS.
+const bookCoverHosts = [
+  "https://books.google.com",
+  "https://books.googleusercontent.com",
+  "https://covers.openlibrary.org",
+  "https://archive.org",
+].join(" ");
+
 const contentSecurityPolicy = [
   "default-src 'self'",
   `script-src ${scriptSrc}`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: https://lh3.googleusercontent.com",
+  // blob: est nécessaire au scanner de code-barres, qui rend les images de la caméra
+  // dans un canvas avant de les décoder.
+  `img-src 'self' data: blob: https://lh3.googleusercontent.com ${bookCoverHosts}`,
   "font-src 'self' data:",
-  "connect-src 'self' https://analytics.umami.is",
+  `connect-src 'self' https://stats.mathis-lamotte.fr https://www.googleapis.com ${bookCoverHosts}`,
+  // media-src blob: : le flux vidéo de la caméra pour le scan d'ISBN.
+  "media-src 'self' blob:",
+  "worker-src 'self' blob:",
   "frame-src https://challenges.cloudflare.com https://accounts.google.com",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
+  "object-src 'none'",
 ].join("; ");
 
 const securityHeaders = [
@@ -41,9 +57,11 @@ const securityHeaders = [
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
   {
+    // camera=(self) : indispensable au scan de code-barres (components/BarcodeScanner).
     key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=()",
+    value: "camera=(self), microphone=(), geolocation=()",
   },
+  { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
 ];
 
 const nextConfig: NextConfig = {
@@ -52,10 +70,25 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
+  // Les URLs d'authentification de BookList v1 restent valides : elles sont dans des
+  // favoris, des emails de réinitialisation déjà envoyés et l'historique des navigateurs.
+  async redirects() {
+    return [
+      { source: "/auth/signin", destination: "/login", permanent: true },
+      { source: "/auth/signup", destination: "/register", permanent: true },
+      { source: "/auth/forgot-password", destination: "/forgot-password", permanent: true },
+      { source: "/auth/reset-password", destination: "/reset-password", permanent: true },
+    ];
+  },
   images: {
     remotePatterns: [
       // Google account avatars (better-auth Google OAuth profile images)
       { protocol: "https", hostname: "lh3.googleusercontent.com" },
+      // Couvertures de livres
+      { protocol: "https", hostname: "books.google.com" },
+      { protocol: "https", hostname: "books.googleusercontent.com" },
+      { protocol: "https", hostname: "covers.openlibrary.org" },
+      { protocol: "https", hostname: "archive.org" },
     ],
   },
 };
