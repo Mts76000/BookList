@@ -53,6 +53,38 @@ export type Env = z.infer<typeof envSchema>;
 // re-importing this module under different process.env values.
 export { envSchema };
 
+/** Marqueur des valeurs de remplacement injectées par le Dockerfile pendant le build. */
+const BUILD_PLACEHOLDER = "build-placeholder";
+
+/**
+ * Refuse de laisser démarrer l'application si une valeur de remplacement du build a survécu.
+ *
+ * Le Dockerfile fournit des valeurs factices aux secrets serveur pour que `next build`
+ * puisse valider l'environnement sans eux (voir son étape `builder`). Si l'une d'elles est
+ * encore là au démarrage réel, c'est que l'hébergeur n'a pas injecté la vraie : mieux vaut
+ * refuser de démarrer que de servir l'application avec un secret que tout le monde peut lire
+ * dans le dépôt.
+ *
+ * Exporté pour être testable isolément — c'est un garde-fou de sécurité, pas un détail.
+ */
+export function assertNoBuildPlaceholders(
+  data: Env,
+  { isBuildPhase }: { isBuildPhase: boolean },
+): void {
+  if (data.NODE_ENV !== "production" || isBuildPhase) return;
+
+  const leaked = Object.entries(data)
+    .filter(([, value]) => typeof value === "string" && value.includes(BUILD_PLACEHOLDER))
+    .map(([key]) => key);
+
+  if (leaked.length > 0) {
+    throw new Error(
+      `Variables d'environnement non fournies en production : ${leaked.join(", ")}. ` +
+        "Elles portent encore la valeur de remplacement utilisée au build.",
+    );
+  }
+}
+
 function loadEnv(): Env {
   const parsed = envSchema.safeParse(process.env);
 
@@ -71,27 +103,12 @@ function loadEnv(): Env {
     );
   }
 
-  // Les valeurs de remplacement du Dockerfile (voir son étape `builder`) n'existent que pour
-  // satisfaire cette validation pendant `next build`. Si l'une survit jusqu'à un démarrage en
-  // production, c'est que l'hébergeur n'a pas injecté la vraie : mieux vaut refuser de
-  // démarrer que de servir l'application avec un secret connu de tous.
-  // `next build` s'exécute lui aussi en NODE_ENV=production, et c'est précisément le moment
-  // où les valeurs de remplacement sont légitimes. On ne contrôle donc qu'au démarrage réel
-  // du serveur, que Next signale en ne posant pas NEXT_PHASE.
-  const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
-
-  if (parsed.data.NODE_ENV === "production" && !isBuildPhase) {
-    const leaked = Object.entries(parsed.data)
-      .filter(([, value]) => typeof value === "string" && value.includes("build-placeholder"))
-      .map(([key]) => key);
-
-    if (leaked.length > 0) {
-      throw new Error(
-        `Variables d'environnement non fournies en production : ${leaked.join(", ")}. ` +
-          "Elles portent encore la valeur de remplacement utilisée au build.",
-      );
-    }
-  }
+  assertNoBuildPlaceholders(parsed.data, {
+    // `next build` s'exécute lui aussi en NODE_ENV=production, et c'est précisément le
+    // moment où les valeurs de remplacement sont légitimes. Next signale cette phase par
+    // NEXT_PHASE.
+    isBuildPhase: process.env.NEXT_PHASE === "phase-production-build",
+  });
 
   return parsed.data;
 }
