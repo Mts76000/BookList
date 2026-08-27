@@ -71,6 +71,28 @@ function loadEnv(): Env {
     );
   }
 
+  // Les valeurs de remplacement du Dockerfile (voir son étape `builder`) n'existent que pour
+  // satisfaire cette validation pendant `next build`. Si l'une survit jusqu'à un démarrage en
+  // production, c'est que l'hébergeur n'a pas injecté la vraie : mieux vaut refuser de
+  // démarrer que de servir l'application avec un secret connu de tous.
+  // `next build` s'exécute lui aussi en NODE_ENV=production, et c'est précisément le moment
+  // où les valeurs de remplacement sont légitimes. On ne contrôle donc qu'au démarrage réel
+  // du serveur, que Next signale en ne posant pas NEXT_PHASE.
+  const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
+
+  if (parsed.data.NODE_ENV === "production" && !isBuildPhase) {
+    const leaked = Object.entries(parsed.data)
+      .filter(([, value]) => typeof value === "string" && value.includes("build-placeholder"))
+      .map(([key]) => key);
+
+    if (leaked.length > 0) {
+      throw new Error(
+        `Variables d'environnement non fournies en production : ${leaked.join(", ")}. ` +
+          "Elles portent encore la valeur de remplacement utilisée au build.",
+      );
+    }
+  }
+
   return parsed.data;
 }
 

@@ -13,12 +13,27 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-# Build-time env vars: only what's needed to satisfy lib/env.ts during `next build`.
-# Real secrets are injected at runtime by Coolify, not baked into the image.
-ARG NEXT_PUBLIC_APP_URL
+# lib/env.ts valide tout l'environnement au chargement, y compris pendant `next build` :
+# sans ces valeurs, la collecte des pages échoue sur « Invalid environment variables ».
+#
+# Les variables NEXT_PUBLIC_* doivent porter leur vraie valeur ici, car Next les inline dans
+# le bundle client au moment du build. Les secrets serveur, eux, reçoivent des valeurs de
+# remplacement : ils ne servent à rien pendant le build et sont fournis au runtime par
+# l'hébergeur. lib/env.ts refuse de démarrer en production si l'une d'elles a survécu.
+ARG NEXT_PUBLIC_APP_URL=http://build-placeholder.invalid
+ARG NEXT_PUBLIC_APP_NAME=BookList
 ARG NEXT_PUBLIC_UMAMI_WEBSITE_ID
-ARG NEXT_PUBLIC_TURNSTILE_SITE_KEY
+ARG NEXT_PUBLIC_TURNSTILE_SITE_KEY=build-placeholder
 ARG NEXT_PUBLIC_IS_PREVIEW
+ARG NEXT_PUBLIC_BUYMEACOFFEE_SLUG
+ARG DATABASE_URL=postgres://build-placeholder@build-placeholder.invalid/build-placeholder
+ARG BETTER_AUTH_SECRET=build-placeholder-secret-at-least-32-characters
+ARG GOOGLE_CLIENT_ID=build-placeholder
+ARG GOOGLE_CLIENT_SECRET=build-placeholder
+ARG RESEND_API_KEY=build-placeholder
+ARG CONTACT_EMAIL=build-placeholder@build-placeholder.invalid
+ARG TURNSTILE_SECRET_KEY=build-placeholder
+ARG CRON_SECRET=build-placeholder-cron-secret
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 

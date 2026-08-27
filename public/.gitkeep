@@ -1,0 +1,5 @@
+Ce dossier sert aux fichiers statiques servis tels quels (robots complémentaires, images,
+fichiers de vérification de domaine...). Il est vide pour l'instant : le service worker est
+généré par Serwist et les icônes le sont à la volée par app/icon.tsx et lib/pwa-icon.tsx.
+
+Ne pas le supprimer : le Dockerfile copie ce dossier, et sa disparition fait échouer le build.
