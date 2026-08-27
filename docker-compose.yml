@@ -1,3 +1,5 @@
+# Ports décalés (5436 dev / 5435 test) : 5432 est occupé par BookList v1 et 5433/5434
+# par d'autres projets locaux. Seul l'hôte change, le conteneur reste sur 5432.
 services:
   postgres:
     image: postgres:17-alpine
@@ -7,7 +9,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: booklist_dev
     ports:
-      - "5434:5432"
+      - "5436:5432"
     volumes:
       - postgres-dev-data:/var/lib/postgresql/data
     healthcheck:
@@ -24,7 +26,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: booklist_test
     ports:
-      - "5433:5432"
+      - "5435:5432"
     volumes:
       - postgres-test-data:/var/lib/postgresql/data
     healthcheck:

@@ -1,22 +1,31 @@
 import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { Geist, Fraunces } from "next/font/google";
 import { ToastProvider } from "@/components/ui/toast";
 import { UmamiScript } from "@/components/umami-script";
 import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
 import { ServiceWorkerRegister } from "@/components/service-worker-register";
-import { canonicalUrl, organizationJsonLd } from "@/lib/seo";
+import { APP_DESCRIPTION, canonicalUrl, organizationJsonLd } from "@/lib/seo";
 import { env } from "@/lib/env";
 import "./globals.css";
 
-const plusJakarta = Plus_Jakarta_Sans({
-  variable: "--font-plus-jakarta",
+const geist = Geist({
+  variable: "--font-geist",
   subsets: ["latin"],
   display: "swap",
 });
 
+// Fraunces porte les titres : l'axe SOFT arrondit les terminaisons, ce qui donne le côté
+// « carnet » du produit plutôt qu'une serif de presse.
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
+  subsets: ["latin"],
+  axes: ["opsz", "SOFT"],
+  style: ["normal", "italic"],
+  display: "swap",
+});
+
 const appName = env.NEXT_PUBLIC_APP_NAME;
-const description =
-  "Socle Next.js générique : auth, email, analytics, sécurité, tests, prêt à l'emploi.";
+const description = APP_DESCRIPTION;
 
 export const metadata: Metadata = {
   metadataBase: new URL(env.NEXT_PUBLIC_APP_URL),
@@ -25,6 +34,14 @@ export const metadata: Metadata = {
     template: `%s | ${appName}`,
   },
   description,
+  keywords: [
+    "suivi de lecture",
+    "bibliothèque personnelle",
+    "tracker de livres",
+    "statistiques de lecture",
+    "scan ISBN",
+  ],
+  applicationName: appName,
   alternates: { canonical: canonicalUrl("/") },
   openGraph: {
     title: appName,
@@ -40,6 +57,7 @@ export const metadata: Metadata = {
     description,
   },
   appleWebApp: {
+    capable: true,
     title: appName,
     statusBarStyle: "default",
   },
@@ -51,12 +69,16 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#f8fafc",
+  themeColor: "#f8f3ea",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr" className={`${plusJakarta.variable} h-full antialiased`}>
+    <html
+      lang="fr"
+      data-scroll-behavior="smooth"
+      className={`${geist.variable} ${fraunces.variable} h-full antialiased`}
+    >
       <head>
         <script
           type="application/ld+json"

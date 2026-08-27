@@ -8,7 +8,7 @@ import { env } from "@/lib/env";
  * initial without editing this file.
  */
 export function generateIconResponse(px: number, padding = 0) {
-  const letter = env.NEXT_PUBLIC_APP_NAME.trim().charAt(0).toUpperCase() || "S";
+  const letter = env.NEXT_PUBLIC_APP_NAME.trim().charAt(0).toUpperCase() || "B";
 
   return new ImageResponse(
     <div
@@ -18,7 +18,7 @@ export function generateIconResponse(px: number, padding = 0) {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "#2563eb",
+        background: "#ab4f27",
       }}
     >
       <span
@@ -28,9 +28,10 @@ export function generateIconResponse(px: number, padding = 0) {
           height: px - padding * 2,
           alignItems: "center",
           justifyContent: "center",
-          color: "#ffffff",
+          color: "#f8f3ea",
           fontSize: (px - padding * 2) * 0.6,
-          fontWeight: 700,
+          fontWeight: 600,
+          fontFamily: "Georgia, serif",
         }}
       >
         {letter}

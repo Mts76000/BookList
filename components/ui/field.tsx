@@ -20,7 +20,7 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(
 
     return (
       <div className="flex flex-col gap-1.5">
-        <label htmlFor={inputId} className="text-foreground text-sm font-medium">
+        <label htmlFor={inputId} className="text-sm font-medium tracking-tight text-stone-700">
           {label}
         </label>
         <div className="relative">
@@ -30,7 +30,7 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(
             type={isPassword && isRevealed ? "text" : type}
             aria-invalid={Boolean(error)}
             aria-describedby={error ? errorId : helperText ? helperId : undefined}
-            className={`border-border bg-card text-card-foreground placeholder:text-muted-foreground focus-visible:outline-ring h-10 w-full rounded-md border px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 ${isPassword ? "pr-10" : ""} ${error ? "border-destructive" : ""} ${className}`}
+            className={`border-border bg-card text-card-foreground focus:border-accent-400 focus:ring-accent-400/15 w-full rounded-[var(--radius-sm)] border px-4 py-3 text-base shadow-[0_1px_2px_rgba(36,29,21,0.03)] transition-all duration-200 ease-out placeholder:text-stone-400 focus:ring-4 focus:outline-none ${isPassword ? "pr-12" : ""} ${error ? "border-destructive" : ""} ${className}`}
             {...props}
           />
           {isPassword ? (
@@ -38,7 +38,7 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(
               type="button"
               onClick={() => setIsRevealed((prev) => !prev)}
               aria-label={isRevealed ? "Masquer le mot de passe" : "Afficher le mot de passe"}
-              className="text-muted-foreground hover:text-foreground absolute inset-y-0 right-0 flex w-10 items-center justify-center"
+              className="text-muted-foreground hover:text-accent-600 absolute inset-y-0 right-0 flex w-12 items-center justify-center transition-colors"
             >
               {isRevealed ? (
                 <EyeSlash size={18} aria-hidden="true" />

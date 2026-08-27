@@ -107,9 +107,9 @@ au chargement du module, ce qui casse au bundling client. Utiliser
 
 ## Base de données — dev/test/prod
 
-- **Dev** : Postgres via `docker-compose.yml` (service `postgres`, port 5434 en local pour
-  éviter les conflits avec d'autres projets), `DATABASE_URL` dans `.env.local`.
-- **Test** : service Postgres séparé (`postgres-test`, port 5433), `DATABASE_URL` dans
+- **Dev** : Postgres via `docker-compose.yml` (service `postgres`, port 5436 en local pour
+  éviter les conflits avec BookList v1 et les autres projets), `DATABASE_URL` dans `.env.local`.
+- **Test** : service Postgres séparé (`postgres-test`, port 5435), `DATABASE_URL` dans
   `.env.test`, jamais partagé avec dev/prod.
 - **Prod** : Postgres Coolify, URL interne fournie par Coolify, jamais committée.
 - Garde-fou anti-prod : `lib/db-safety.ts` (`assertTestDatabase`) refuse de lancer les tests

@@ -18,7 +18,7 @@ interface ToastContextValue {
 const ToastContext = createContext<ToastContextValue | null>(null);
 
 const ICONS: Record<ToastVariant, ReactNode> = {
-  success: <CheckCircle size={20} className="text-primary" aria-hidden="true" />,
+  success: <CheckCircle size={20} className="text-success" aria-hidden="true" />,
   error: <XCircle size={20} className="text-destructive" aria-hidden="true" />,
   info: <WarningCircle size={20} className="text-muted-foreground" aria-hidden="true" />,
 };
@@ -42,7 +42,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.map((t) => (
           <div
             key={t.id}
-            className="border-border bg-card text-card-foreground pointer-events-auto flex items-center gap-2 rounded-md border px-4 py-3 text-sm shadow-lg"
+            className="border-border bg-card text-card-foreground pointer-events-auto flex items-center gap-2 rounded-[var(--radius-md)] border px-4 py-3 text-sm shadow-[0_1px_2px_rgba(36,29,21,0.06),0_18px_32px_-16px_rgba(36,29,21,0.45)]"
           >
             {ICONS[t.variant]}
             {t.message}
