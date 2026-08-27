@@ -12,6 +12,8 @@
 
 # testing
 /coverage
+/playwright-report
+/test-results
 
 # next.js
 /.next/
@@ -30,9 +32,10 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env
-.env*.local
+# env files (examples are committed, real env files never are)
+.env*
+!.env.example
+!.env.test.example
 
 # vercel
 .vercel
@@ -41,4 +44,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-/src/generated/prisma
+# dumps de base de données — contiennent des emails et des hashs de mots de passe,
+# ils ne doivent jamais entrer dans l'historique (le job gitleaks scanne tout le passé)
+*.sql
+*.dump
+*.sql.gz
+!drizzle/migrations/*.sql

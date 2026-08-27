@@ -2,15 +2,17 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 
+// eslint-config-next already registers and configures eslint-plugin-jsx-a11y
+// (see node_modules/eslint-config-next/dist/index.js) — re-registering the plugin here
+// throws "Cannot redefine plugin". We only tighten a few rules from warn to error.
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   {
     rules: {
-      // Ces effets synchronisent l'état React avec des systèmes externes
-      // (capacités du navigateur, session, token d'URL) au montage : c'est
-      // l'usage légitime documenté par React, pas un rendu en cascade à corriger.
-      "react-hooks/set-state-in-effect": "warn",
+      "jsx-a11y/alt-text": "error",
+      "jsx-a11y/aria-props": "error",
+      "jsx-a11y/role-has-required-aria-props": "error",
     },
   },
   // Override default ignores of eslint-config-next.
@@ -20,6 +22,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "drizzle/migrations/**",
+    "coverage/**",
+    "playwright-report/**",
+    "test-results/**",
   ]),
 ]);
 

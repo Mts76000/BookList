@@ -1,0 +1,244 @@
+@import "tailwindcss";
+
+/*
+  Système de design « Carnet de lecture », hérité de BookList v1.
+  La palette stone (neutres) est redéfinie sur une base crème/encre chaude au lieu du gris
+  froid de Tailwind, et deux familles propres au produit s'y ajoutent : terracotta pour
+  l'accent, moss pour le statut « terminé ». Un seul accent porte l'action.
+
+  Ces échelles alimentent les tokens sémantiques du socle (--color-primary, --color-card…)
+  définis juste en dessous : les composants de components/ui/ héritent donc automatiquement
+  du rendu BookList sans connaître la palette.
+*/
+@theme {
+  --color-stone-50: #f8f3ea;
+  --color-stone-100: #f0e7d6;
+  --color-stone-200: #e3d5bc;
+  --color-stone-300: #cebb9b;
+  --color-stone-400: #b0a081;
+  --color-stone-500: #8a7a63;
+  --color-stone-600: #6b5d49;
+  --color-stone-700: #504536;
+  --color-stone-800: #372e23;
+  --color-stone-900: #241d15;
+  --color-stone-950: #17120c;
+
+  --color-accent-50: #fbeee6;
+  --color-accent-100: #f5dac8;
+  --color-accent-200: #e9b892;
+  --color-accent-300: #dc9569;
+  --color-accent-400: #c8703f;
+  --color-accent-500: #ab4f27;
+  --color-accent-600: #93401e;
+  --color-accent-700: #79331a;
+  --color-accent-800: #5f2a18;
+  --color-accent-900: #4a2315;
+
+  --color-moss-50: #eef1e7;
+  --color-moss-100: #dbe3cc;
+  --color-moss-200: #b9c8a1;
+  --color-moss-300: #93a878;
+  --color-moss-400: #6d8757;
+  --color-moss-500: #4f6a41;
+  --color-moss-600: #3f5535;
+  --color-moss-700: #33452c;
+  --color-moss-800: #2a3824;
+  --color-moss-900: #212c1c;
+
+  --color-amber-50: #fbf3e2;
+  --color-amber-100: #f4e3bd;
+  --color-amber-300: #e0b465;
+  --color-amber-400: #cf9843;
+  --color-amber-500: #b9812f;
+  --color-amber-600: #986a27;
+}
+
+/* Thème clair uniquement : BookList est un produit mono-thème, comme le socle. */
+:root {
+  --color-background: #f8f3ea;
+  --color-background-soft: #efe4cf;
+  --color-foreground: #241d15;
+  --color-card: #fffcf5;
+  --color-card-foreground: #241d15;
+  --color-muted: #f0e7d6;
+  /* stone-600 et non stone-500 : le contraste sur fond crème doit rester >= 4.5:1. */
+  --color-muted-foreground: #6b5d49;
+  --color-border: #e3d5bc;
+
+  /* L'action principale est encre, pas terracotta : le terracotta n'apparaît qu'au survol
+     et sur les éléments d'accentuation, pour qu'un seul accent porte l'attention. */
+  --color-primary: #241d15;
+  --color-on-primary: #f8f3ea;
+  --color-accent: #ab4f27;
+  --color-on-accent: #ffffff;
+  --color-accent-soft: #f5dac8;
+  /* Vert moss : statut « terminé » et confirmations. */
+  --color-success: #4f6a41;
+  --color-on-success: #eef1e7;
+  /* Rouge brique, plus froid que le terracotta pour rester distinguable de l'accent. */
+  --color-destructive: #b3261e;
+  --color-on-destructive: #ffffff;
+  --color-ring: #dc9569;
+
+  /* Rayons du produit, volontairement absents du bloc @theme : les remonter y écraserait
+     `rounded-sm` / `rounded-md` / `rounded-lg` de Tailwind, dont les valeurs bien plus
+     petites sont attendues telles quelles par les composants (une pastille de 36px en
+     rounded-lg deviendrait un cercle). On les référence explicitement, en
+     `rounded-[var(--radius-md)]`, là où le rayon « carnet » est voulu. */
+  --radius-sm: 0.75rem;
+  --radius-md: 1.125rem;
+  --radius-lg: 1.75rem;
+
+  --ease-apple: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@theme inline {
+  --color-background: var(--color-background);
+  --color-background-soft: var(--color-background-soft);
+  --color-foreground: var(--color-foreground);
+  --color-card: var(--color-card);
+  --color-card-foreground: var(--color-card-foreground);
+  --color-muted: var(--color-muted);
+  --color-muted-foreground: var(--color-muted-foreground);
+  --color-border: var(--color-border);
+  --color-primary: var(--color-primary);
+  --color-on-primary: var(--color-on-primary);
+  --color-accent: var(--color-accent);
+  --color-on-accent: var(--color-on-accent);
+  --color-accent-soft: var(--color-accent-soft);
+  --color-success: var(--color-success);
+  --color-on-success: var(--color-on-success);
+  --color-destructive: var(--color-destructive);
+  --color-on-destructive: var(--color-on-destructive);
+  --color-ring: var(--color-ring);
+  --font-sans: var(--font-geist);
+  --font-serif: var(--font-fraunces);
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings:
+    "kern" 1,
+    "liga" 1;
+}
+
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-fraunces), Georgia, serif;
+  letter-spacing: -0.01em;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Sans ça les cases et boutons radio gardent le bleu système, seule tache froide de l'UI. */
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--color-accent);
+}
+
+input[type="date"] {
+  min-height: 48px;
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0;
+}
+
+::selection {
+  background: var(--color-accent-soft);
+  color: var(--color-foreground);
+}
+
+*:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.6s var(--ease-apple) both;
+}
+
+/*
+  Primitives visuelles propres à BookList, sans équivalent dans components/ui/.
+  Les boutons et les champs, eux, ne sont volontairement PAS ici : ils passent par
+  <Button> et <Field> du socle, pour éviter deux systèmes concurrents.
+*/
+@layer components {
+  .card {
+    @apply border-border bg-card rounded-[var(--radius-md)] border shadow-[0_1px_1px_rgba(36,29,21,0.03),0_10px_24px_-18px_rgba(36,29,21,0.35)];
+  }
+
+  .card-interactive {
+    @apply transition-all duration-300 ease-out hover:-translate-y-1 hover:border-stone-300 hover:shadow-[0_1px_2px_rgba(36,29,21,0.04),0_18px_32px_-16px_rgba(36,29,21,0.3)];
+  }
+
+  /* En CSS natif et non en @apply : la variante supports-[] combinée à une opacité de
+     couleur est perdue à la compilation, et .glass ressort alors opaque et sans flou. */
+  .glass {
+    background-color: color-mix(in oklab, var(--color-background) 75%, transparent);
+  }
+
+  @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+    .glass {
+      background-color: color-mix(in oklab, var(--color-background) 60%, transparent);
+      -webkit-backdrop-filter: blur(24px) saturate(1.5);
+      backdrop-filter: blur(24px) saturate(1.5);
+    }
+  }
+
+  /* Lien textuel souligné. L'équivalent bouton est <Button variant="text"> ; cette classe
+     existe pour les vrais liens (<a>, <Link>), qu'un bouton ne peut pas remplacer. */
+  .link {
+    @apply hover:text-accent-600 hover:decoration-accent-400 text-stone-600 underline decoration-stone-300 decoration-1 underline-offset-4 transition-colors duration-200;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium tracking-tight;
+  }
+
+  .status-dot {
+    @apply inline-block h-1.5 w-1.5 shrink-0 rounded-full;
+  }
+
+  .noise-overlay {
+    position: relative;
+  }
+
+  .noise-overlay::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.05;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27120%27%20height%3D%27120%27%3E%3Cfilter%20id%3D%27n%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.9%27%20numOctaves%3D%272%27%20stitchTiles%3D%27stitch%27%2F%3E%3C%2Ffilter%3E%3Crect%20width%3D%27100%25%27%20height%3D%27100%25%27%20filter%3D%27url(%23n)%27%2F%3E%3C%2Fsvg%3E");
+  }
+}
