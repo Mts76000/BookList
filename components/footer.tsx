@@ -22,6 +22,9 @@ export function Footer() {
           <Link href="/legal/privacy" className="hover:text-foreground">
             Confidentialité
           </Link>
+          <Link href="/legal/cookies" className="hover:text-foreground">
+            Cookies
+          </Link>
         </nav>
       </div>
     </footer>

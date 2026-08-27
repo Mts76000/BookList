@@ -13,7 +13,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly",
       priority: 1,
     },
-    ...["/legal/notice", "/legal/terms", "/legal/privacy"].map((path) => ({
+    ...["/legal/notice", "/legal/terms", "/legal/privacy", "/legal/cookies"].map((path) => ({
       url: `${env.NEXT_PUBLIC_APP_URL}${path}`,
       lastModified,
       changeFrequency: "yearly" as const,

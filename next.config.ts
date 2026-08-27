@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSerwist } from "@serwist/turbopack";
 
 // CSP whitelist rationale:
 // - 'self' + inline styles/scripts: Next.js/Tailwind require these for hydration.
@@ -88,4 +89,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSerwist(nextConfig);

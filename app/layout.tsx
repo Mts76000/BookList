@@ -3,7 +3,9 @@ import { Geist, Fraunces } from "next/font/google";
 import { ToastProvider } from "@/components/ui/toast";
 import { UmamiScript } from "@/components/umami-script";
 import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
-import { ServiceWorkerRegister } from "@/components/service-worker-register";
+import { SerwistProvider } from "@serwist/turbopack/react";
+import { DevServiceWorkerCleanup } from "@/components/dev-service-worker-cleanup";
+import { CookieConsent } from "@/components/cookie-consent";
 import { APP_DESCRIPTION, canonicalUrl, organizationJsonLd } from "@/lib/seo";
 import { env } from "@/lib/env";
 import "./globals.css";
@@ -97,8 +99,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         >
           Aller au contenu principal
         </a>
-        <ToastProvider>{children}</ToastProvider>
-        <ServiceWorkerRegister />
+        <DevServiceWorkerCleanup />
+        {/* Serwist plutôt que l'enregistrement minimal du socle : BookList a besoin d'un
+            vrai cache hors ligne et d'une page de repli (voir app/sw.ts). */}
+        <SerwistProvider swUrl="/serwist/sw.js" disable={process.env.NODE_ENV === "development"}>
+          <ToastProvider>{children}</ToastProvider>
+        </SerwistProvider>
+        <CookieConsent />
         <PwaInstallPrompt />
         <UmamiScript />
       </body>
