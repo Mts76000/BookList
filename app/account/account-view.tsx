@@ -71,9 +71,11 @@ function SectionCard({
 
 interface AccountViewProps {
   stats: ReadingStats;
-  /** Nom d'affichage, fourni par le serveur : la session client n'est pas encore chargée
-   *  au premier rendu, et le champ ne doit pas partir vide puis se remplir. */
+  /** Identité fournie par le serveur, qui la connaît déjà. Sans elle, le rendu serveur
+   *  affiche le squelette de chargement (useSession n'est résolu qu'au client) tandis que
+   *  le client affiche le contenu : l'hydratation échoue et la page se re-rend entièrement. */
   userName: string;
+  userEmail: string;
   /** Livres lus avant l'inscription, saisis à l'onboarding et comptés dans le total. */
   initialBooksRead: number;
   /** Déjà formatée côté serveur : formater une date ici produit un rendu différent de
@@ -81,10 +83,16 @@ interface AccountViewProps {
   memberSince: string;
 }
 
-export function AccountView({ stats, userName, initialBooksRead, memberSince }: AccountViewProps) {
+export function AccountView({
+  stats,
+  userName,
+  userEmail,
+  initialBooksRead,
+  memberSince,
+}: AccountViewProps) {
   const router = useRouter();
   const { toast } = useToast();
-  const { data: session, isPending } = useSession();
+  const { data: session } = useSession();
 
   const [isPasswordFormOpen, setIsPasswordFormOpen] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
@@ -174,32 +182,18 @@ export function AccountView({ stats, userName, initialBooksRead, memberSince }: 
     }
   }
 
-  if (isPending) {
-    return (
-      <div className="flex flex-col gap-6">
-        <Skeleton className="h-24 w-full rounded-xl" />
-        <Skeleton className="h-48 w-full rounded-xl" />
-        <Skeleton className="h-40 w-full rounded-xl" />
-      </div>
-    );
-  }
-
-  if (!session) {
-    return null; // proxy + requireAuth() redirect unauthenticated users before this renders
-  }
-
   return (
     <div className="flex flex-col gap-6">
       <div className="border-border bg-card flex items-center justify-between rounded-xl border p-6">
         <div className="flex items-center gap-4">
           <span className="bg-primary text-on-primary flex size-12 shrink-0 items-center justify-center rounded-full text-base font-semibold">
-            {initialsFrom(session.user.name || session.user.email)}
+            {initialsFrom(userName || userEmail)}
           </span>
           <div>
             <h1 className="text-card-foreground text-lg font-semibold tracking-tight">
-              {session.user.name || "Mon compte"}
+              {userName || "Mon compte"}
             </h1>
-            <p className="text-muted-foreground text-sm">{session.user.email}</p>
+            <p className="text-muted-foreground text-sm">{userEmail}</p>
           </div>
         </div>
         <Button type="button" variant="secondary" onClick={handleSignOut}>
@@ -366,7 +360,7 @@ export function AccountView({ stats, userName, initialBooksRead, memberSince }: 
         ) : (
           <ul className="divide-border -mx-2 flex flex-col divide-y">
             {sessions.map((s) => {
-              const isCurrent = s.token === session.session.token;
+              const isCurrent = s.token === session?.session.token;
               return (
                 <li key={s.id} className="flex items-center justify-between gap-4 px-2 py-3">
                   <div className="flex items-center gap-3">

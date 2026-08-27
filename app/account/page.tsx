@@ -22,6 +22,7 @@ export default async function AccountPage() {
     <AccountView
       stats={stats}
       userName={session.user.name}
+      userEmail={session.user.email}
       initialBooksRead={session.user.initialBooksRead}
       memberSince={new Date(session.user.createdAt).toLocaleDateString("fr-FR")}
     />
