@@ -101,4 +101,13 @@ d'un compteur vide.
 ## Déploiement
 
 Déploiement Coolify avec les variables d'environnement injectées par la plateforme (aucun
-fichier `.env` en production). Le `Dockerfile` produit un build `standalone`.
+fichier `.env` en production).
+
+**Le build pack doit être réglé sur « Dockerfile »**, pas sur Nixpacks. Le `Dockerfile` du
+projet produit une image `standalone` sur Node 22 ; Nixpacks, lui, retombe sur Node 18, que
+`package.json` n'autorise pas.
+
+**Ne pas définir `NODE_ENV` dans les variables de la plateforme.** Next.js le positionne
+lui-même. Le forcer à `development` fait échouer `next build` au prérendu de
+`/_global-error`, sur une erreur `Cannot read properties of null (reading 'useContext')` qui
+ne dit rien de sa cause réelle.
