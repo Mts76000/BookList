@@ -11,6 +11,7 @@ import * as schema from "./schema";
 
 const SEED_EMAIL = "test@booklist.fr";
 const SEED_PASSWORD = "test1234";
+const ADMIN_EMAIL = "admin@booklist.fr";
 
 // Annoté explicitement pour que `status` soit vu comme la valeur d'enum et non comme string.
 const books: Omit<typeof schema.book.$inferInsert, "userId">[] = [
@@ -310,6 +311,31 @@ export async function runSeed() {
     console.log(`User already present: ${SEED_EMAIL} (id: ${userId})`);
   }
 
+  // Compte administrateur, pour pouvoir ouvrir le back-office en développement. Même mot de
+  // passe que le compte de démonstration.
+  const existingAdmin = await db.query.user.findFirst({
+    where: eq(schema.user.email, ADMIN_EMAIL),
+  });
+  if (!existingAdmin) {
+    const adminId = randomUUID();
+    await db.insert(schema.user).values({
+      id: adminId,
+      name: "Admin BookList",
+      email: ADMIN_EMAIL,
+      emailVerified: true,
+      role: "admin",
+    });
+    await db.insert(schema.account).values({
+      id: randomUUID(),
+      accountId: adminId,
+      providerId: "credential",
+      issuer: createLocalAccountIssuer("credential"),
+      userId: adminId,
+      password: await hashPassword(SEED_PASSWORD),
+    });
+    console.log(`Admin created: ${ADMIN_EMAIL} (id: ${adminId})`);
+  }
+
   await db
     .insert(schema.book)
     .values(books.map((b) => ({ ...b, userId })))
@@ -354,7 +380,7 @@ export async function runSeed() {
   }
 
   console.log("\n--- Seed complete ---");
-  console.log(`Email: ${SEED_EMAIL}`);
+  console.log(`Email: ${SEED_EMAIL} (utilisateur) / ${ADMIN_EMAIL} (admin)`);
   console.log(`Password: ${SEED_PASSWORD}`);
   await pool.end();
 }
