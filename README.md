@@ -123,3 +123,7 @@ projet produit une image `standalone` sur Node 22 ; Nixpacks, lui, retombe sur N
 lui-même. Le forcer à `development` fait échouer `next build` au prérendu de
 `/_global-error`, sur une erreur `Cannot read properties of null (reading 'useContext')` qui
 ne dit rien de sa cause réelle.
+
+Le Dockerfile résiste néanmoins à un `NODE_ENV=production` injecté par la plateforme : son
+`npm ci --include=dev` force l'installation des devDependencies, sans lesquelles TypeScript
+et Tailwind manqueraient au build, et le script `prepare` tolère l'absence de husky.
