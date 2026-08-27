@@ -214,6 +214,12 @@ input[type="date"] {
     }
   }
 
+  /* Lien textuel souligné. L'équivalent bouton est <Button variant="text"> ; cette classe
+     existe pour les vrais liens (<a>, <Link>), qu'un bouton ne peut pas remplacer. */
+  .link {
+    @apply hover:text-accent-600 hover:decoration-accent-400 text-stone-600 underline decoration-stone-300 decoration-1 underline-offset-4 transition-colors duration-200;
+  }
+
   .badge {
     @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium tracking-tight;
   }
