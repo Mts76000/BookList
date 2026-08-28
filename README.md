@@ -8,8 +8,6 @@ Cette version est construite sur le socle [`starter-nextjs`](https://github.com/
 Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS v4 · PostgreSQL + Drizzle ORM ·
 better-auth · Resend + react-email · Umami · Vitest + Playwright.
 
-> Migration depuis BookList v1 (NextAuth + Prisma) en cours — voir `docs/MIGRATION-PLAN.md`.
-
 ## Prérequis
 
 - Node.js `^20.19.0`, `^22.12.0` ou `>=24.0.0`
@@ -20,7 +18,7 @@ better-auth · Resend + react-email · Umami · Vitest + Playwright.
 ```bash
 npm install
 cp .env.example .env.local   # puis complétez les valeurs
-docker compose up -d          # Postgres dev (5434) + test (5433)
+docker compose up -d          # Postgres dev (5436) + test (5435)
 npm run db:migrate
 npm run db:seed               # données de démonstration
 npm run dev
@@ -51,7 +49,7 @@ npm run db:seed       # données de démonstration
 npm run db:reset      # remise à zéro complète
 ```
 
-La base de test (`postgres-test`, port 5433) est séparée de la base de dev : `tests/setup.ts`
+La base de test (`postgres-test`, port 5435) est séparée de la base de dev : `tests/setup.ts`
 refuse de démarrer si `DATABASE_URL` ne contient pas « test ».
 
 ## Note sur l'override esbuild
@@ -65,30 +63,6 @@ sont partagés entre les versions, et la vérification échoue.
 L'erreur ne se manifeste qu'à l'installation propre — `npm install` incrémental y échappe —
 et donc surtout au build Docker. Cet override disparaîtra le jour où `drizzle-kit`
 abandonnera `@esbuild-kit`.
-
-## Migration des données depuis BookList v1
-
-Le script `drizzle/migrate-from-booklist-v1.ts` recopie les données de la base v1
-(NextAuth + Prisma) vers le schéma v2. Il lit `LEGACY_DATABASE_URL` et écrit dans
-`DATABASE_URL` ; l'ancienne base n'est jamais modifiée.
-
-```bash
-# Simulation : compte les lignes et n'écrit rien
-LEGACY_DATABASE_URL=postgres://… npm run db:migrate-v1 -- --dry-run
-
-# Migration réelle
-LEGACY_DATABASE_URL=postgres://… npm run db:migrate-v1
-```
-
-Le script est rejouable : les identifiants de la v1 sont conservés et les lignes déjà
-présentes sont ignorées, y compris les moyens de connexion. Il refuse de démarrer si les deux
-URLs désignent la même base, ou si la table `ReadingSession` de la v1 contient des lignes —
-aucun schéma v2 ne les accueille, et il vaut mieux interrompre que les perdre en silence.
-
-Les comptes migrés sont marqués comme vérifiés, et leur mot de passe bcrypt est conservé tel
-quel : il est accepté à la connexion puis remplacé par un hash scrypt (voir
-`lib/legacy-password.ts`). Les adresses listées dans `MIGRATION_ADMIN_EMAILS` (par défaut
-`contact@mathis-lamotte.fr`) reçoivent le rôle `admin`.
 
 ## Qualité
 

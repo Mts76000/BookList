@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { envSchema } from "@/lib/env";
+import { assertNoBuildPlaceholders, envSchema, type Env } from "@/lib/env";
 
 const validEnv = {
   NODE_ENV: "test",
@@ -47,5 +47,58 @@ describe("envSchema", () => {
   it("rejects a BETTER_AUTH_SECRET shorter than 32 characters", () => {
     const result = envSchema.safeParse({ ...validEnv, BETTER_AUTH_SECRET: "short" });
     expect(result.success).toBe(false);
+  });
+});
+
+describe("assertNoBuildPlaceholders", () => {
+  /** Environnement de production complet, avec les valeurs de remplacement demandées. */
+  function productionEnv(overrides: Partial<Env> = {}): Env {
+    return {
+      ...validEnv,
+      NODE_ENV: "production",
+      ...overrides,
+    } as Env;
+  }
+
+  it("laisse passer un environnement de production correctement renseigné", () => {
+    expect(() => assertNoBuildPlaceholders(productionEnv(), { isBuildPhase: false })).not.toThrow();
+  });
+
+  it("refuse de démarrer si un secret porte encore sa valeur de remplacement", () => {
+    expect(() =>
+      assertNoBuildPlaceholders(
+        productionEnv({ BETTER_AUTH_SECRET: "build-placeholder-secret-at-least-32-chars" }),
+        { isBuildPhase: false },
+      ),
+    ).toThrow(/BETTER_AUTH_SECRET/);
+  });
+
+  it("nomme toutes les variables concernées, pas seulement la première", () => {
+    expect(() =>
+      assertNoBuildPlaceholders(
+        productionEnv({
+          BETTER_AUTH_SECRET: "build-placeholder-secret-at-least-32-chars",
+          RESEND_API_KEY: "build-placeholder",
+        }),
+        { isBuildPhase: false },
+      ),
+    ).toThrow(/BETTER_AUTH_SECRET.*RESEND_API_KEY/);
+  });
+
+  it("tolère les valeurs de remplacement pendant le build, où elles sont légitimes", () => {
+    expect(() =>
+      assertNoBuildPlaceholders(productionEnv({ RESEND_API_KEY: "build-placeholder" }), {
+        isBuildPhase: true,
+      }),
+    ).not.toThrow();
+  });
+
+  it("ne contrôle rien hors production : le développement local n'est pas concerné", () => {
+    expect(() =>
+      assertNoBuildPlaceholders(
+        { ...validEnv, NODE_ENV: "development", RESEND_API_KEY: "build-placeholder" } as Env,
+        { isBuildPhase: false },
+      ),
+    ).not.toThrow();
   });
 });

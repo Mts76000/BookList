@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { getLogoMark } from "@/lib/pwa-icon";
 import { env } from "@/lib/env";
 import { APP_DESCRIPTION } from "@/lib/seo";
 
@@ -19,23 +20,7 @@ export default function OpengraphImage() {
       }}
     >
       <div style={{ display: "flex", flexDirection: "column", maxWidth: 720 }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: 64,
-            height: 64,
-            borderRadius: 16,
-            background: "#ab4f27",
-            color: "#f8f3ea",
-            fontSize: 36,
-            fontWeight: 600,
-            marginBottom: 32,
-          }}
-        >
-          B
-        </div>
+        <img src={getLogoMark()} width={128} height={83} alt="" style={{ marginBottom: 28 }} />
         <div style={{ display: "flex", fontSize: 72, fontWeight: 600, color: "#241d15" }}>
           {env.NEXT_PUBLIC_APP_NAME}
         </div>

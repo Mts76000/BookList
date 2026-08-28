@@ -5,6 +5,7 @@ import { getOptionalSession } from "@/lib/permissions";
 import { APP_DESCRIPTION, canonicalUrl } from "@/lib/seo";
 import { buttonClasses } from "@/components/ui/button";
 import { Footer } from "@/components/footer";
+import { Logo } from "@/components/logo";
 import { env } from "@/lib/env";
 
 const FEATURES = [
@@ -68,9 +69,7 @@ export default async function HomePage() {
     <div className="min-h-screen overflow-x-hidden bg-stone-50">
       <header className="glass sticky top-0 z-50 border-b border-stone-200/60">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
-          <span className="font-serif text-lg font-medium tracking-tight text-stone-900">
-            BookList
-          </span>
+          <Logo priority />
           <Link
             href="/login"
             className="text-sm font-medium text-stone-600 transition-colors duration-200 hover:text-stone-900"

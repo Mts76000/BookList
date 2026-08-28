@@ -120,6 +120,7 @@ export default async function BooksPage({
                     coverUrl={entry.coverUrl}
                     alt={entry.title}
                     tactile
+                    variant="large"
                     className="aspect-[2/3] w-full rounded-[var(--radius-sm)]"
                   />
                   {entry.userRating && (
