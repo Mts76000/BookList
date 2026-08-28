@@ -1,14 +1,33 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { ImageResponse } from "next/og";
-import { env } from "@/lib/env";
+
+const BACKGROUND = "#f8f3ea";
+
+// Satori ne résout ni URL ni chemin public : il lui faut les octets de l'image. Le fichier
+// est lu une seule fois par processus, et seulement au build puisque toutes les routes qui
+// appellent cette fonction sont statiques.
+let markDataUri: string | undefined;
+
+export function getLogoMark(): string {
+  markDataUri ??= `data:image/png;base64,${readFileSync(
+    join(process.cwd(), "public", "logo-mark.png"),
+  ).toString("base64")}`;
+
+  return markDataUri;
+}
 
 /**
- * Shared glyph generator for every app icon (favicon, apple-icon, PWA manifest icons).
- * `padding` leaves safe-zone margin for maskable icons, where OS shells crop/mask the image.
- * The glyph is the first letter of NEXT_PUBLIC_APP_NAME, so a new project shows its own
- * initial without editing this file.
+ * Générateur partagé de toutes les icônes de l'application (favicon, apple-icon, icônes du
+ * manifest PWA) : le livre ouvert du logo, centré sur le fond crème de la marque.
+ * `padding` réserve la marge de sécurité des icônes maskable, que le système d'exploitation
+ * rogne pour appliquer son propre masque.
  */
+const MARK_RATIO = 640 / 416;
+
 export function generateIconResponse(px: number, padding = 0) {
-  const letter = env.NEXT_PUBLIC_APP_NAME.trim().charAt(0).toUpperCase() || "B";
+  const width = Math.round((px - padding * 2) * 0.82);
+  const height = Math.round(width / MARK_RATIO);
 
   return new ImageResponse(
     <div
@@ -18,24 +37,11 @@ export function generateIconResponse(px: number, padding = 0) {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "#ab4f27",
+        background: BACKGROUND,
       }}
     >
-      <span
-        style={{
-          display: "flex",
-          width: px - padding * 2,
-          height: px - padding * 2,
-          alignItems: "center",
-          justifyContent: "center",
-          color: "#f8f3ea",
-          fontSize: (px - padding * 2) * 0.6,
-          fontWeight: 600,
-          fontFamily: "Georgia, serif",
-        }}
-      >
-        {letter}
-      </span>
+      {/* eslint-disable-next-line @next/next/no-img-element -- rendu par satori, hors DOM */}
+      <img src={getLogoMark()} width={width} height={height} alt="" />
     </div>,
     { width: px, height: px },
   );

@@ -72,6 +72,9 @@
   --color-accent: #ab4f27;
   --color-on-accent: #ffffff;
   --color-accent-soft: #f5dac8;
+  /* Terracotta du logo, légèrement plus saturé que l'accent : réservé au mot-symbole, pour
+     qu'il s'accorde exactement au glyphe du livre. */
+  --color-brand: #a73e21;
   /* Vert moss : statut « terminé » et confirmations. */
   --color-success: #4f6a41;
   --color-on-success: #eef1e7;
@@ -106,6 +109,7 @@
   --color-accent: var(--color-accent);
   --color-on-accent: var(--color-on-accent);
   --color-accent-soft: var(--color-accent-soft);
+  --color-brand: var(--color-brand);
   --color-success: var(--color-success);
   --color-on-success: var(--color-on-success);
   --color-destructive: var(--color-destructive);

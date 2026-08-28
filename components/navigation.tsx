@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
+import { Logo } from "@/components/logo";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Accueil", icon: HomeIcon },
@@ -38,11 +39,8 @@ export function Navigation() {
     <>
       <header className="glass sticky top-0 z-40 border-b border-stone-200/70 sm:hidden">
         <div className="flex h-14 items-center justify-between px-4">
-          <Link
-            href="/dashboard"
-            className="font-serif text-lg font-medium tracking-tight text-stone-900"
-          >
-            BookList
+          <Link href="/dashboard">
+            <Logo priority />
           </Link>
         </div>
       </header>
@@ -78,11 +76,8 @@ export function Navigation() {
         aria-label="Navigation principale"
         className="bg-background-soft fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-stone-200/70 sm:flex"
       >
-        <Link
-          href="/dashboard"
-          className="flex h-16 items-center px-6 font-serif text-lg font-medium tracking-tight text-stone-900"
-        >
-          BookList
+        <Link href="/dashboard" className="flex h-16 items-center px-6">
+          <Logo priority />
         </Link>
 
         <div className="flex-1 space-y-1 px-3 py-2">
