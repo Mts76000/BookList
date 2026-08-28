@@ -25,7 +25,6 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx drizzle/seed.ts",
-    "db:migrate-v1": "tsx drizzle/migrate-from-booklist-v1.ts",
     "db:reset": "tsx drizzle/reset.ts",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm run test",
     "prepare": "husky || true"

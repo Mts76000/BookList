@@ -17,8 +17,6 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et ce p
 - Back-office d'administration (`/admin`) : vue d'ensemble chiffrée, liste et fiche
   utilisateur, changement de rôle, révocation de sessions, suppression de compte et
   consultation du journal d'audit. Invisible (404) pour un non-administrateur.
-- Script de migration des données depuis BookList v1 (`npm run db:migrate-v1`), rejouable,
-  avec mode simulation et garde-fous.
 
 ### Changed
 

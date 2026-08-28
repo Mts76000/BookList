@@ -20,9 +20,6 @@ rester identique au starter : c'est BookList qui s'adapte au socle, jamais l'inv
 décris et n'implémente ici que les **fonctionnalités métier** de BookList et les dérogations
 listées plus bas.
 
-Le plan de migration depuis BookList v1 (NextAuth + Prisma) est suivi dans
-`docs/MIGRATION-PLAN.md`.
-
 ## Dérogations assumées au starter
 
 Ces trois écarts sont volontaires et ne doivent pas être « corrigés » vers le défaut du
@@ -30,8 +27,8 @@ starter sans validation explicite :
 
 1. **Suppression de compte par anonymisation, et non hard delete.** BookList remplace
    l'email par `deleted-<id>@anonymized.booklist`, efface nom et données métier, et conserve
-   la ligne `user` avec `isAnonymized`/`anonymizedAt`. Comportement hérité de la v1 et
-   conservé pour ne pas casser les comptes déjà supprimés lors de la migration.
+   la ligne `user` avec `isAnonymized`/`anonymizedAt`. L'adresse libérée ne peut ainsi pas
+   servir à rouvrir un compte se faisant passer pour l'ancien.
 2. **Vérification bcrypt en plus de scrypt.** Les mots de passe de la v1 sont des hashs
    bcrypt. `lib/auth.ts` branche un `password.verify` custom qui détecte le préfixe
    `$2a$`/`$2b$`, vérifie en bcrypt, puis re-hash en scrypt à la première connexion réussie.
@@ -39,10 +36,9 @@ starter sans validation explicite :
 3. **Serwist plutôt que le service worker minimal du starter.** BookList a besoin d'un vrai
    cache hors-ligne et d'une page `~offline`.
 
-**Pas de redirections depuis les URLs de la v1.** Quand le socle fournit déjà une page pour
-un contenu, on écrit ce contenu dans la page du socle et l'ancienne URL disparaît, sans bloc
-`redirects()` : `/mentions-legales` devient `app/legal/notice`, `/auth/signin` devient
-`/login`, `/profile` devient `/account`. La rupture d'URL est assumée.
+**Pas de redirections de compatibilité.** Quand le socle fournit déjà une page pour un
+contenu, ce contenu va dans la page du socle et l'ancienne adresse disparaît, sans bloc
+`redirects()`. La rupture d'URL est assumée.
 
 Autres adaptations projet : `lib/umami.ts` pointe sur l'instance self-hosted
 `stats.mathis-lamotte.fr`, et `lib/env.ts` ajoute `GOOGLE_BOOKS_API_KEY` (optionnelle) pour

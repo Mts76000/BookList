@@ -64,30 +64,6 @@ L'erreur ne se manifeste qu'à l'installation propre — `npm install` incrémen
 et donc surtout au build Docker. Cet override disparaîtra le jour où `drizzle-kit`
 abandonnera `@esbuild-kit`.
 
-## Migration des données depuis BookList v1
-
-Le script `drizzle/migrate-from-booklist-v1.ts` recopie les données de la base v1
-(NextAuth + Prisma) vers le schéma v2. Il lit `LEGACY_DATABASE_URL` et écrit dans
-`DATABASE_URL` ; l'ancienne base n'est jamais modifiée.
-
-```bash
-# Simulation : compte les lignes et n'écrit rien
-LEGACY_DATABASE_URL=postgres://… npm run db:migrate-v1 -- --dry-run
-
-# Migration réelle
-LEGACY_DATABASE_URL=postgres://… npm run db:migrate-v1
-```
-
-Le script est rejouable : les identifiants de la v1 sont conservés et les lignes déjà
-présentes sont ignorées, y compris les moyens de connexion. Il refuse de démarrer si les deux
-URLs désignent la même base, ou si la table `ReadingSession` de la v1 contient des lignes —
-aucun schéma v2 ne les accueille, et il vaut mieux interrompre que les perdre en silence.
-
-Les comptes migrés sont marqués comme vérifiés, et leur mot de passe bcrypt est conservé tel
-quel : il est accepté à la connexion puis remplacé par un hash scrypt (voir
-`lib/legacy-password.ts`). Les adresses listées dans `MIGRATION_ADMIN_EMAILS` (par défaut
-`contact@mathis-lamotte.fr`) reçoivent le rôle `admin`.
-
 ## Qualité
 
 ```bash
