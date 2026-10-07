@@ -6,7 +6,6 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import { eq } from "drizzle-orm";
 import { hashPassword } from "better-auth/crypto";
-import { createLocalAccountIssuer } from "better-auth/db";
 import * as schema from "./schema";
 
 const SEED_EMAIL = "test@booklist.fr";
@@ -295,14 +294,10 @@ export async function runSeed() {
       initialBooksRead: 42,
       hasSeenOnboarding: true,
     });
-    // `issuer` n'est pas décoratif : depuis better-auth 1.7 la connexion cherche le compte
-    // par (providerId, issuer, accountId), et un issuer manquant fait échouer l'auth avec un
-    // « User not found » trompeur. Pour les comptes locaux, c'est "local:credential".
     await db.insert(schema.account).values({
       id: randomUUID(),
       accountId: userId,
       providerId: "credential",
-      issuer: createLocalAccountIssuer("credential"),
       userId,
       password: await hashPassword(SEED_PASSWORD),
     });
@@ -329,7 +324,6 @@ export async function runSeed() {
       id: randomUUID(),
       accountId: adminId,
       providerId: "credential",
-      issuer: createLocalAccountIssuer("credential"),
       userId: adminId,
       password: await hashPassword(SEED_PASSWORD),
     });

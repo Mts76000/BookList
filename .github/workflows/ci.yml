@@ -15,12 +15,18 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
       - run: npm ci
       - run: npm run format:check
       - run: npm run lint
       - run: npm run typecheck
+      # Catches build/prerender regressions before deploy (lib/env.ts is validated at build
+      # time, so the test env provides the required vars).
+      - name: Build
+        run: |
+          set -a; . ./.env.test.example; set +a
+          npm run build
 
   audit:
     runs-on: ubuntu-latest
@@ -28,13 +34,16 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
       - run: npm ci
-      # --audit-level=high: blocks on exploitable vulnerabilities. A known moderate
-      # dev-only advisory (esbuild via drizzle-kit's local migration tooling, not shipped
-      # to production) is accepted — see `npm audit` output for details if this changes.
-      - run: npm audit --audit-level=high
+      # Production dependencies: blocks on any high/critical advisory.
+      - run: npm audit --omit=dev --audit-level=high
+      # All dependencies: blocks on critical only. Accepted high, dev-only advisory:
+      # braces (via eslint-config-next > fast-glob), which has no patched release and is
+      # only reached with glob patterns from our own ESLint config — never user input.
+      # (esbuild via drizzle-kit is patched through `overrides` in package.json.)
+      - run: npm audit --audit-level=critical
 
   gitleaks:
     runs-on: ubuntu-latest
@@ -75,7 +84,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
       - run: npm ci
       - name: Copy .env.test
@@ -105,7 +114,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
       - run: npm ci
       - name: Copy .env.test

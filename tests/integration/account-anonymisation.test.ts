@@ -1,7 +1,6 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
-import { createLocalAccountIssuer } from "better-auth/db";
 import { db } from "@/lib/db";
 import { runMigrations } from "@/drizzle/migrate";
 
@@ -34,9 +33,8 @@ async function seedUserWithData(): Promise<string> {
         VALUES (${userId}, 'À Supprimer', ${currentUser.email}, true, 'user', 12)`,
   );
   await db.execute(
-    sql`INSERT INTO "account" (id, account_id, provider_id, issuer, user_id, password)
-        VALUES (${randomUUID()}, ${userId}, 'credential',
-                ${createLocalAccountIssuer("credential")}, ${userId}, 'un-hash')`,
+    sql`INSERT INTO "account" (id, account_id, provider_id, user_id, password)
+        VALUES (${randomUUID()}, ${userId}, 'credential', ${userId}, 'un-hash')`,
   );
   const bookId = randomUUID();
   await db.execute(

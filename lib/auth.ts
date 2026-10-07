@@ -17,7 +17,6 @@ import {
   rehashToScrypt,
   verifyPasswordWithLegacySupport,
 } from "@/lib/legacy-password";
-import { createLocalAccountIssuer } from "better-auth/db";
 import { logger } from "@/lib/logger";
 
 export const auth = betterAuth({
@@ -122,11 +121,7 @@ export const auth = betterAuth({
         if (session && typeof password === "string") {
           try {
             const credential = await db.query.account.findFirst({
-              where: and(
-                eq(account.userId, session.user.id),
-                eq(account.providerId, "credential"),
-                eq(account.issuer, createLocalAccountIssuer("credential")),
-              ),
+              where: and(eq(account.userId, session.user.id), eq(account.providerId, "credential")),
             });
             if (credential?.password && isBcryptHash(credential.password)) {
               await db
