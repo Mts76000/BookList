@@ -44,8 +44,12 @@ function setConsent(value: Exclude<ConsentState, null>) {
   window.dispatchEvent(new StorageEvent("storage", { key: CONSENT_KEY, newValue: value }));
 }
 
+export function useCookieConsent(): ConsentState {
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+}
+
 export function CookieConsent() {
-  const consent = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const consent = useCookieConsent();
 
   const accept = useCallback(() => setConsent("accepted"), []);
   const dismiss = useCallback(() => setConsent("dismissed"), []);
