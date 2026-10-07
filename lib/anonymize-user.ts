@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { account, book, comment, readingActivity, session, user } from "@/drizzle/schema";
+import { type AuditLogEntry, logAuditEvent } from "@/lib/audit-log";
 
 /** Domaine de façade des comptes anonymisés — il n'existe pas, rien ne peut y être envoyé. */
 const ANONYMIZED_EMAIL_DOMAIN = "anonymized.booklist";
@@ -18,11 +19,16 @@ const ANONYMIZED_EMAIL_DOMAIN = "anonymized.booklist";
  *
  * Partagé par la suppression volontaire (`/api/account`) et par la suppression administrative
  * (`/api/admin/users/[id]`) : les deux chemins doivent laisser la base dans le même état.
+ *
+ * `audit` est écrit dans la même transaction : l'audit log n'annonce jamais une suppression
+ * qui n'a pas eu lieu, et aucune suppression n'a lieu sans son entrée d'audit.
  */
-export async function anonymizeUser(userId: string): Promise<void> {
+export async function anonymizeUser(userId: string, audit: AuditLogEntry): Promise<void> {
   // Transaction : un compte à moitié anonymisé laisserait des données personnelles derrière
   // lui tout en ayant l'air supprimé.
   await db.transaction(async (tx) => {
+    // En premier : l'entrée d'audit porte l'adresse e-mail, qui n'existera plus après.
+    await logAuditEvent(audit, tx);
     await tx.delete(comment).where(eq(comment.userId, userId));
     await tx.delete(readingActivity).where(eq(readingActivity.userId, userId));
     await tx.delete(book).where(eq(book.userId, userId));

@@ -69,8 +69,7 @@ export const DELETE = withApiErrorHandling(async (request: Request, context: Rou
   if (!target) return apiError("NOT_FOUND", "Utilisateur introuvable.");
   if (target.isAnonymized) return apiError("CONFLICT", "Ce compte est déjà supprimé.");
 
-  // Journalisé avant l'opération : l'adresse e-mail n'existera plus après.
-  await logAuditEvent({
+  await anonymizeUser(id, {
     userId: session.user.id,
     action: "admin.delete_account",
     entityType: "user",
@@ -79,8 +78,6 @@ export const DELETE = withApiErrorHandling(async (request: Request, context: Rou
     ip,
     userAgent,
   });
-
-  await anonymizeUser(id);
 
   return apiSuccess(null, "Compte supprimé.");
 });

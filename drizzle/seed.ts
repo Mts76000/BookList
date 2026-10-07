@@ -4,6 +4,7 @@ config({ path: process.env.NODE_ENV === "test" ? ".env.test" : ".env.local", qui
 import { randomUUID } from "node:crypto";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
+import { pathToFileURL } from "node:url";
 import { eq } from "drizzle-orm";
 import { hashPassword } from "better-auth/crypto";
 import * as schema from "./schema";
@@ -379,7 +380,9 @@ export async function runSeed() {
   await pool.end();
 }
 
-const isMain = process.argv[1] && import.meta.url === `file://${process.argv[1]}`;
+// pathToFileURL, not `file://${argv[1]}`: on Windows the latter is a malformed URL that
+// never matches import.meta.url (`file:///C:/...`), so the script silently did nothing.
+const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 if (isMain) {
   runSeed().catch((err) => {
     console.error(err);

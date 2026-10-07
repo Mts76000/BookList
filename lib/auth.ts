@@ -9,7 +9,7 @@ import {
   sendChangeEmailVerification,
   sendSignupAdminNotification,
 } from "@/lib/email";
-import { logAuditEvent } from "@/lib/audit-log";
+import { getClientIp, logAuditEvent } from "@/lib/audit-log";
 import { account } from "@/drizzle/schema";
 import { and, eq } from "drizzle-orm";
 import {
@@ -23,6 +23,25 @@ export const auth = betterAuth({
   baseURL: env.NEXT_PUBLIC_APP_URL,
   secret: env.BETTER_AUTH_SECRET,
   database: drizzleAdapter(db, { provider: "pg" }),
+
+  // These flows go through our own routes (/api/register, /api/login, /api/forgot-password),
+  // which add Turnstile + per-IP/per-email rate limiting. Disabling the native HTTP
+  // endpoints stops anyone from calling them directly to skip those checks. Server-side
+  // `auth.api.*` calls bypass the router, so our routes keep working.
+  disabledPaths: ["/sign-up/email", "/sign-in/email", "/request-password-reset"],
+
+  rateLimit: {
+    customRules: {
+      // Still public (resend button on /verify-email): cap it to limit email spam.
+      "/send-verification-email": { window: 60 * 60, max: 5 },
+    },
+  },
+
+  advanced: {
+    // Same rule as getClientIp(): X-Real-IP is set by the reverse proxy, whereas the
+    // first X-Forwarded-For entry is client-controlled.
+    ipAddress: { ipAddressHeaders: ["x-real-ip"] },
+  },
 
   emailAndPassword: {
     enabled: true,
@@ -145,7 +164,7 @@ export const auth = betterAuth({
             action: "user.change_password",
             entityType: "user",
             entityId: session.user.id,
-            ip: ctx.request?.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
+            ip: ctx.request ? getClientIp(ctx.request.headers) : null,
             userAgent: ctx.request?.headers.get("user-agent") ?? null,
           });
         }
