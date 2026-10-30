@@ -152,7 +152,7 @@ function SuggestionCard({
   const wikidata = identified?.found ? identified : null;
   // Couvertures des tomes manquants, dans la collection des livres repérés (Premium).
   const editions = useSeriesEditions(
-    isPremium && wikidata && wikidata.missing.length > 0
+    wikidata && wikidata.missing.length > 0
       ? {
           titles: wikidata.missing.map((volume) => volume.title),
           author: wikidata.author,
@@ -224,7 +224,7 @@ function SuggestionCard({
           {suggestion.existing ? `Ajouter à « ${name} » ?` : `Une saga « ${name} » ?`}
         </p>
         <p className="flex items-center gap-1.5 text-xs text-stone-500" aria-live="polite">
-          {(identified === null || (wikidata && isPremium && editions === null)) && (
+          {(identified === null || (wikidata && editions === null)) && (
             <span
               className="border-t-accent-500 size-3 shrink-0 animate-spin rounded-full border-2 border-stone-200"
               aria-hidden="true"
@@ -266,7 +266,6 @@ function SuggestionCard({
             />
           ))}
         {wikidata &&
-          isPremium &&
           wikidata.missing.map((volume) => (
             <li
               key={volume.id}
@@ -282,11 +281,6 @@ function SuggestionCard({
               />
             </li>
           ))}
-        {wikidata && !isPremium && wikidata.missingCount > 0 && (
-          <li className="flex w-12 shrink-0 items-center justify-center rounded-[4px] border border-dashed border-stone-300 text-xs text-stone-500">
-            +{wikidata.missingCount}
-          </li>
-        )}
       </ul>
 
       {isPremium ? (

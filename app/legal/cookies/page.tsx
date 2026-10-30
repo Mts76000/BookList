@@ -35,7 +35,8 @@ export default function CookiesPage() {
             l&apos;accès au compte.
           </li>
           <li>
-            <strong>Préférences</strong> : mémorisent votre choix concernant la bannière de cookies.
+            <strong>Préférences</strong> : mémorisent votre choix concernant la bannière de cookies
+            et le dernier tri choisi pour votre bibliothèque.
           </li>
           <li>
             <strong>Mesure d&apos;audience</strong> : nous utilisons Umami, un outil

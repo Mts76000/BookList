@@ -80,7 +80,13 @@ const bookFieldsSchema = z.object({
   pageCount: emptyToNull(z.coerce.number().int().min(0).max(100_000)),
   genre: optionalText(MAX_TEXT),
   publishedDate: optionalText(32),
-  userRating: emptyToNull(z.coerce.number().int().min(1, "Note entre 1 et 5.").max(5)),
+  userRating: emptyToNull(
+    z.coerce
+      .number()
+      .min(0.5, "Note entre 0,5 et 5.")
+      .max(5, "Note entre 0,5 et 5.")
+      .multipleOf(0.5, "Note par demi-étoile."),
+  ),
   userStartDate: readingDateSchema,
   userEndDate: readingDateSchema,
   status: bookStatusSchema,

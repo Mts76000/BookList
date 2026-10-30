@@ -43,7 +43,8 @@ function cleanDate(value: string | undefined): string {
 function cleanRating(value: string | undefined): string {
   const rating = Number.parseFloat(value ?? "");
   if (!Number.isFinite(rating) || rating <= 0) return "";
-  return String(Math.min(Math.max(Math.round(rating), 1), 5));
+  // Arrondie à la demi-étoile : StoryGraph exporte des notes comme 4.25.
+  return String(Math.min(Math.max(Math.round(rating * 2) / 2, 0.5), 5));
 }
 
 /**

@@ -5,10 +5,9 @@ import { requireAuth } from "@/lib/permissions";
 import { apiSuccess, apiError, withApiErrorHandling } from "@/lib/api-response";
 import { createRateLimiter } from "@/lib/rate-limit";
 import { requestMetadata } from "@/lib/audit-log";
-import { getUserPlan } from "@/lib/subscription";
 import { inSeries } from "@/lib/series-store";
 import { findSeriesForTitles } from "@/lib/series-completion";
-import { chooseSeries, missingVolumes } from "@/lib/series-detection";
+import { chooseSeries, cleanTitleVariants, missingVolumes } from "@/lib/series-detection";
 
 const missingLimiter = createRateLimiter("series-missing", 60, 60);
 
@@ -35,7 +34,7 @@ export const GET = withApiErrorHandling(async (request: Request) => {
   const name = new URL(request.url).searchParams.get("name")?.trim();
   if (!name) return apiError("VALIDATION_ERROR", "Le nom de la saga est requis.");
 
-  const [sagaBooks, library, plan] = await Promise.all([
+  const [sagaBooks, library] = await Promise.all([
     db
       .select({
         id: book.id,
@@ -47,14 +46,17 @@ export const GET = withApiErrorHandling(async (request: Request) => {
       .where(inSeries(userId, name))
       .orderBy(asc(book.seriesIndex)),
     db.select({ title: book.title }).from(book).where(eq(book.userId, userId)),
-    getUserPlan(userId),
   ]);
   if (sagaBooks.length === 0) return apiError("NOT_FOUND", "Saga introuvable.");
 
-  const series = chooseSeries(
-    await findSeriesForTitles(sagaBooks.map((entry) => entry.title)),
-    sagaBooks,
-  );
+  // Le nom de la saga d'abord, puis les titres nettoyés de leur tomaison : les titres
+  // d'édition (« tome 1, Harry Potter ») sont inconnus de Wikidata tels quels.
+  const searchTitles = [
+    name,
+    ...sagaBooks.flatMap((entry) => cleanTitleVariants(entry.title)),
+    ...sagaBooks.map((entry) => entry.title),
+  ];
+  const series = chooseSeries(await findSeriesForTitles(searchTitles), sagaBooks, name);
   if (!series) return apiSuccess({ found: false });
 
   const missing = missingVolumes(
@@ -73,7 +75,9 @@ export const GET = withApiErrorHandling(async (request: Request) => {
     found: true,
     total: series.volumes.filter((volume) => volume.index !== null).length,
     missingCount: missing.length,
-    missing: plan.isPremium ? missing : [],
+    // La liste est visible de tous : un compte gratuit voit quels tomes lui manquent, seul
+    // l'ajout en un clic (et la recherche de leurs éditions) est réservé à Premium.
+    missing,
     author,
     // Tomes possédés : leur ISBN sert à choisir l'édition des tomes manquants.
     referenceBookIds: sagaBooks.map((entry) => entry.id),

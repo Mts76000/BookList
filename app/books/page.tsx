@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { and, arrayContains, asc, count, desc, eq, ilike, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { book } from "@/drizzle/schema";
@@ -8,23 +9,50 @@ import { BooksFilter } from "@/components/books-filter";
 import { BookCover } from "@/components/book-cover";
 import { buttonClasses } from "@/components/ui/button";
 import { BooksTabs } from "@/components/books-tabs";
-import { STATUS_DOT, STATUS_LABELS, isBookStatus } from "@/lib/book-status";
+import {
+  BOOKS_SORT_COOKIE,
+  STATUS_DOT,
+  STATUS_LABELS,
+  formatRating,
+  isBookSort,
+  isBookStatus,
+  type BookSort,
+} from "@/lib/book-status";
 
 const BOOKS_PER_PAGE = 12;
 
-/** Un livre sans note ou sans date de fin doit finir la liste, jamais la commencer. */
+/**
+ * Date de lecture d'un livre, pour le tri : la date saisie par l'utilisateur (fin, ou début
+ * pour une lecture en cours), sinon la date à laquelle il a changé le statut dans l'app. Les
+ * dates restent facultatives, ce repli suffit à ranger les livres ajoutés au fil de l'eau.
+ * Un livre à lire n'a pas de date de lecture ; un livre importé sans date non plus.
+ */
+const readingDate = sql`case
+  when ${book.status} = 'TO_READ' then null
+  when ${book.status} = 'READING' then coalesce(${book.userStartDate}, ${book.statusChangedAt})
+  else coalesce(${book.userEndDate}, ${book.userReadDate}, ${book.statusChangedAt}, ${book.userStartDate})
+end`;
+
+/**
+ * Un livre sans note ou sans date de lecture finit la liste, jamais ne la commence — dans
+ * les deux sens du tri. L'id en dernier départage les égalités : sans lui, l'ordre entre
+ * deux livres de même rang changeait d'une page à l'autre et certains apparaissaient deux
+ * fois quand d'autres disparaissaient.
+ */
 function orderFor(sortBy: string): SQL[] {
   switch (sortBy) {
     case "title":
-      return [asc(book.title)];
+      return [asc(book.title), asc(book.id)];
     case "rating":
-      return [desc(book.userRating), asc(book.title)];
+      return [sql`${book.userRating} desc nulls last`, asc(book.title), asc(book.id)];
     case "oldest":
-      return [asc(book.userEndDate)];
+      return [sql`${readingDate} asc nulls last`, asc(book.createdAt), asc(book.id)];
+    case "added":
+      return [desc(book.createdAt), asc(book.id)];
     case "pages":
-      return [desc(book.pageCount), asc(book.title)];
+      return [sql`${book.pageCount} desc nulls last`, asc(book.title), asc(book.id)];
     default:
-      return [desc(book.userEndDate)];
+      return [sql`${readingDate} desc nulls last`, desc(book.createdAt), asc(book.id)];
   }
 }
 
@@ -45,7 +73,13 @@ export default async function BooksPage({
   const session = await requireAuthPage("/books");
   const params = await searchParams;
 
-  const sortBy = params.sort || "date";
+  // Tri de l'URL, sinon le dernier choisi (cookie posé par le filtre), sinon par date.
+  const savedSort = (await cookies()).get(BOOKS_SORT_COOKIE)?.value;
+  const sortBy: BookSort = isBookSort(params.sort)
+    ? params.sort
+    : isBookSort(savedSort)
+      ? savedSort
+      : "date";
   const { genre, search, status, tag } = params;
   const currentPage = Math.max(1, Number.parseInt(params.page || "1", 10) || 1);
   const trimmedSearch = search?.trim();
@@ -133,7 +167,7 @@ export default async function BooksPage({
                       >
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                       </svg>
-                      {entry.userRating}
+                      {formatRating(entry.userRating)}
                     </span>
                   )}
                 </div>

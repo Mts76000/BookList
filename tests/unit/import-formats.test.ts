@@ -78,7 +78,7 @@ describe("toBookListRow — Goodreads", () => {
 });
 
 describe("toBookListRow — StoryGraph", () => {
-  it("arrondit les quarts d'étoile et reprend les dates de lecture", () => {
+  it("arrondit les quarts d'étoile à la demi-étoile et reprend les dates de lecture", () => {
     const row = toBookListRow("storygraph", {
       Title: "Klara et le Soleil",
       Authors: "Kazuo Ishiguro",
@@ -90,7 +90,7 @@ describe("toBookListRow — StoryGraph", () => {
     });
     expect(row).toMatchObject({
       isbn: "9782070149254",
-      userRating: "4",
+      userRating: "4.5",
       userStartDate: "2023-04-01",
       userEndDate: "2023-05-14",
       status: "FINISHED",

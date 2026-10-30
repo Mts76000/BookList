@@ -9,6 +9,7 @@ import { getYearReview } from "@/lib/year-review";
 import { getUserPlan } from "@/lib/subscription";
 import { REVIEW_THEMES, isReviewTheme } from "@/lib/review-themes";
 import { coverToneFor } from "@/lib/generated-cover";
+import { formatRating } from "@/lib/book-status";
 
 const imageLimiter = createRateLimiter("year-review-image", 20, 60);
 
@@ -246,7 +247,7 @@ export const GET = withApiErrorHandling(async (request: Request) => {
               </div>
               {review.favoriteBook.userRating !== null && (
                 <div style={{ display: "flex", fontSize: 34, color: theme.accent, marginTop: 14 }}>
-                  {`${review.favoriteBook.userRating}/5`}
+                  {`${formatRating(review.favoriteBook.userRating)}/5`}
                 </div>
               )}
             </div>

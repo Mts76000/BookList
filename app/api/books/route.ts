@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { book } from "@/drizzle/schema";
 import { requireAuth } from "@/lib/permissions";
@@ -10,6 +10,7 @@ import { requestMetadata } from "@/lib/audit-log";
 import { getUserPlan } from "@/lib/subscription";
 import { FREE_BOOK_LIMIT } from "@/lib/plans";
 import { canonicalSeriesName } from "@/lib/series-store";
+import { toIsbn10, toIsbn13 } from "@/lib/isbn";
 
 const createLimiter = createRateLimiter("books-create", 30, 60);
 const listLimiter = createRateLimiter("books-list", 60, 60);
@@ -31,8 +32,11 @@ export const POST = withApiErrorHandling(async (request: Request) => {
   // Ré-ajouter un livre déjà présent n'est pas une erreur : rescanner un code-barres déjà
   // scanné renvoie simplement le livre existant, plutôt qu'un conflit à gérer côté client.
   if (fields.isbn) {
+    // Toujours stocké en ISBN-13 : un ancien ISBN-10 et son code-barres sont le même livre.
+    fields.isbn = toIsbn13(fields.isbn) ?? fields.isbn;
+    const forms = [fields.isbn, toIsbn10(fields.isbn)].filter((value): value is string => !!value);
     const existing = await db.query.book.findFirst({
-      where: and(eq(book.userId, session.user.id), eq(book.isbn, fields.isbn)),
+      where: and(eq(book.userId, session.user.id), inArray(book.isbn, forms)),
     });
     if (existing) return apiSuccess(existing, "Ce livre est déjà dans votre bibliothèque.");
   }
@@ -55,20 +59,22 @@ export const POST = withApiErrorHandling(async (request: Request) => {
 
   const [created] = await db
     .insert(book)
-    .values({ ...fields, userId: session.user.id })
+    .values({ ...fields, userId: session.user.id, statusChangedAt: new Date() })
     .returning();
 
   return apiSuccess(created, "Livre ajouté.", 201);
 });
 
 /**
- * Renvoie l'identifiant et l'ISBN de tous les livres de l'utilisateur.
+ * Renvoie de quoi reconnaître chaque livre de l'utilisateur : identifiant, ISBN, titre et
+ * auteur, plus la couverture et le nombre de pages pour proposer de compléter une fiche.
  *
  * Volontairement non paginé, contrairement à la règle générale du socle : l'unique appelant
- * est l'écran d'ajout, qui construit une table ISBN → id pour signaler d'un coup d'œil les
- * résultats de recherche déjà possédés. Une réponse partielle y afficherait comme absents
- * des livres pourtant en bibliothèque. La charge reste faible (deux colonnes, et une
- * bibliothèque personnelle se compte en centaines de lignes).
+ * est l'écran d'ajout, qui signale d'un coup d'œil les résultats de recherche déjà possédés
+ * — même ISBN, ou même titre et même auteur quand le livre a été ajouté par son nom ou
+ * sous une autre édition. Une réponse partielle y afficherait comme absents des livres
+ * pourtant en bibliothèque. La charge reste faible (une bibliothèque personnelle se compte
+ * en centaines de lignes).
  */
 export const GET = withApiErrorHandling(async (request: Request) => {
   const session = await requireAuth();
@@ -80,7 +86,14 @@ export const GET = withApiErrorHandling(async (request: Request) => {
   }
 
   const books = await db
-    .select({ id: book.id, isbn: book.isbn })
+    .select({
+      id: book.id,
+      isbn: book.isbn,
+      title: book.title,
+      author: book.author,
+      coverUrl: book.coverUrl,
+      pageCount: book.pageCount,
+    })
     .from(book)
     .where(eq(book.userId, session.user.id));
 

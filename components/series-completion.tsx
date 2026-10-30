@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus } from "@phosphor-icons/react";
+import { LockSimple, Plus } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { MissingVolumeCover, SeriesSearchPlaceholder } from "@/components/missing-volume-cover";
@@ -34,8 +34,9 @@ type Completion =
  * l'affichage de la page, avec une attente visible : la première consultation d'une saga
  * prend quelques secondes, les suivantes viennent du cache partagé.
  *
- * Premium voit leur couverture, dans la collection de ses tomes, et les ajoute à sa pile en
- * un clic ; un compte gratuit voit combien il en manque.
+ * Tout le monde voit quels tomes manquent, avec leur couverture dans la collection de ses
+ * tomes. Premium les ajoute à sa pile en un clic ; un compte gratuit voit un lien vers
+ * l'offre à la place du bouton d'ajout.
  */
 export function SeriesCompletion({ name, isPremium }: { name: string; isPremium: boolean }) {
   const router = useRouter();
@@ -57,7 +58,7 @@ export function SeriesCompletion({ name, isPremium }: { name: string; isPremium:
 
   const found = completion?.found ? completion : null;
   const editions = useSeriesEditions(
-    isPremium && found && found.missing.length > 0
+    found && found.missing.length > 0
       ? {
           titles: found.missing.map((volume) => volume.title),
           author: found.author,
@@ -72,17 +73,6 @@ export function SeriesCompletion({ name, isPremium }: { name: string; isPremium:
 
   if (missingCount === 0) {
     return <p className="mt-2 text-xs text-stone-500">Vous avez tous les tomes parus ({total}).</p>;
-  }
-
-  if (!isPremium) {
-    return (
-      <p className="mt-3 text-sm text-stone-600">
-        La saga compte {total} tomes, il vous en manque {missingCount}.{" "}
-        <Link href="/account#premium" className="text-accent-700 font-medium hover:underline">
-          Les ajouter avec Premium
-        </Link>
-      </p>
-    );
   }
 
   async function add(volumes: MissingVolume[]) {
@@ -132,7 +122,16 @@ export function SeriesCompletion({ name, isPremium }: { name: string; isPremium:
         <p className="text-sm font-medium text-stone-700">
           Il vous manque {missingCount} tome{missingCount > 1 ? "s" : ""} sur {total}
         </p>
-        {missing.length > 1 && (
+        {!isPremium && (
+          <Link
+            href="/account#premium"
+            className="text-accent-700 flex min-h-8 items-center gap-1.5 text-xs font-medium hover:underline"
+          >
+            <LockSimple size={12} aria-hidden="true" />
+            Ajouter en un clic avec Premium
+          </Link>
+        )}
+        {isPremium && missing.length > 1 && (
           <Button
             type="button"
             variant="secondary"
@@ -165,15 +164,17 @@ export function SeriesCompletion({ name, isPremium }: { name: string; isPremium:
             <p className="line-clamp-2 text-xs text-stone-500" title={volume.title}>
               {volume.title}
             </p>
-            <button
-              type="button"
-              onClick={() => add([volume])}
-              disabled={adding !== null}
-              className="text-accent-700 mt-1 flex min-h-8 items-center gap-1 text-xs font-medium hover:underline disabled:opacity-50"
-            >
-              <Plus size={12} aria-hidden="true" />
-              {adding?.ids.includes(volume.id) ? "Ajout…" : "Ajouter"}
-            </button>
+            {isPremium && (
+              <button
+                type="button"
+                onClick={() => add([volume])}
+                disabled={adding !== null}
+                className="text-accent-700 mt-1 flex min-h-8 items-center gap-1 text-xs font-medium hover:underline disabled:opacity-50"
+              >
+                <Plus size={12} aria-hidden="true" />
+                {adding?.ids.includes(volume.id) ? "Ajout…" : "Ajouter"}
+              </button>
+            )}
           </li>
         ))}
       </ul>

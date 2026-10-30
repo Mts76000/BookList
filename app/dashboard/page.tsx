@@ -18,6 +18,7 @@ import { readingStreaks } from "@/lib/advanced-stats";
 import { PREMIUM_STREAK_JOKERS } from "@/lib/plans";
 import { Onboarding } from "@/components/onboarding";
 import { buttonClasses } from "@/components/ui/button";
+import { formatRating } from "@/lib/book-status";
 
 // Page privée et personnalisée : rien à y indexer.
 export const metadata: Metadata = {
@@ -455,7 +456,7 @@ export default async function DashboardPage() {
                       {entry.userRating && (
                         <p className="mt-1 flex items-center gap-0.5 text-xs text-stone-500">
                           <StarIcon className="h-3 w-3 text-amber-500" />
-                          {entry.userRating}/5
+                          {formatRating(entry.userRating)}/5
                         </p>
                       )}
                     </Link>

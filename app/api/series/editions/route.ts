@@ -7,7 +7,6 @@ import { validateBody } from "@/lib/validation";
 import { seriesEditionsSchema } from "@/lib/validation-schemas";
 import { createRateLimiter } from "@/lib/rate-limit";
 import { requestMetadata } from "@/lib/audit-log";
-import { getUserPlan } from "@/lib/subscription";
 import { findEdition, type Edition } from "@/lib/series-editions";
 
 const editionsLimiter = createRateLimiter("series-editions", 30, 60);
@@ -18,7 +17,9 @@ const CONCURRENCY = 3;
 /**
  * Éditions des tomes manquants d'une saga, pour afficher leur couverture avant l'ajout et
  * les ajouter dans la même collection que les tomes possédés (voir lib/edition-match.ts).
- * Réservée à Premium, comme la liste des tomes manquants.
+ * Ouverte à tous : un compte gratuit voit les vraies couvertures des tomes qui lui manquent,
+ * seul leur ajout en un clic est réservé à Premium. Le coût reste borné par le cache partagé
+ * des éditions et la limite de débit.
  */
 export const POST = withApiErrorHandling(async (request: Request) => {
   const session = await requireAuth();
@@ -33,10 +34,6 @@ export const POST = withApiErrorHandling(async (request: Request) => {
   const validation = await validateBody(seriesEditionsSchema, request);
   if (!validation.success) return validation.response;
   const { titles, author, referenceBookIds } = validation.data;
-
-  if (!(await getUserPlan(userId)).isPremium) {
-    return apiError("FORBIDDEN", "Les tomes manquants sont réservés à Premium.");
-  }
 
   // Les ISBN de référence viennent des livres de l'utilisateur, jamais du client.
   const references =

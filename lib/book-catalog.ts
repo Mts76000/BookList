@@ -39,16 +39,6 @@ const entryColumns = {
   genres: catalogBook.genres,
 };
 
-/** Livre du catalogue portant cet ISBN, quelle que soit la recherche qui l'y a fait entrer. */
-export async function findCatalogBookByIsbn(isbn: string): Promise<CatalogEntry | null> {
-  const [entry] = await db
-    .select(entryColumns)
-    .from(catalogBook)
-    .where(eq(catalogBook.isbn, isbn))
-    .limit(1);
-  return entry ?? null;
-}
-
 /**
  * Résultats en cache d'une recherche, dans l'ordre d'origine, ou `null` si la recherche est
  * absente ou expirée et doit être relancée auprès de Google.
@@ -79,11 +69,17 @@ export async function getCachedSearch(key: string): Promise<CatalogEntry[] | nul
  * le catalogue, et la requête mémorise leur ordre. Dans une transaction, pour qu'une
  * recherche en cache ne puisse jamais pointer vers des livres absents du catalogue.
  */
-export async function saveSearch(key: string, books: CatalogEntry[]): Promise<void> {
+export async function saveSearch(
+  key: string,
+  books: CatalogEntry[],
+  { partial = false }: { partial?: boolean } = {},
+): Promise<void> {
   // Google renvoie parfois deux fois le même volume dans une page de résultats, ce qu'un
   // ON CONFLICT DO UPDATE refuse au sein d'un même INSERT.
   const unique = [...new Map(books.map((entry) => [entry.id, entry])).values()];
-  const ttl = unique.length > 0 ? RESULTS_TTL_MS : EMPTY_TTL_MS;
+  // Une recherche à laquelle une source n'a pas répondu n'est gardée qu'un jour, comme
+  // une recherche vide : la suivante aura sa chance d'être complète.
+  const ttl = unique.length > 0 && !partial ? RESULTS_TTL_MS : EMPTY_TTL_MS;
 
   await db.transaction(async (tx) => {
     if (unique.length > 0) {

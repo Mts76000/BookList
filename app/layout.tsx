@@ -79,6 +79,9 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  // Indispensable pour que env(safe-area-inset-*) renvoie autre chose que 0 : sans lui, la
+  // barre de navigation de la PWA passait sous l'indicateur d'accueil de l'iPhone.
+  viewportFit: "cover",
   themeColor: "#f8f3ea",
 };
 

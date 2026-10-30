@@ -8,6 +8,7 @@ import { BookCover } from "@/components/book-cover";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { apiFetch } from "@/lib/api-client";
+import { formatRating } from "@/lib/book-status";
 
 interface FavoriteBook {
   id: string;
@@ -87,7 +88,9 @@ export function FavoritePicker({ year, favorite, isChosen, candidates }: Favorit
             </Link>
             <p className="text-sm text-stone-500">{favorite.author}</p>
             {favorite.userRating !== null && (
-              <p className="mt-2 text-sm text-stone-700">Noté {favorite.userRating}/5</p>
+              <p className="mt-2 text-sm text-stone-700">
+                Noté {formatRating(favorite.userRating)}/5
+              </p>
             )}
           </div>
         </div>
@@ -148,7 +151,7 @@ export function FavoritePicker({ year, favorite, isChosen, candidates }: Favorit
                     </span>
                     {candidate.userRating !== null && (
                       <span className="flex shrink-0 items-center gap-1 text-xs text-stone-500">
-                        {candidate.userRating}
+                        {formatRating(candidate.userRating)}
                         <Star className="h-3 w-3 text-amber-500" weight="fill" aria-hidden="true" />
                       </span>
                     )}

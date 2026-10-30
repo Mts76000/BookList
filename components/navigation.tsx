@@ -18,12 +18,11 @@ const NAV_ITEMS = [
   { href: "/account", label: "Compte", icon: UserIcon },
 ];
 
-export function Navigation() {
-  const { data: session } = authClient.useSession();
+export function Navigation({ signedIn }: { signedIn: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
 
-  if (!session) return null;
+  if (!signedIn) return null;
 
   const isActive = (href: string) => {
     if (href === "/dashboard") return pathname === "/dashboard";
@@ -45,7 +44,7 @@ export function Navigation() {
 
   return (
     <>
-      <header className="glass sticky top-0 z-40 border-b border-stone-200/70 sm:hidden">
+      <header className="glass sticky top-0 z-40 border-b border-stone-200/70 pt-[env(safe-area-inset-top)] sm:hidden">
         <div className="flex h-14 items-center justify-between px-4">
           <Link href="/dashboard">
             <Logo priority />
@@ -55,7 +54,7 @@ export function Navigation() {
 
       <nav
         aria-label="Navigation principale"
-        className="bg-card fixed inset-x-0 bottom-0 z-40 border-t border-stone-200/70 sm:hidden"
+        className="bg-card fixed inset-x-0 bottom-0 z-40 border-t border-stone-200/70 pb-[max(env(safe-area-inset-bottom),0.25rem)] sm:hidden"
       >
         <div className="mx-auto grid max-w-lg grid-cols-5">
           {NAV_ITEMS.map((item) => {

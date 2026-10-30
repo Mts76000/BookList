@@ -10,6 +10,30 @@ export function isBookStatus(value: string | null | undefined): value is BookSta
   return BOOK_STATUSES.includes(value as BookStatus);
 }
 
+/**
+ * Tris de l'étagère. Le choix est mémorisé dans un cookie (`BOOKS_SORT_COOKIE`) : revenir
+ * sur l'étagère par la navigation garde le dernier tri, sans flash ni second rendu.
+ */
+export const BOOK_SORTS = {
+  date: "Lecture récente",
+  oldest: "Lecture ancienne",
+  added: "Ajoutés récemment",
+  title: "Titre",
+  rating: "Mieux notés",
+  pages: "Plus longs",
+} as const;
+export type BookSort = keyof typeof BOOK_SORTS;
+export const BOOKS_SORT_COOKIE = "books-sort";
+
+export function isBookSort(value: string | null | undefined): value is BookSort {
+  return !!value && Object.hasOwn(BOOK_SORTS, value);
+}
+
+/** Note affichée à la française, demi-étoile comprise : 4,5. */
+export function formatRating(rating: number): string {
+  return rating.toLocaleString("fr-FR", { maximumFractionDigits: 1 });
+}
+
 export const STATUS_LABELS: Record<BookStatus, string> = {
   TO_READ: "À lire",
   READING: "En cours",

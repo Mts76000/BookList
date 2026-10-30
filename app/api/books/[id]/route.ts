@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { book } from "@/drizzle/schema";
 import { requireAuth } from "@/lib/permissions";
@@ -39,7 +39,14 @@ export const PATCH = withApiErrorHandling(async (request: Request, context: Rout
 
   const [updated] = await db
     .update(book)
-    .set(fields)
+    .set({
+      ...fields,
+      // Repli du tri par date de lecture (voir le schéma) : seul un vrai changement de
+      // statut le date, pas un enregistrement de la fiche qui renvoie le même statut.
+      ...(fields.status && {
+        statusChangedAt: sql`case when ${book.status} is distinct from ${fields.status}::book_status then now() else ${book.statusChangedAt} end`,
+      }),
+    })
     .where(and(eq(book.id, id), eq(book.userId, session.user.id)))
     .returning();
 

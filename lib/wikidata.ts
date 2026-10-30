@@ -28,19 +28,29 @@ function sparqlString(value: string): string {
 }
 
 /**
- * Sagas des livres dont le titre ressemble à `title` (recherche Wikidata, en français), et
- * tous les tomes de ces sagas. Seules les œuvres littéraires (Q7725634 et sous-classes)
+ * Sagas des livres dont le titre ressemble à `title` (recherche Wikidata, en français), ou
+ * sagas portant ce nom (`match = "series"`), et tous les tomes de ces sagas. Seules les œuvres littéraires (Q7725634 et sous-classes)
  * sont gardées : pas les films ni les jeux d'une même franchise.
  */
-export function buildSeriesQuery(title: string): string {
+export function buildSeriesQuery(title: string, match: "volume" | "series" = "volume"): string {
+  // Le résultat de recherche est un tome de la saga, ou (`series`) la saga elle-même :
+  // « Harry Potter » désigne la série, dont aucun tome ne porte exactement ce titre. Deux
+  // requêtes distinctes plutôt qu'un UNION, que le moteur SPARQL ne sait pas optimiser
+  // derrière la recherche (délai dépassé à tous les coups).
+  const seed = match === "volume" ? "?seed" : "?series";
+  // Saga connue d'entrée : ses tomes se trouvent en partant d'elle (`?statement` d'abord),
+  // sinon le moteur parcourt toutes les déclarations P179 de Wikidata.
+  const volumesClause =
+    match === "volume"
+      ? "?seed wdt:P179 ?series .\n  ?book p:P179 ?statement . ?statement ps:P179 ?series ."
+      : "?statement ps:P179 ?series .\n  ?book p:P179 ?statement .";
   return `SELECT DISTINCT ?series ?seriesNameFr ?seriesNameMul ?seriesNameEn ?book ?bookLabel ?ordinal ?date WHERE {
   SERVICE wikibase:mwapi {
     bd:serviceParam wikibase:endpoint "www.wikidata.org"; wikibase:api "EntitySearch";
       mwapi:search ${sparqlString(title.slice(0, 200))}; mwapi:language "fr"; mwapi:limit "5" .
-    ?seed wikibase:apiOutputItem mwapi:item .
+    ${seed} wikibase:apiOutputItem mwapi:item .
   }
-  ?seed wdt:P179 ?series .
-  ?book p:P179 ?statement . ?statement ps:P179 ?series .
+  ${volumesClause}
   OPTIONAL { ?statement pq:P1545 ?ordinal }
   ?book wdt:P31/wdt:P279* wd:Q7725634 .
   OPTIONAL { ?book wdt:P577 ?date }
@@ -120,18 +130,31 @@ export function parseSeriesResponse(json: { results: { bindings: Binding[] } }):
 }
 
 /** Sagas Wikidata contenant un livre au titre proche de `title`. Lève une erreur réseau. */
-export async function fetchSeriesByTitle(title: string): Promise<FetchedSeries[]> {
-  const response = await fetch(
-    `${ENDPOINT}?${new URLSearchParams({ query: buildSeriesQuery(title) })}`,
-    {
-      headers: {
-        Accept: "application/sparql-results+json",
-        // Wikimedia demande un User-Agent identifiable pour tout usage automatisé.
-        "User-Agent": `BookList/1.0 (${env.NEXT_PUBLIC_APP_URL})`,
-      },
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+async function runQuery(query: string): Promise<FetchedSeries[]> {
+  const response = await fetch(`${ENDPOINT}?${new URLSearchParams({ query })}`, {
+    headers: {
+      Accept: "application/sparql-results+json",
+      // Wikimedia demande un User-Agent identifiable pour tout usage automatisé.
+      "User-Agent": `BookList/1.0 (${env.NEXT_PUBLIC_APP_URL})`,
     },
-  );
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+  });
   if (!response.ok) throw new Error(`Wikidata a répondu ${response.status}`);
   return parseSeriesResponse(await response.json());
+}
+
+/**
+ * Sagas trouvées pour `title`, qu'il soit le titre d'un tome ou le nom de la saga : les deux
+ * recherches partent en parallèle. Une erreur n'est levée que si toutes deux échouent.
+ */
+export async function fetchSeriesByTitle(title: string): Promise<FetchedSeries[]> {
+  const [byVolume, bySeries] = await Promise.allSettled([
+    runQuery(buildSeriesQuery(title, "volume")),
+    runQuery(buildSeriesQuery(title, "series")),
+  ]);
+  if (byVolume.status === "rejected" && bySeries.status === "rejected") throw byVolume.reason;
+  const found = [byVolume, bySeries].flatMap((result) =>
+    result.status === "fulfilled" ? result.value : [],
+  );
+  return [...new Map(found.map((series) => [series.id, series])).values()];
 }

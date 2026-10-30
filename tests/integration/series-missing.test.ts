@@ -90,7 +90,7 @@ describe("GET /api/series/missing", () => {
     expect(fetchSpy.mock.calls.length).toBe(callsAfterFirstVisit);
   });
 
-  it("ne donne que le nombre de tomes manquants à un compte gratuit", async () => {
+  it("montre aussi les tomes manquants à un compte gratuit", async () => {
     await addHarryPotter(await createUser(false));
     vi.spyOn(globalThis, "fetch").mockImplementation(
       async () => new Response(wikidataResponse, { status: 200 }),
@@ -98,7 +98,8 @@ describe("GET /api/series/missing", () => {
 
     const { data } = await (await getMissing(request("harry potter"))).json();
 
-    expect(data).toMatchObject({ found: true, total: 7, missingCount: 5, missing: [] });
+    expect(data).toMatchObject({ found: true, total: 7, missingCount: 5 });
+    expect(data.missing).toHaveLength(5);
   });
 
   it("répond sans erreur quand Wikidata est indisponible, sans mettre l'échec en cache", async () => {

@@ -3,6 +3,7 @@ import {
   pgEnum,
   text,
   integer,
+  real,
   timestamp,
   date,
   index,
@@ -47,13 +48,19 @@ export const book = pgTable(
     // Chaîne libre et non une date : l'API Google Books renvoie aussi bien "2019" que
     // "2019-04" ou "2019-04-23", et on affiche la valeur telle qu'elle est publiée.
     publishedDate: text("published_date"),
-    userRating: integer("user_rating"),
+    // Note sur 5 par pas de 0,5 (demi-étoiles) : `real` représente ces valeurs exactement.
+    userRating: real("user_rating"),
     // Conservé de la v1 : plus écrit par l'application, mais d'anciennes lignes peuvent
     // encore porter une valeur qu'on ne veut pas perdre à la migration.
     userReadDate: timestamp("user_read_date"),
     userStartDate: timestamp("user_start_date"),
     userEndDate: timestamp("user_end_date"),
     status: bookStatus("status").notNull().default("FINISHED"),
+    // Dernier changement de statut fait dans l'application (ajout compris). Les dates de
+    // lecture restent facultatives : c'est le repli du tri par date de lecture quand
+    // l'utilisateur ne les a pas saisies. NULL pour un livre importé ou antérieur à la
+    // colonne : on ne sait pas quand il a été lu.
+    statusChangedAt: timestamp("status_changed_at"),
     // Saga : nom de la série, numéro du tome et nombre de tomes connus. Saisis à la main
     // ou déduits d'un titre Goodreads « Titre (Série, #3) » à l'import.
     // Page où en est la lecture. Mise à jour via /api/books/[id]/progress, qui enregistre

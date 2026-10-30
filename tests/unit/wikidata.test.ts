@@ -103,3 +103,16 @@ describe("missingVolumes", () => {
     expect(missing.map((entry) => entry.index)).toEqual([4, 5, 6, 7]);
   });
 });
+
+describe("chooseSeries — nom de la saga", () => {
+  it("retient la saga du même nom quand aucun titre d'édition ne correspond", () => {
+    const series = {
+      id: "Q8337",
+      name: "Harry Potter",
+      volumes: [{ id: "Q1", title: "Harry Potter à l'école des sorciers", index: 1, year: 1997 }],
+    };
+    const books = [{ title: "tome 1, Harry Potter", seriesIndex: 1 }];
+    expect(chooseSeries([series], books)).toBeNull();
+    expect(chooseSeries([series], books, "harry potter")?.id).toBe("Q8337");
+  });
+});

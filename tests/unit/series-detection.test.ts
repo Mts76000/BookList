@@ -4,6 +4,10 @@ import {
   seriesFromTitle,
   suggestSeries,
   type LibraryBook,
+  cleanTitleVariants,
+  matchKnownSeries,
+  sameAuthors,
+  seriesLookupTitles,
 } from "@/lib/series-detection";
 
 describe("seriesFromTitle", () => {
@@ -161,5 +165,43 @@ describe("seriesForNewBook", () => {
 
   it("ne rattache pas un livre d'un autre auteur sur un simple mot commun", () => {
     expect(seriesForNewBook("Dune et désert", null, "Autre Auteur", known)).toBeNull();
+  });
+});
+
+describe("détection des sagas à l'ajout", () => {
+  const known = [
+    { name: "Le cycle de Dune", nextIndex: 3, total: 6, authors: ["Frank Herbert"] },
+    { name: "Harry Potter", nextIndex: 2, total: 7, authors: ["J.K. Rowling"] },
+  ];
+
+  it("nettoie les titres d'édition de leur tomaison", () => {
+    expect(cleanTitleVariants("tome 1, Harry Potter")).toEqual(["Harry Potter"]);
+    expect(cleanTitleVariants("Hunger Games - tome 1")).toEqual(["Hunger Games"]);
+    expect(cleanTitleVariants("Divergente 1 - Divergente")).toEqual(["Divergente"]);
+  });
+
+  it("cherche d'abord le titre du tome, puis le titre complet", () => {
+    expect(seriesLookupTitles("Dune - Tome 2 Le Messie de Dune")[0]).toBe("Le Messie de Dune");
+  });
+
+  it("reconnaît un même auteur écrit autrement ou avec son traducteur", () => {
+    expect(sameAuthors("J. K. Rowling", "J.K. Rowling")).toBe(true);
+    expect(sameAuthors(["Frank Herbert"], "Frank Herbert, Michel Demuth")).toBe(true);
+    expect(sameAuthors("Frank Herbert", "Isaac Asimov")).toBe(false);
+  });
+
+  it("range dans la saga existante même nommée autrement", () => {
+    expect(matchKnownSeries("Dune", "Frank Herbert, Michel Demuth", known)?.name).toBe(
+      "Le cycle de Dune",
+    );
+    expect(matchKnownSeries("harry potter", "Autre", known)?.name).toBe("Harry Potter");
+    expect(matchKnownSeries("Fondation", "Isaac Asimov", known)).toBeNull();
+  });
+
+  it("lit la tomaison d'une notice de bibliothèque", () => {
+    expect(seriesFromTitle("Le cycle de Dune. 3, Le messie de Dune")).toEqual({
+      seriesName: "Le cycle de Dune",
+      seriesIndex: 3,
+    });
   });
 });

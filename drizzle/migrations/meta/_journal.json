@@ -85,6 +85,13 @@
       "when": 1793355589334,
       "tag": "0011_series_catalog",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793395798093,
+      "tag": "0012_half_star_rating_status_changed",
+      "breakpoints": true
     }
   ]
 }

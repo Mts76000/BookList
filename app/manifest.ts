@@ -8,7 +8,9 @@ export default function manifest(): MetadataRoute.Manifest {
     name: env.NEXT_PUBLIC_APP_NAME,
     short_name: env.NEXT_PUBLIC_APP_NAME,
     description: APP_DESCRIPTION,
-    start_url: "/",
+    // Directement le tableau de bord : partir de l'accueil coûtait une redirection de plus
+    // à chaque ouverture de la PWA. Sans session, le proxy renvoie vers la connexion.
+    start_url: "/dashboard",
     scope: "/",
     display: "standalone",
     orientation: "portrait-primary",

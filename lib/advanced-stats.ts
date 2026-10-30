@@ -133,8 +133,9 @@ export function computeAdvancedStats(
     else if (entry.status === "ABANDONED") byStatus.abandoned += 1;
     else byStatus.finished += 1;
 
-    if (entry.userRating && entry.userRating >= 1 && entry.userRating <= 5) {
-      ratings[entry.userRating - 1] += 1;
+    // Une demi-étoile compte avec l'étoile pleine au-dessus : 4,5 rejoint les 5.
+    if (entry.userRating && entry.userRating > 0 && entry.userRating <= 5) {
+      ratings[Math.ceil(entry.userRating) - 1] += 1;
     }
     byAuthor.set(entry.author, (byAuthor.get(entry.author) ?? 0) + 1);
 

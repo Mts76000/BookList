@@ -7,7 +7,6 @@ import { validateBody } from "@/lib/validation";
 import { identifySeriesSchema } from "@/lib/validation-schemas";
 import { createRateLimiter } from "@/lib/rate-limit";
 import { requestMetadata } from "@/lib/audit-log";
-import { getUserPlan } from "@/lib/subscription";
 import { findSeriesForTitles } from "@/lib/series-completion";
 import { chooseSeries, missingVolumes, volumeForTitle } from "@/lib/series-detection";
 
@@ -20,7 +19,8 @@ const identifyLimiter = createRateLimiter("series-identify", 60, 60);
  * manque 5 », prête à créer.
  *
  * Les titres viennent de la base, pas du client : seuls les livres de l'utilisateur sont
- * pris en compte. La liste des tomes manquants est réservée à Premium.
+ * pris en compte. Les tomes manquants sont listés pour tous ; les ajouter en un clic est
+ * réservé à Premium.
  */
 export const POST = withApiErrorHandling(async (request: Request) => {
   const session = await requireAuth();
@@ -35,13 +35,12 @@ export const POST = withApiErrorHandling(async (request: Request) => {
   const validation = await validateBody(identifySeriesSchema, request);
   if (!validation.success) return validation.response;
 
-  const [books, library, plan] = await Promise.all([
+  const [books, library] = await Promise.all([
     db
       .select({ id: book.id, title: book.title, author: book.author })
       .from(book)
       .where(and(eq(book.userId, userId), inArray(book.id, validation.data.bookIds))),
     db.select({ title: book.title }).from(book).where(eq(book.userId, userId)),
-    getUserPlan(userId),
   ]);
   if (books.length === 0) return apiError("NOT_FOUND", "Livre introuvable.");
 
@@ -68,7 +67,8 @@ export const POST = withApiErrorHandling(async (request: Request) => {
     total: series.volumes.filter((volume) => volume.index !== null).length,
     owned,
     missingCount: missing.length,
-    missing: plan.isPremium ? missing : [],
+    // Visible de tous, comme sur la page Sagas : seul l'ajout en un clic est Premium.
+    missing,
     author: books[0].author,
   });
 });

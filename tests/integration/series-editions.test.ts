@@ -126,9 +126,10 @@ describe("POST /api/series/editions", () => {
     expect(data.editions[0].isbn).toMatch(/^9782/);
   });
 
-  it("est réservée à Premium", async () => {
+  it("est ouverte aux comptes gratuits", async () => {
     await createUser(false);
+    mockServices();
     const res = await findEditions(request({ titles: ["Dune"], author: "Frank Herbert" }));
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(200);
   });
 });

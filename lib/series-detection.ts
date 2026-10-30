@@ -34,8 +34,11 @@ function romanToNumber(value: string): number | null {
 const VOLUME_PATTERN =
   /^(.+?)[\s,.:;–—-]*(?:\b(?:tome|t\.?|vol(?:ume)?\.?|livre|book|partie)\s*|#\s*)(\d{1,3}|[ivxlc]{1,6})\b/i;
 
+/** Notice de bibliothèque (BnF) : « Le cycle de Dune. 3, Le messie de Dune ». */
+const CATALOG_VOLUME_PATTERN = /^(.+?)\.\s*(\d{1,3})\s*[,:]\s*\S/;
+
 function parseVolume(text: string): SeriesHint | null {
-  const match = text.trim().match(VOLUME_PATTERN);
+  const match = text.trim().match(VOLUME_PATTERN) ?? text.trim().match(CATALOG_VOLUME_PATTERN);
   if (!match) return null;
   const name = match[1].trim().replace(/[\s,.:;–—(-]+$/, "");
   const raw = match[2];
@@ -271,6 +274,64 @@ export interface KnownSeriesSummary {
   authors: string[];
 }
 
+/**
+ * Deux auteurs sont-ils le même ? Un nom de famille en commun suffit : « Frank Herbert » et
+ * « Frank Herbert, Michel Demuth » (traducteur compris), « J.K. Rowling » et « J. K.
+ * Rowling » désignent la même personne.
+ */
+export function sameAuthors(a: string | string[], b: string | string[]): boolean {
+  const words = (value: string | string[]) =>
+    (Array.isArray(value) ? value : [value])
+      .flatMap((name) => normalizeText(name).split(" "))
+      .filter((word) => word.length > 2 && word !== "auteur" && word !== "inconnu");
+  const first = new Set(words(a));
+  return words(b).some((word) => first.has(word));
+}
+
+/**
+ * Saga de la bibliothèque qui correspond à un nom de saga venu d'ailleurs (titre, Wikidata) :
+ * même nom, ou même auteur et un mot porteur en commun (« Le cycle de Dune » et « Dune »).
+ * C'est ce qui range un nouveau tome dans la saga existante, même acheté dans une autre
+ * édition ou une autre collection, où la saga ne s'écrit pas pareil.
+ */
+export function matchKnownSeries(
+  name: string,
+  author: string,
+  known: KnownSeriesSummary[],
+): KnownSeriesSummary | null {
+  const key = normalizeText(name);
+  const words = significantWords(name);
+  return (
+    known.find((entry) => normalizeText(entry.name) === key) ??
+    known.find(
+      (entry) =>
+        sameAuthors(entry.authors, author) &&
+        significantWords(entry.name).some((word) => words.includes(word)),
+    ) ??
+    null
+  );
+}
+
+/**
+ * Titres à chercher sur Wikidata pour un livre qu'on ajoute : le titre du tome quand il suit
+ * un marqueur, puis le titre tel quel (« Dune - Tome 2 Le Messie de Dune » → « Le
+ * Messie de Dune »), sous lequel Wikidata le connaît.
+ */
+export function seriesLookupTitles(title: string, subtitle?: string | null): string[] {
+  // Le titre du tome en premier : « Dune - Tome 2 … » ressemble aussi au tome 1, « Dune ».
+  const titles: string[] = [];
+  const rest = title
+    .trim()
+    .replace(VOLUME_PATTERN, "")
+    .replace(/^[\s,.:;–—)-]+/, "")
+    .trim();
+  if (rest && rest !== title.trim() && rest.length > 2) titles.push(rest);
+  titles.push(title);
+  if (subtitle && !parseVolume(subtitle)) titles.push(`${title} ${subtitle}`);
+  titles.push(...cleanTitleVariants(title));
+  return [...new Set(titles)].slice(0, 3);
+}
+
 export interface NewBookSeries {
   seriesName: string;
   seriesIndex: number | null;
@@ -291,10 +352,7 @@ export function seriesForNewBook(
   author: string,
   known: KnownSeriesSummary[],
 ): NewBookSeries | null {
-  const authorKey = normalizeText(author);
-  const sameAuthor = known.filter((entry) =>
-    entry.authors.some((name) => normalizeText(name) === authorKey),
-  );
+  const sameAuthor = known.filter((entry) => sameAuthors(entry.authors, author));
   const sharesWord = (a: string, b: string) => {
     const words = significantWords(b);
     return significantWords(a).some((word) => words.includes(word));
@@ -356,16 +414,52 @@ export interface SagaBook {
 }
 
 /**
+ * Formes « propres » d'un titre d'édition, sous lesquelles Wikidata connaît le livre ou sa
+ * saga : sans tomaison ni numéro, découpé sur ses séparateurs. « tome 1, Harry Potter » →
+ * « Harry Potter » ; « Hunger Games - tome 1 » → « Hunger Games » ; « Divergente 1 -
+ * Divergente » → « Divergente ».
+ */
+export function cleanTitleVariants(title: string): string[] {
+  const stripped = title
+    .replace(/\b(?:tome|t|vol(?:ume)?|livre|book|partie)\.?\s*\d{1,3}\b/gi, " ")
+    .replace(/(^|\s)\d{1,3}(?=\s|$)/g, " ")
+    .replace(/[()[\]]/g, " ");
+  return [
+    ...new Set(
+      stripped
+        .split(/\s[-–—]\s|[,:;]|\s\.\s/)
+        .map((part) =>
+          part
+            .replace(/\s+/g, " ")
+            .replace(/^[\s.-]+|[\s.-]+$/g, "")
+            .trim(),
+        )
+        .filter((part) => part.length > 2 && normalizeText(part) !== normalizeText(title)),
+    ),
+  ];
+}
+
+/**
  * La saga Wikidata qui correspond le mieux aux tomes de l'utilisateur : celle qui en
  * contient le plus, et à égalité la plus courte (« Fondation » existe en trilogie et en
  * cycle de sept tomes : avec les trois premiers en bibliothèque, c'est la trilogie).
+ *
+ * `sagaName` : le nom donné par l'utilisateur à sa saga. Une saga Wikidata du même nom est
+ * retenue même quand aucun titre ne correspond, ce qui arrive avec des titres d'édition
+ * comme « tome 1, Harry Potter ».
  */
-export function chooseSeries(candidates: FetchedSeries[], books: SagaBook[]): FetchedSeries | null {
+export function chooseSeries(
+  candidates: FetchedSeries[],
+  books: SagaBook[],
+  sagaName?: string,
+): FetchedSeries | null {
   let best: { series: FetchedSeries; score: number; size: number } | null = null;
+  const nameKey = sagaName ? normalizeText(sagaName) : null;
   for (const series of candidates) {
-    const score = books.filter((book) =>
+    const titleScore = books.filter((book) =>
       series.volumes.some((volume) => sameBook(volume.title, book.title)),
     ).length;
+    const score = titleScore + (nameKey && normalizeText(series.name) === nameKey ? 0.5 : 0);
     const size = series.volumes.filter((volume) => volume.index !== null).length;
     if (score === 0 || size === 0) continue;
     if (!best || score > best.score || (score === best.score && size < best.size)) {
