@@ -23,6 +23,7 @@ import {
 } from "@/lib/book-status";
 import { Select } from "@/components/ui/select";
 import { ReadingProgress } from "@/components/reading-progress";
+import type { KnownSeries } from "@/lib/series-store";
 
 interface Comment {
   id: string;
@@ -54,6 +55,8 @@ interface Book {
 
 interface BookDetailsProps {
   book: Book;
+  /** Sagas de la bibliothèque, proposées à la saisie du nom de série. */
+  knownSeries?: KnownSeries[];
 }
 
 /** Au-delà, la description est repliée derrière un « Voir plus ». */
@@ -75,7 +78,7 @@ function formatDate(value: string | Date | null): string {
   return value ? new Date(value).toLocaleDateString("fr-FR") : "?";
 }
 
-export function BookDetails({ book }: BookDetailsProps) {
+export function BookDetails({ book, knownSeries = [] }: BookDetailsProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [newComment, setNewComment] = useState("");
@@ -356,9 +359,35 @@ export function BookDetails({ book }: BookDetailsProps) {
                   label="Nom de la série"
                   hideLabel
                   placeholder="Nom de la série (ex : Dune)"
+                  list="known-series"
+                  autoComplete="off"
                   value={editForm.seriesName}
-                  onChange={(e) => setEditForm({ ...editForm, seriesName: e.target.value })}
+                  onChange={(e) => {
+                    const seriesName = e.target.value;
+                    // Une saga existante choisie : on propose le tome suivant et son nombre
+                    // de tomes, sans écraser ce qui est déjà saisi.
+                    const known = knownSeries.find(
+                      (entry) => entry.name.toLowerCase() === seriesName.trim().toLowerCase(),
+                    );
+                    setEditForm({
+                      ...editForm,
+                      seriesName,
+                      seriesIndex:
+                        editForm.seriesIndex || !known
+                          ? editForm.seriesIndex
+                          : String(known.nextIndex),
+                      seriesTotal:
+                        editForm.seriesTotal || !known?.total
+                          ? editForm.seriesTotal
+                          : String(known.total),
+                    });
+                  }}
                 />
+                <datalist id="known-series">
+                  {knownSeries.map((entry) => (
+                    <option key={entry.name} value={entry.name} />
+                  ))}
+                </datalist>
                 <Field
                   label="Tome"
                   hideLabel

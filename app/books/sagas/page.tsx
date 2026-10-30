@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { and, eq, isNotNull } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { book } from "@/drizzle/schema";
 import { requireAuthPage } from "@/lib/permissions";
@@ -8,6 +8,9 @@ import { groupSeries } from "@/lib/series";
 import { BooksTabs } from "@/components/books-tabs";
 import { BookCover } from "@/components/book-cover";
 import { PremiumTeaser } from "@/components/premium-teaser";
+import { SeriesEditor, type EditorBook } from "@/components/series-editor";
+import { SeriesSuggestions, type SuggestionView } from "@/components/series-suggestions";
+import { suggestSeries } from "@/lib/series-detection";
 
 /** Statut d'un tome, sous sa couverture : une pastille et un mot, lisibles sans légende. */
 const STATUS = {
@@ -21,7 +24,9 @@ export default async function SeriesPage() {
   const session = await requireAuthPage("/books/sagas");
   const plan = await getUserPlan(session.user.id);
 
-  const books = await db
+  // Toute la bibliothèque : l'éditeur y cherche les livres à ajouter, et la détection y
+  // repère les sagas qui ne sont pas encore renseignées.
+  const library = await db
     .select({
       id: book.id,
       title: book.title,
@@ -31,14 +36,53 @@ export default async function SeriesPage() {
       seriesName: book.seriesName,
       seriesIndex: book.seriesIndex,
       seriesTotal: book.seriesTotal,
+      publishedDate: book.publishedDate,
     })
     .from(book)
-    .where(and(eq(book.userId, session.user.id), isNotNull(book.seriesName)));
-  const allSeries = groupSeries(books);
+    .where(eq(book.userId, session.user.id));
+  const allSeries = groupSeries(library.filter((entry) => entry.seriesName));
   // Aperçu gratuit : la première saga en entier, les autres seulement annoncées. Leur
   // contenu ne quitte pas le serveur.
   const series = plan.isPremium ? allSeries : allSeries.slice(0, 1);
   const lockedCount = allSeries.length - series.length;
+
+  const editorLibrary: EditorBook[] = library.map(
+    ({ id, title, author, coverUrl, seriesName, seriesIndex }) => ({
+      id,
+      title,
+      author,
+      coverUrl,
+      seriesName,
+      seriesIndex,
+    }),
+  );
+  const existingNames = allSeries.map((entry) => entry.name);
+  const byId = new Map(library.map((entry) => [entry.id, entry]));
+
+  // Une suggestion pour une saga existante reprend ses tomes actuels, suivis des nouveaux.
+  const suggestions: SuggestionView[] = suggestSeries(library).map((suggestion) => {
+    const current = suggestion.existing
+      ? (allSeries.find((entry) => entry.name === suggestion.name)?.books ?? [])
+      : [];
+    return {
+      key: suggestion.key,
+      name: suggestion.name,
+      existing: suggestion.existing,
+      reason: suggestion.reason,
+      books: suggestion.books.map(({ id }) => {
+        const entry = byId.get(id)!;
+        return { id, title: entry.title, author: entry.author, coverUrl: entry.coverUrl };
+      }),
+      draft: {
+        name: suggestion.name,
+        total: current[0]?.seriesTotal ?? null,
+        volumes: [
+          ...current.map((entry) => ({ bookId: entry.id, seriesIndex: entry.seriesIndex })),
+          ...suggestion.books.map(({ id, seriesIndex }) => ({ bookId: id, seriesIndex })),
+        ],
+      },
+    };
+  });
 
   return (
     <main
@@ -47,30 +91,63 @@ export default async function SeriesPage() {
     >
       <BooksTabs active="/books/sagas" />
 
-      <header className="mb-6">
-        <h1 className="font-serif text-2xl text-stone-900 sm:text-3xl">Vos sagas</h1>
-        <p className="mt-1 text-sm text-stone-500">
-          Renseignez la série et le numéro du tome en modifiant un livre.
-        </p>
+      <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="font-serif text-2xl text-stone-900 sm:text-3xl">Vos sagas</h1>
+          <p className="mt-1 text-sm text-stone-500">
+            Regroupez les tomes d&apos;une série pour savoir lequel lire ensuite.
+          </p>
+        </div>
+        <SeriesEditor
+          library={editorLibrary}
+          existingNames={existingNames}
+          triggerLabel="Nouvelle saga"
+          triggerVariant="primary"
+          triggerClassName="w-full sm:w-auto"
+        />
       </header>
+
+      <SeriesSuggestions
+        suggestions={suggestions}
+        library={editorLibrary}
+        existingNames={existingNames}
+      />
 
       {series.length === 0 ? (
         <p className="card p-6 text-center text-sm text-stone-500">
-          Aucune saga pour l&apos;instant. Modifiez un livre pour indiquer sa série et son tome, ou
-          importez votre export Goodreads : les séries y sont reconnues.
+          Aucune saga pour l&apos;instant. Créez-en une avec « Nouvelle saga », ou importez votre
+          export Goodreads : les séries y sont reconnues.
         </p>
       ) : (
         <ul className="space-y-4">
           {series.map((entry) => (
             <li key={entry.name} className="card p-5 sm:p-6">
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <h2 className="font-serif text-xl text-stone-900">{entry.name}</h2>
-                <p className="text-sm text-stone-500 tabular-nums">
-                  {entry.finished} lu{entry.finished > 1 ? "s" : ""}
-                  {entry.total
-                    ? ` sur ${entry.total}`
-                    : ` sur ${entry.books.length} en bibliothèque`}
-                </p>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h2 className="font-serif text-xl text-stone-900">{entry.name}</h2>
+                  <p className="text-sm text-stone-500 tabular-nums">
+                    {entry.finished} lu{entry.finished > 1 ? "s" : ""}
+                    {entry.total
+                      ? ` sur ${entry.total}`
+                      : ` sur ${entry.books.length} en bibliothèque`}
+                  </p>
+                </div>
+                <SeriesEditor
+                  library={editorLibrary}
+                  existingNames={existingNames}
+                  previousName={entry.name}
+                  initial={{
+                    name: entry.name,
+                    total: entry.total,
+                    volumes: entry.books.map((volume) => ({
+                      bookId: volume.id,
+                      seriesIndex: volume.seriesIndex,
+                    })),
+                  }}
+                  triggerLabel="Modifier"
+                  triggerVariant="ghost"
+                  triggerClassName="shrink-0 px-3"
+                />
               </div>
 
               {/* Défilement horizontal bord à bord sur mobile : la carte ne coupe pas le
@@ -130,10 +207,14 @@ export default async function SeriesPage() {
           trialAvailable={plan.trialAvailable}
           title={
             lockedCount > 0
-              ? `${lockedCount} autre${lockedCount > 1 ? "s" : ""} saga${lockedCount > 1 ? "s" : ""} avec Premium`
-              : "Toutes vos sagas, tome par tome"
+              ? `${lockedCount === 1 ? "Votre autre saga est masquée" : `Vos ${lockedCount} autres sagas sont masquées`}`
+              : "Suivez toutes vos sagas avec Premium"
           }
-          description="Suivez où vous en êtes de chaque série et le prochain tome à lire, sans rien noter nulle part."
+          description={
+            lockedCount > 0
+              ? "Le compte gratuit affiche une saga. Avec Premium, retrouvez-les toutes, avec les tomes lus et le prochain à lire."
+              : "Le compte gratuit affiche une saga. Avec Premium, suivez-les toutes, avec les tomes lus et le prochain à lire."
+          }
         />
       )}
     </main>

@@ -194,3 +194,25 @@ export const importBooksSchema = z.object({
     .min(1, "Fichier CSV requis.")
     .max(5 * 1024 * 1024, "Fichier CSV trop volumineux (5 Mo max)."),
 });
+
+/** Une saga enregistrée d'un coup : son nom et ses tomes, dans l'ordre. */
+export const saveSeriesSchema = z.object({
+  name: z.string().trim().min(1, "Donnez un nom à la saga.").max(MAX_TEXT),
+  /** Nom actuel quand on modifie une saga existante : permet de la renommer et d'en retirer
+   *  des tomes. Absent à la création. */
+  previousName: z.string().trim().max(MAX_TEXT).nullish(),
+  total: emptyToNull(z.coerce.number().int().min(1).max(1000)),
+  volumes: z
+    .array(
+      z.object({
+        bookId: z.string().min(1),
+        seriesIndex: emptyToNull(z.coerce.number().int().min(0).max(1000)),
+      }),
+    )
+    .min(1, "Ajoutez au moins un livre à la saga.")
+    .max(200),
+});
+
+export const deleteSeriesSchema = z.object({
+  name: z.string().trim().min(1).max(MAX_TEXT),
+});

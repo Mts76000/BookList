@@ -19,6 +19,8 @@ export const catalogBook = pgTable(
     id: text("id").primaryKey(),
     isbn: text("isbn"),
     title: text("title").notNull(),
+    /** Sous-titre Google, qui porte souvent la saga : « Le cycle de Dune, tome 2 ». */
+    subtitle: text("subtitle"),
     authors: text("authors").array().notNull(),
     description: text("description"),
     coverUrl: text("cover_url"),

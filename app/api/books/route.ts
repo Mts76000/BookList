@@ -9,6 +9,7 @@ import { createRateLimiter } from "@/lib/rate-limit";
 import { requestMetadata } from "@/lib/audit-log";
 import { getUserPlan } from "@/lib/subscription";
 import { FREE_BOOK_LIMIT } from "@/lib/plans";
+import { canonicalSeriesName } from "@/lib/series-store";
 
 const createLimiter = createRateLimiter("books-create", 30, 60);
 const listLimiter = createRateLimiter("books-list", 60, 60);
@@ -45,6 +46,11 @@ export const POST = withApiErrorHandling(async (request: Request) => {
       `Votre bibliothèque gratuite est pleine (${FREE_BOOK_LIMIT} livres). Passez à Premium pour continuer à ajouter des livres.`,
       { reason: "BOOK_LIMIT_REACHED", limit: FREE_BOOK_LIMIT },
     );
+  }
+
+  // Une saga déjà présente garde son orthographe : « dune » rejoint « Dune ».
+  if (fields.seriesName) {
+    fields.seriesName = await canonicalSeriesName(db, session.user.id, fields.seriesName);
   }
 
   const [created] = await db

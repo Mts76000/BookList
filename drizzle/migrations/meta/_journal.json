@@ -71,6 +71,13 @@
       "when": 1793297106906,
       "tag": "0009_premium_grant",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793353420476,
+      "tag": "0010_catalog_subtitle",
+      "breakpoints": true
     }
   ]
 }

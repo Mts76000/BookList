@@ -83,6 +83,7 @@ interface ReadingActivity {
 
 export function ContributionGraph({ activities }: { activities: ReadingActivity[] }) {
   const [periodIndex, setPeriodIndex] = useState(0);
+  const [activeKey, setActiveKey] = useState<string | null>(null);
   const period = PERIODS[periodIndex];
 
   const pagesByDay = new Map(activities.map((a) => [a.date, a.pagesRead]));
@@ -113,7 +114,10 @@ export function ContributionGraph({ activities }: { activities: ReadingActivity[
             <button
               key={entry.label}
               type="button"
-              onClick={() => setPeriodIndex(index)}
+              onClick={() => {
+                setPeriodIndex(index);
+                setActiveKey(null);
+              }}
               aria-pressed={index === periodIndex}
               className={`min-h-8 rounded-md px-2.5 py-1 text-xs font-medium transition ${
                 index === periodIndex
@@ -128,27 +132,58 @@ export function ContributionGraph({ activities }: { activities: ReadingActivity[
       </div>
 
       <p className="mb-2 text-[11px] text-stone-400">Pages {period.caption}</p>
+      {/* Chaque barre est un bouton : survol, clic (au doigt) ou focus clavier affichent sa
+          valeur dans une bulle. Elle reste affichée jusqu'à la sortie du graphique. */}
       <div
-        className={`flex h-40 items-end ${period.unit === "day" ? "gap-[3px] sm:gap-1" : "gap-1 sm:gap-2"}`}
+        className={`flex h-40 items-end pt-8 ${period.unit === "day" ? "gap-[3px] sm:gap-1" : "gap-1 sm:gap-2"}`}
+        onMouseLeave={() => setActiveKey(null)}
       >
-        {buckets.map((bucket) => (
-          <div
-            key={bucket.key}
-            className="group relative flex h-full flex-1 items-end"
-            title={bucket.tooltip}
-          >
-            <div
-              className={`w-full rounded-t-[3px] transition-colors ${
-                bucket.pages > 0
-                  ? "bg-accent-400 group-hover:bg-accent-600"
-                  : "bg-stone-100 group-hover:bg-stone-200"
-              }`}
-              style={{
-                height: bucket.pages > 0 ? `${Math.max((bucket.pages / max) * 100, 4)}%` : "3px",
-              }}
-            />
-          </div>
-        ))}
+        {buckets.map((bucket, index) => {
+          const isActive = bucket.key === activeKey;
+          // Près des bords, la bulle s'aligne sur la barre au lieu de déborder de la carte.
+          const align =
+            index < buckets.length * 0.15
+              ? "left-0"
+              : index > buckets.length * 0.85
+                ? "right-0"
+                : "left-1/2 -translate-x-1/2";
+          return (
+            <button
+              key={bucket.key}
+              type="button"
+              className="relative flex h-full flex-1 items-end focus:outline-none"
+              aria-label={bucket.tooltip}
+              aria-pressed={isActive}
+              onMouseEnter={() => setActiveKey(bucket.key)}
+              onFocus={() => setActiveKey(bucket.key)}
+              onBlur={() => setActiveKey(null)}
+              onClick={() => setActiveKey(bucket.key)}
+            >
+              {isActive && (
+                <span
+                  className={`pointer-events-none absolute bottom-full z-10 mb-1 rounded-[6px] bg-stone-900 px-2 py-1 text-[11px] whitespace-nowrap text-stone-50 shadow-sm ${align}`}
+                  role="tooltip"
+                >
+                  {bucket.tooltip}
+                </span>
+              )}
+              <span
+                className={`block w-full rounded-t-[3px] transition-colors ${
+                  bucket.pages > 0
+                    ? isActive
+                      ? "bg-accent-600"
+                      : "bg-accent-400"
+                    : isActive
+                      ? "bg-stone-300"
+                      : "bg-stone-100"
+                }`}
+                style={{
+                  height: bucket.pages > 0 ? `${Math.max((bucket.pages / max) * 100, 4)}%` : "3px",
+                }}
+              />
+            </button>
+          );
+        })}
       </div>
       <div className="mt-2 flex justify-between text-[10px] text-stone-400" aria-hidden="true">
         {buckets.map((bucket, index) =>
@@ -159,12 +194,6 @@ export function ContributionGraph({ activities }: { activities: ReadingActivity[
           ) : null,
         )}
       </div>
-      <p className="sr-only">
-        {buckets
-          .filter((b) => b.pages > 0)
-          .map((b) => b.tooltip)
-          .join(", ")}
-      </p>
     </div>
   );
 }

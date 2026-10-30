@@ -7,6 +7,7 @@ import { BookDetails } from "@/components/book-details";
 import { BookQuotes } from "@/components/book-quotes";
 import { SeriesNav } from "@/components/series-nav";
 import { getUserPlan } from "@/lib/subscription";
+import { getKnownSeries } from "@/lib/series-store";
 
 export default async function BookDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await requireAuthPage();
@@ -25,7 +26,7 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
 
   if (!entry) notFound();
 
-  const [quotes, [{ value: totalQuotes }], plan, seriesVolumes] = await Promise.all([
+  const [quotes, [{ value: totalQuotes }], plan, seriesVolumes, knownSeries] = await Promise.all([
     db
       .select({ id: quote.id, content: quote.content, page: quote.page })
       .from(quote)
@@ -44,6 +45,7 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
             ),
           )
       : Promise.resolve([]),
+    getKnownSeries(session.user.id),
   ]);
 
   return (
@@ -52,7 +54,7 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
         id="main-content"
         className="animate-fade-in-up mx-auto max-w-3xl px-4 py-6 sm:px-6 sm:py-8"
       >
-        <BookDetails book={entry} />
+        <BookDetails book={entry} knownSeries={knownSeries} />
         {entry.seriesName && (
           <SeriesNav seriesName={entry.seriesName} current={entry} volumes={seriesVolumes} />
         )}
