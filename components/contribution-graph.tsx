@@ -2,80 +2,102 @@
 
 import { useState } from "react";
 
+/**
+ * Un seul type de graphique quelle que soit la période : un histogramme, dont chaque barre
+ * regroupe un jour, une semaine ou un mois. Le nombre de barres reste lisible (30, 26 ou
+ * 12) et changer de période ne change pas la façon de lire le graphique.
+ */
+const PERIODS = [
+  { label: "1 mois", unit: "day", count: 30, caption: "par jour" },
+  { label: "6 mois", unit: "week", count: 26, caption: "par semaine" },
+  { label: "1 an", unit: "month", count: 12, caption: "par mois" },
+] as const;
+
+type Unit = (typeof PERIODS)[number]["unit"];
+
+/** Jour civil local au format `YYYY-MM-DD`. */
+function dayKey(date: Date): string {
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+const shortDay = (date: Date) =>
+  date.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+const shortMonth = (date: Date) => date.toLocaleDateString("fr-FR", { month: "short" });
+const longMonth = (date: Date) =>
+  date.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+
+type Bucket = { key: string; start: Date; pages: number; label: string; tooltip: string };
+
+/**
+ * Découpe la période en barres, la dernière se terminant aujourd'hui. Les semaines vont du
+ * lundi au dimanche et les mois sont des mois civils, pour que chaque barre corresponde à
+ * une période qu'on reconnaît.
+ */
+function buildBuckets(unit: Unit, count: number, pagesByDay: Map<string, number>): Bucket[] {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const buckets: Bucket[] = [];
+
+  for (let i = count - 1; i >= 0; i--) {
+    const start = new Date(today);
+    const end = new Date(today);
+    if (unit === "day") {
+      start.setDate(today.getDate() - i);
+      end.setTime(start.getTime());
+    } else if (unit === "week") {
+      const mondayOffset = (today.getDay() + 6) % 7;
+      start.setDate(today.getDate() - mondayOffset - i * 7);
+      end.setTime(start.getTime());
+      end.setDate(start.getDate() + 6);
+    } else {
+      start.setDate(1);
+      start.setMonth(today.getMonth() - i);
+      end.setTime(start.getTime());
+      end.setMonth(start.getMonth() + 1, 0);
+    }
+
+    let pages = 0;
+    for (const cursor = new Date(start); cursor <= end; cursor.setDate(cursor.getDate() + 1))
+      pages += pagesByDay.get(dayKey(cursor)) ?? 0;
+
+    const label =
+      unit === "month" ? shortMonth(start) : unit === "week" ? shortDay(start) : shortDay(start);
+    const span =
+      unit === "day"
+        ? shortDay(start)
+        : unit === "week"
+          ? `Semaine du ${shortDay(start)}`
+          : longMonth(start);
+    buckets.push({ key: dayKey(start), start, pages, label, tooltip: `${span} : ${pages} pages` });
+  }
+  return buckets;
+}
+
 interface ReadingActivity {
   /** Jour civil au format `YYYY-MM-DD`. */
   date: string;
   pagesRead: number;
 }
 
-interface ContributionGraphProps {
-  activities: ReadingActivity[];
-}
-
-/**
- * Sur un mois, une grille de semaines n'aurait que quatre ou cinq colonnes : elle laissait
- * l'essentiel de la carte vide. On y affiche plutôt un histogramme d'un trait par jour, qui
- * remplit la largeur et donne à lire les volumes. Sur 6 mois et un an, la grille façon
- * calendrier reste la plus lisible.
- */
-const PERIODS = [
-  { label: "1 mois", days: 30, view: "bars" },
-  { label: "6 mois", days: 26 * 7, view: "grid" },
-  { label: "1 an", days: 52 * 7, view: "grid" },
-] as const;
-
-const MONTHS = [
-  "Jan",
-  "Fév",
-  "Mar",
-  "Avr",
-  "Mai",
-  "Juin",
-  "Juil",
-  "Aoû",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Déc",
-];
-
-const DAY_LABELS = ["L", "", "M", "", "V", "", "D"];
-
-/** Intensité de la case selon le nombre de pages lues ce jour-là. */
-function colorFor(pagesRead: number): string {
-  if (pagesRead === 0) return "bg-stone-100";
-  if (pagesRead < 20) return "bg-accent-100";
-  if (pagesRead < 50) return "bg-accent-200";
-  if (pagesRead < 100) return "bg-accent-400";
-  return "bg-accent-600";
-}
-
-/** Jour civil décalé de `daysAgo` jours, au format `YYYY-MM-DD`. */
-function dayOffset(daysAgo: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() - daysAgo);
-  return d.toISOString().slice(0, 10);
-}
-
-function formatDay(date: string): string {
-  return new Date(date).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
-}
-
-type Day = { date: string; pagesRead: number };
-
-export function ContributionGraph({ activities }: ContributionGraphProps) {
+export function ContributionGraph({ activities }: { activities: ReadingActivity[] }) {
   const [periodIndex, setPeriodIndex] = useState(0);
   const period = PERIODS[periodIndex];
 
-  const activityMap = new Map(activities.map((a) => [a.date, a.pagesRead]));
-  const days: Day[] = Array.from({ length: period.days }, (_, i) => {
-    const date = dayOffset(period.days - 1 - i);
-    return { date, pagesRead: activityMap.get(date) ?? 0 };
-  });
+  const pagesByDay = new Map(activities.map((a) => [a.date, a.pagesRead]));
+  const buckets = buildBuckets(period.unit, period.count, pagesByDay);
 
-  const totalPages = days.reduce((sum, d) => sum + d.pagesRead, 0);
-  const activeDays = days.filter((d) => d.pagesRead > 0).length;
+  // Les totaux portent sur les jours couverts par les barres affichées.
+  const firstDay = dayKey(buckets[0].start);
+  const daysInRange = activities.filter((a) => a.date >= firstDay && a.pagesRead > 0);
+  const totalPages = daysInRange.reduce((sum, a) => sum + a.pagesRead, 0);
+  const activeDays = daysInRange.length;
   const average = activeDays > 0 ? Math.round(totalPages / activeDays) : 0;
+  const max = Math.max(...buckets.map((b) => b.pages), 1);
+
+  // Quelques repères sous l'axe : le premier, le milieu et le dernier.
+  const ticks = new Set([0, Math.floor((buckets.length - 1) / 2), buckets.length - 1]);
 
   return (
     <div>
@@ -105,126 +127,44 @@ export function ContributionGraph({ activities }: ContributionGraphProps) {
         </div>
       </div>
 
-      {period.view === "bars" ? <DailyBars days={days} /> : <CalendarGrid days={days} />}
-    </div>
-  );
-}
-
-/** Un trait par jour, hauteur proportionnelle au jour le plus chargé de la période. */
-function DailyBars({ days }: { days: Day[] }) {
-  const max = Math.max(...days.map((d) => d.pagesRead), 1);
-
-  return (
-    <div>
-      <div className="flex h-40 items-end gap-[3px] sm:gap-1">
-        {days.map((day) => (
+      <p className="mb-2 text-[11px] text-stone-400">Pages {period.caption}</p>
+      <div
+        className={`flex h-40 items-end ${period.unit === "day" ? "gap-[3px] sm:gap-1" : "gap-1 sm:gap-2"}`}
+      >
+        {buckets.map((bucket) => (
           <div
-            key={day.date}
+            key={bucket.key}
             className="group relative flex h-full flex-1 items-end"
-            title={`${formatDay(day.date)} : ${day.pagesRead} pages`}
+            title={bucket.tooltip}
           >
             <div
               className={`w-full rounded-t-[3px] transition-colors ${
-                day.pagesRead > 0
+                bucket.pages > 0
                   ? "bg-accent-400 group-hover:bg-accent-600"
                   : "bg-stone-100 group-hover:bg-stone-200"
               }`}
               style={{
-                height: day.pagesRead > 0 ? `${Math.max((day.pagesRead / max) * 100, 4)}%` : "3px",
+                height: bucket.pages > 0 ? `${Math.max((bucket.pages / max) * 100, 4)}%` : "3px",
               }}
             />
           </div>
         ))}
       </div>
-      <div className="mt-2 flex justify-between text-[10px] text-stone-400">
-        <span>{formatDay(days[0].date)}</span>
-        <span>{formatDay(days[Math.floor(days.length / 2)].date)}</span>
-        <span>Aujourd&apos;hui</span>
+      <div className="mt-2 flex justify-between text-[10px] text-stone-400" aria-hidden="true">
+        {buckets.map((bucket, index) =>
+          ticks.has(index) ? (
+            <span key={bucket.key}>
+              {index === buckets.length - 1 && period.unit === "day" ? "Aujourd'hui" : bucket.label}
+            </span>
+          ) : null,
+        )}
       </div>
       <p className="sr-only">
-        {days
-          .filter((d) => d.pagesRead > 0)
-          .map((d) => `${formatDay(d.date)} : ${d.pagesRead} pages`)
+        {buckets
+          .filter((b) => b.pages > 0)
+          .map((b) => b.tooltip)
           .join(", ")}
       </p>
-    </div>
-  );
-}
-
-/**
- * Grille calendrier : une colonne par semaine, une ligne par jour. Les colonnes se partagent
- * la largeur disponible (cases carrées, 10px minimum), si bien que la grille remplit la carte
- * quelle que soit la période ; sous ce minimum, sur mobile pour l'année, elle défile.
- */
-function CalendarGrid({ days }: { days: Day[] }) {
-  const weeks: Day[][] = [];
-  for (let i = 0; i < days.length; i += 7) weeks.push(days.slice(i, i + 7));
-
-  // Le nom du mois n'apparaît qu'à la semaine où il change, et seulement s'il reste assez
-  // de colonnes avant le suivant pour ne pas chevaucher le libellé voisin ("JuilAoû").
-  const MIN_WEEKS_BETWEEN_LABELS = 3;
-  let lastLabelIndex = -Infinity;
-  const monthLabels = weeks.map((week, index) => {
-    const current = new Date(week[0].date).getMonth();
-    const previous = index > 0 ? new Date(weeks[index - 1][0].date).getMonth() : null;
-    const isChange = index === 0 || current !== previous;
-    if (!isChange || index - lastLabelIndex < MIN_WEEKS_BETWEEN_LABELS) return null;
-    lastLabelIndex = index;
-    return MONTHS[current];
-  });
-
-  return (
-    <div>
-      <div className="-mx-1 overflow-x-auto px-1 pb-1">
-        <div
-          className="grid gap-[3px]"
-          style={{
-            gridTemplateColumns: `1rem repeat(${weeks.length}, minmax(10px, 1fr))`,
-            gridTemplateRows: "auto",
-            minWidth: `${weeks.length * 13 + 20}px`,
-          }}
-        >
-          <div />
-          {weeks.map((week, weekIndex) => (
-            <div
-              key={`label-${week[0].date}`}
-              className="h-4 overflow-visible text-[10px] whitespace-nowrap text-stone-400"
-            >
-              {monthLabels[weekIndex]}
-            </div>
-          ))}
-
-          {DAY_LABELS.map((label, dayIndex) => (
-            <div key={`row-${dayIndex}`} className="contents">
-              <div className="flex items-center text-[10px] text-stone-400">{label}</div>
-              {weeks.map((week) => {
-                const day = week[dayIndex];
-                return day ? (
-                  <div
-                    key={day.date}
-                    className={`aspect-square w-full rounded-[3px] ${colorFor(day.pagesRead)}`}
-                    title={`${formatDay(day.date)} : ${day.pagesRead} pages`}
-                  />
-                ) : (
-                  <div key={`${week[0].date}-${dayIndex}`} />
-                );
-              })}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="mt-3 flex items-center justify-end gap-2 text-[10px] text-stone-400">
-        <span>Moins</span>
-        <div className="flex gap-[3px]">
-          {["bg-stone-100", "bg-accent-100", "bg-accent-200", "bg-accent-400", "bg-accent-600"].map(
-            (color) => (
-              <div key={color} className={`h-[11px] w-[11px] rounded-[3px] ${color}`} />
-            ),
-          )}
-        </div>
-        <span>Plus</span>
-      </div>
     </div>
   );
 }

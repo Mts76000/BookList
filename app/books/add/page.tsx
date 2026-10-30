@@ -268,6 +268,7 @@ export default function AddBookPage() {
                 <BookCover
                   coverUrl={entry.coverUrl}
                   alt={entry.title}
+                  author={entry.authors.join(", ")}
                   className="h-20 w-14 shrink-0 rounded-lg"
                 />
                 <div className="min-w-0">
@@ -293,6 +294,7 @@ export default function AddBookPage() {
                 <BookCover
                   coverUrl={selectedBook.coverUrl}
                   alt={selectedBook.title}
+                  author={selectedBook.authors.join(", ")}
                   className="h-24 w-16 rounded-lg shadow-sm"
                 />
                 <div>

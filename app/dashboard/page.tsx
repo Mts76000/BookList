@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { and, desc, eq, isNotNull } from "drizzle-orm";
-import { ArrowRight, Fire, Target } from "@phosphor-icons/react/ssr";
+import { and, desc, eq, isNotNull, sql } from "drizzle-orm";
+import { ArrowRight, Fire, Quotes } from "@phosphor-icons/react/ssr";
 import { db } from "@/lib/db";
-import { book, pushSubscription, readingActivity, readingGoal } from "@/drizzle/schema";
+import { book, pushSubscription, quote, readingActivity, readingGoal } from "@/drizzle/schema";
 import { requireAuthPage } from "@/lib/permissions";
 import { getReadingStats } from "@/lib/reading-stats";
 import { ContributionGraph } from "@/components/contribution-graph";
 import { BookCover } from "@/components/book-cover";
 import { AddReadingActivity } from "@/components/add-reading-activity";
 import { ReadingGoal } from "@/components/reading-goal";
-import { ReadingProgress } from "@/components/reading-progress";
+import { ProgressBar, QuickProgress } from "@/components/reading-progress";
 import { NextReads, type NextRead } from "@/components/next-reads";
 import { GettingStarted } from "@/components/getting-started";
 import { recommendNext } from "@/lib/recommendations";
@@ -26,69 +26,115 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+const DAY_MS = 86_400_000;
+const WEEKDAYS = ["D", "L", "M", "M", "J", "V", "S"];
+
+/** Jour civil au format des activités de lecture (UTC, comme à l'enregistrement). */
+const dayKey = (date: Date) => date.toISOString().slice(0, 10);
+
+/** Les sept derniers jours, du plus ancien à aujourd'hui, avec les pages lues chacun. */
+function lastSevenDays(activities: { date: string; pagesRead: number }[]) {
+  const pagesByDay = new Map(activities.map((entry) => [entry.date, entry.pagesRead]));
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(Date.now() - (6 - index) * DAY_MS);
+    return {
+      key: dayKey(date),
+      label: WEEKDAYS[date.getUTCDay()],
+      pages: pagesByDay.get(dayKey(date)) ?? 0,
+    };
+  });
+}
+
+/** Pages lues par jour en moyenne sur les 30 derniers jours, jours sans lecture compris. */
+function recentPagesPerDay(activities: { date: string; pagesRead: number }[]): number {
+  const since = dayKey(new Date(Date.now() - 29 * DAY_MS));
+  const total = activities
+    .filter((entry) => entry.date >= since)
+    .reduce((sum, entry) => sum + entry.pagesRead, 0);
+  return total / 30;
+}
+
 /** Jours restants avant une date, arrondis au jour supérieur, au moins 1. */
 function daysUntil(date: Date): number {
-  return Math.max(Math.ceil((date.getTime() - Date.now()) / 86_400_000), 1);
+  return Math.max(Math.ceil((date.getTime() - Date.now()) / DAY_MS), 1);
 }
 
 /**
- * Accueil : tout part de la lecture en cours. En haut, la série et l'objectif en un coup
- * d'œil ; puis les livres en cours, dont on met la page à jour sans quitter l'écran ; puis
- * de quoi enchaîner. Le reste (activité, année, derniers livres) vient ensuite, et les
- * fonctions Premium n'y apparaissent qu'en discret.
+ * Accueil : le bureau de lecture. La lecture en cours est mise en avant, avec ce qu'il en
+ * reste et un geste pour noter les pages lues ; à côté, la semaine (série et pages du jour)
+ * et l'objectif de l'année. Viennent ensuite de quoi enchaîner, l'activité, une citation
+ * tirée des notes de l'utilisateur et les derniers livres terminés.
  */
 export default async function DashboardPage() {
   const session = await requireAuthPage("/dashboard");
   const user = session.user;
   const year = new Date().getFullYear();
 
-  const [currentlyReading, recentlyFinished, activities, stats, goal, plan, libraryBooks, push] =
-    await Promise.all([
-      db.query.book.findMany({
-        where: and(eq(book.userId, user.id), eq(book.status, "READING")),
-        orderBy: [desc(book.updatedAt)],
-        limit: 4,
-      }),
-      db.query.book.findMany({
-        where: and(
-          eq(book.userId, user.id),
-          eq(book.status, "FINISHED"),
-          isNotNull(book.userEndDate),
-        ),
-        orderBy: [desc(book.userEndDate)],
-        limit: 4,
-      }),
-      db.query.readingActivity.findMany({
-        where: eq(readingActivity.userId, user.id),
-        columns: { date: true, pagesRead: true },
-      }),
-      getReadingStats(user.id, user.initialBooksRead),
-      db.query.readingGoal.findFirst({
-        where: and(eq(readingGoal.userId, user.id), eq(readingGoal.year, year)),
-        columns: { target: true },
-      }),
-      getUserPlan(user.id),
-      db
-        .select({
-          id: book.id,
-          title: book.title,
-          author: book.author,
-          coverUrl: book.coverUrl,
-          genre: book.genre,
-          status: book.status,
-          userRating: book.userRating,
-          seriesName: book.seriesName,
-          seriesIndex: book.seriesIndex,
-          currentPage: book.currentPage,
-          createdAt: book.createdAt,
-        })
-        .from(book)
-        .where(eq(book.userId, user.id)),
-      db.query.pushSubscription.findFirst({
-        where: eq(pushSubscription.userId, user.id),
-        columns: { id: true },
-      }),
-    ]);
+  const [
+    currentlyReading,
+    recentlyFinished,
+    activities,
+    stats,
+    goal,
+    plan,
+    libraryBooks,
+    push,
+    [randomQuote],
+  ] = await Promise.all([
+    db.query.book.findMany({
+      where: and(eq(book.userId, user.id), eq(book.status, "READING")),
+      orderBy: [desc(book.updatedAt)],
+      limit: 4,
+    }),
+    db.query.book.findMany({
+      where: and(
+        eq(book.userId, user.id),
+        eq(book.status, "FINISHED"),
+        isNotNull(book.userEndDate),
+      ),
+      orderBy: [desc(book.userEndDate)],
+      limit: 6,
+    }),
+    db.query.readingActivity.findMany({
+      where: eq(readingActivity.userId, user.id),
+      columns: { date: true, pagesRead: true },
+    }),
+    getReadingStats(user.id, user.initialBooksRead),
+    db.query.readingGoal.findFirst({
+      where: and(eq(readingGoal.userId, user.id), eq(readingGoal.year, year)),
+      columns: { target: true },
+    }),
+    getUserPlan(user.id),
+    db
+      .select({
+        id: book.id,
+        title: book.title,
+        author: book.author,
+        coverUrl: book.coverUrl,
+        genre: book.genre,
+        status: book.status,
+        userRating: book.userRating,
+        seriesName: book.seriesName,
+        seriesIndex: book.seriesIndex,
+        currentPage: book.currentPage,
+        createdAt: book.createdAt,
+      })
+      .from(book)
+      .where(eq(book.userId, user.id)),
+    db.query.pushSubscription.findFirst({
+      where: eq(pushSubscription.userId, user.id),
+      columns: { id: true },
+    }),
+    // Une citation au hasard parmi celles de l'utilisateur : une bibliothèque personnelle
+    // en compte quelques centaines au plus, ORDER BY random() reste négligeable.
+    db
+      .select({ content: quote.content, bookId: book.id, title: book.title, author: book.author })
+      .from(quote)
+      .innerJoin(book, eq(book.id, quote.bookId))
+      .where(eq(quote.userId, user.id))
+      .orderBy(sql`random()`)
+      .limit(1),
+  ]);
 
   const firstName = user.name?.split(" ")[0] || "Lecteur";
   const trialDaysLeft = plan.premiumUntil ? daysUntil(plan.premiumUntil) : 0;
@@ -97,6 +143,29 @@ export default async function DashboardPage() {
     new Date(),
     plan.isPremium ? PREMIUM_STREAK_JOKERS : 0,
   );
+
+  const week = lastSevenDays(activities);
+  const pagesToday = week[6].pages;
+  const pagesThisWeek = week.reduce((sum, day) => sum + day.pages, 0);
+  const maxWeek = Math.max(...week.map((day) => day.pages), 1);
+
+  // Rythme des 30 derniers jours, pour estimer quand la lecture en cours sera terminée.
+  const pagesPerDay = recentPagesPerDay(activities);
+  const [featured, ...otherReading] = currentlyReading;
+  const pagesLeft =
+    featured?.pageCount != null
+      ? Math.max(featured.pageCount - (featured.currentPage ?? 0), 0)
+      : null;
+  const daysToFinish =
+    pagesLeft !== null && pagesLeft > 0 && pagesPerDay >= 1
+      ? Math.ceil(pagesLeft / pagesPerDay)
+      : null;
+
+  const today = new Date().toLocaleDateString("fr-FR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
 
   // À lire ensuite : classés selon les goûts pour Premium, sinon les derniers ajoutés. Un
   // compte gratuit ne reçoit aucune raison de suggestion : elles ne quittent pas le serveur.
@@ -132,40 +201,13 @@ export default async function DashboardPage() {
 
       <main
         id="main-content"
-        className="animate-fade-in-up mx-auto max-w-3xl px-4 py-6 sm:px-6 sm:py-8"
+        className="animate-fade-in-up mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8"
       >
-        <header className="mb-6">
-          <h1 className="text-2xl font-medium tracking-tight text-stone-900 sm:text-3xl">
+        <header className="mb-6 sm:mb-8">
+          <p className="text-sm text-stone-500 first-letter:uppercase">{today}</p>
+          <h1 className="mt-1 font-serif text-3xl tracking-tight text-stone-900 sm:text-4xl">
             Bonjour {firstName}
           </h1>
-          <div className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
-            <span
-              className="bg-card flex shrink-0 items-center gap-1.5 rounded-full border border-stone-200 px-3 py-1.5 text-sm text-stone-700"
-              title={
-                plan.isPremium
-                  ? `Jokers ce mois-ci : ${PREMIUM_STREAK_JOKERS - streaks.jokersUsedThisMonth} sur ${PREMIUM_STREAK_JOKERS}`
-                  : undefined
-              }
-            >
-              <Fire
-                className={`h-4 w-4 ${streaks.current > 0 ? "text-accent-500" : "text-stone-300"}`}
-                weight="fill"
-                aria-hidden="true"
-              />
-              {streaks.current > 0
-                ? `${streaks.current} jour${streaks.current > 1 ? "s" : ""} de suite`
-                : "Lisez aujourd'hui pour lancer une série"}
-            </span>
-            <a
-              href="#objectif"
-              className="bg-card flex shrink-0 items-center gap-1.5 rounded-full border border-stone-200 px-3 py-1.5 text-sm text-stone-700 hover:border-stone-300"
-            >
-              <Target className="text-accent-500 h-4 w-4" aria-hidden="true" />
-              {goal
-                ? `${stats.booksThisYear} / ${goal.target} livres en ${year}`
-                : `${stats.booksThisYear} livre${stats.booksThisYear > 1 ? "s" : ""} en ${year}`}
-            </a>
-          </div>
         </header>
 
         {plan.isTrial && !plan.cancelAtPeriodEnd && trialDaysLeft <= 3 && (
@@ -179,124 +221,274 @@ export default async function DashboardPage() {
           </Link>
         )}
 
-        {currentlyReading.length > 0 ? (
-          <section className="mb-8">
-            <h2 className="mb-3 text-sm font-medium text-stone-500">En cours de lecture</h2>
-            <ul className="space-y-3">
-              {currentlyReading.map((entry) => (
-                <li key={entry.id} className="card flex gap-4 p-4">
-                  <Link href={`/books/${entry.id}`} className="shrink-0">
-                    <BookCover
-                      coverUrl={entry.coverUrl}
-                      alt={entry.title}
-                      tactile
-                      className="h-28 w-[4.75rem] rounded-[var(--radius-sm)]"
-                    />
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-6">
+          {/* Lecture mise en avant */}
+          {featured ? (
+            <section aria-labelledby="featured-title" className="card overflow-hidden">
+              <div className="from-accent-50 flex gap-5 bg-gradient-to-br to-transparent p-5 sm:gap-6 sm:p-6">
+                <Link href={`/books/${featured.id}`} className="shrink-0">
+                  <BookCover
+                    coverUrl={featured.coverUrl}
+                    alt={featured.title}
+                    author={featured.author}
+                    tactile
+                    variant="large"
+                    className="aspect-[2/3] w-24 rounded-[var(--radius-sm)] sm:w-32"
+                  />
+                </Link>
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <p className="text-accent-700 text-xs font-medium tracking-wide uppercase">
+                    En ce moment
+                  </p>
+                  <Link href={`/books/${featured.id}`} className="mt-1 block">
+                    <h2
+                      id="featured-title"
+                      className="line-clamp-2 font-serif text-xl leading-snug text-stone-900 sm:text-2xl"
+                    >
+                      {featured.title}
+                    </h2>
+                    <p className="mt-0.5 truncate text-sm text-stone-500">
+                      {featured.author}
+                      {featured.seriesName &&
+                        featured.seriesIndex !== null &&
+                        `, ${featured.seriesName} tome ${featured.seriesIndex}`}
+                    </p>
                   </Link>
-                  <div className="min-w-0 flex-1">
-                    <Link href={`/books/${entry.id}`} className="block">
-                      <h3 className="truncate font-serif text-lg text-stone-900">{entry.title}</h3>
-                      <p className="truncate text-sm text-stone-500">
-                        {entry.author}
-                        {entry.seriesName &&
-                          entry.seriesIndex !== null &&
-                          `, ${entry.seriesName} tome ${entry.seriesIndex}`}
-                      </p>
-                    </Link>
-                    <ReadingProgress
-                      bookId={entry.id}
-                      currentPage={entry.currentPage}
-                      pageCount={entry.pageCount}
-                      compact
+                  <div className="mt-auto pt-4">
+                    <ProgressBar
+                      currentPage={featured.currentPage}
+                      pageCount={featured.pageCount}
                     />
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ) : (
-          <section className="card mb-8 p-5 text-center sm:p-6">
-            <h2 className="font-serif text-xl text-stone-900">Que lisez-vous en ce moment ?</h2>
-            <p className="mx-auto mt-1 max-w-sm text-sm text-stone-500">
-              {toRead.length > 0
-                ? "Commencez un livre de votre pile, ou ajoutez celui que vous avez en main."
-                : "Scannez ou cherchez le livre que vous avez en main."}
-            </p>
-            <Link href="/books/add" className={buttonClasses("primary", "mt-4 w-full sm:w-auto")}>
-              Ajouter un livre
-            </Link>
-          </section>
-        )}
-
-        <NextReads
-          books={nextReads.slice(0, 3)}
-          isPremium={plan.isPremium}
-          title={currentlyReading.length > 0 ? "À lire ensuite" : "Dans votre pile"}
-        />
-
-        {/* Guide réservé aux nouveaux venus : une bibliothèque déjà fournie n'en a pas besoin. */}
-        {libraryBooks.length < 20 && <GettingStarted steps={steps} />}
-
-        <section className="card mb-8 p-4 sm:p-6">
-          <h2 className="mb-4 text-sm font-medium text-stone-900">Pages lues par jour</h2>
-          <ContributionGraph activities={activities} />
-          <details className="group mt-4 border-t border-stone-100 pt-3">
-            <summary className="flex min-h-11 cursor-pointer list-none items-center text-sm font-medium text-stone-600 hover:text-stone-900">
-              Corriger les pages d&apos;une journée
-            </summary>
-            <div className="pt-2">
-              <AddReadingActivity />
-            </div>
-          </details>
-        </section>
-
-        <section id="objectif" className="mb-8 scroll-mt-20">
-          <div className="mb-3 flex items-baseline justify-between gap-4">
-            <h2 className="text-sm font-medium text-stone-500">Votre année {year}</h2>
-            <Link
-              href="/dashboard/stats/bilan"
-              className="flex items-center gap-1 text-sm font-medium text-stone-600 transition hover:text-stone-900"
-            >
-              Voir le bilan
-              <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-            </Link>
-          </div>
-          <ReadingGoal year={year} target={goal?.target ?? null} booksRead={stats.booksThisYear} />
-        </section>
-
-        {recentlyFinished.length > 0 && (
-          <section>
-            <div className="mb-3 flex items-baseline justify-between gap-4">
-              <h2 className="text-sm font-medium text-stone-500">Terminés récemment</h2>
-              <Link
-                href="/books?status=FINISHED"
-                className="text-sm font-medium text-stone-600 transition hover:text-stone-900"
-              >
-                Tout voir
-              </Link>
-            </div>
-            <ul className="grid grid-cols-4 gap-3">
-              {recentlyFinished.map((entry) => (
-                <li key={entry.id}>
-                  <Link href={`/books/${entry.id}`} className="group block" title={entry.title}>
-                    <BookCover
-                      coverUrl={entry.coverUrl}
-                      alt={entry.title}
-                      tactile
-                      className="aspect-[2/3] w-full rounded-[var(--radius-sm)]"
-                    />
-                    {entry.userRating && (
-                      <p className="mt-1 flex items-center gap-0.5 text-xs text-stone-500">
-                        <StarIcon className="h-3 w-3 text-amber-500" />
-                        {entry.userRating}/5
+                    {pagesLeft !== null && pagesLeft > 0 && (
+                      <p className="mt-1 text-xs text-stone-500">
+                        Encore {pagesLeft} pages
+                        {daysToFinish !== null &&
+                          `, environ ${daysToFinish} jour${daysToFinish > 1 ? "s" : ""} à votre rythme`}
                       </p>
                     )}
-                  </Link>
-                </li>
-              ))}
-            </ul>
+                  </div>
+                </div>
+              </div>
+              <div className="border-t border-stone-100 px-5 py-4 sm:px-6">
+                <QuickProgress
+                  bookId={featured.id}
+                  currentPage={featured.currentPage}
+                  pageCount={featured.pageCount}
+                />
+              </div>
+              {otherReading.length > 0 && (
+                <ul className="divide-y divide-stone-100 border-t border-stone-100">
+                  {otherReading.map((entry) => (
+                    <li key={entry.id}>
+                      <Link
+                        href={`/books/${entry.id}`}
+                        className="flex items-center gap-4 px-5 py-3 transition hover:bg-stone-50 sm:px-6"
+                      >
+                        <BookCover
+                          coverUrl={entry.coverUrl}
+                          alt={entry.title}
+                          author={entry.author}
+                          className="aspect-[2/3] w-10 shrink-0 rounded-[4px]"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium text-stone-900">
+                            {entry.title}
+                          </p>
+                          <ProgressBar
+                            currentPage={entry.currentPage}
+                            pageCount={entry.pageCount}
+                          />
+                          {!entry.currentPage && (
+                            <p className="text-xs text-stone-500">Pas encore commencé</p>
+                          )}
+                        </div>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          ) : (
+            <section className="card flex flex-col items-center justify-center p-6 text-center sm:p-8">
+              <h2 className="font-serif text-2xl text-stone-900">Que lisez-vous en ce moment ?</h2>
+              <p className="mx-auto mt-2 max-w-sm text-sm text-stone-500">
+                {toRead.length > 0
+                  ? "Commencez un livre de votre pile, ou ajoutez celui que vous avez en main."
+                  : "Scannez ou cherchez le livre que vous avez en main."}
+              </p>
+              <Link href="/books/add" className={buttonClasses("primary", "mt-5 w-full sm:w-auto")}>
+                Ajouter un livre
+              </Link>
+            </section>
+          )}
+
+          {/* La semaine et l'année, à droite sur grand écran */}
+          <div className="grid content-start gap-4 sm:grid-cols-2 lg:grid-cols-1 lg:gap-6">
+            <section aria-labelledby="week-title" className="card p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 id="week-title" className="text-sm font-medium text-stone-900">
+                    Cette semaine
+                  </h2>
+                  <p className="mt-0.5 text-xs text-stone-500 tabular-nums">
+                    {pagesThisWeek} pages, dont {pagesToday} aujourd&apos;hui
+                  </p>
+                </div>
+                <p
+                  className="flex items-center gap-1 font-serif text-2xl text-stone-900 tabular-nums"
+                  title={
+                    plan.isPremium
+                      ? `Jokers ce mois-ci : ${PREMIUM_STREAK_JOKERS - streaks.jokersUsedThisMonth} sur ${PREMIUM_STREAK_JOKERS}`
+                      : undefined
+                  }
+                >
+                  <Fire
+                    className={`h-5 w-5 ${streaks.current > 0 ? "text-accent-500" : "text-stone-300"}`}
+                    weight="fill"
+                    aria-hidden="true"
+                  />
+                  {streaks.current}
+                  <span className="sr-only"> jours de lecture de suite</span>
+                </p>
+              </div>
+              <ol
+                className="mt-4 grid grid-cols-7 gap-1.5"
+                aria-label="Lecture des 7 derniers jours"
+              >
+                {week.map((day, index) => (
+                  <li key={day.key} className="flex flex-col items-center gap-1.5">
+                    <div className="flex h-14 w-full items-end overflow-hidden rounded-[6px] bg-stone-100">
+                      <div
+                        className={`w-full rounded-[6px] ${index === 6 ? "bg-accent-500" : "bg-accent-300"}`}
+                        style={{
+                          height:
+                            day.pages > 0 ? `${Math.max((day.pages / maxWeek) * 100, 12)}%` : 0,
+                        }}
+                      />
+                    </div>
+                    <span
+                      className={`text-[11px] ${index === 6 ? "font-semibold text-stone-900" : "text-stone-400"}`}
+                    >
+                      {day.label}
+                    </span>
+                    <span className="sr-only">{day.pages} pages</span>
+                  </li>
+                ))}
+              </ol>
+              <p className="mt-3 text-xs text-stone-500">
+                {pagesToday > 0
+                  ? `Journée validée : ${streaks.current} jour${streaks.current > 1 ? "s" : ""} de suite.`
+                  : streaks.current > 0
+                    ? `Lisez aujourd'hui pour passer à ${streaks.current + 1} jours de suite.`
+                    : "Lisez aujourd'hui pour lancer une série."}
+              </p>
+            </section>
+
+            <section id="objectif" aria-label={`Objectif ${year}`} className="scroll-mt-20">
+              <ReadingGoal
+                year={year}
+                target={goal?.target ?? null}
+                booksRead={stats.booksThisYear}
+              />
+              <Link
+                href="/dashboard/stats/bilan"
+                className="mt-2 flex items-center justify-end gap-1 text-sm font-medium text-stone-600 transition hover:text-stone-900"
+              >
+                Voir le bilan {year}
+                <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+              </Link>
+            </section>
+          </div>
+        </div>
+
+        <div className="mt-8 space-y-8">
+          <NextReads
+            books={nextReads.slice(0, 3)}
+            isPremium={plan.isPremium}
+            title={featured ? "À lire ensuite" : "Dans votre pile"}
+          />
+
+          {/* Guide réservé aux nouveaux venus : une bibliothèque déjà fournie n'en a pas besoin. */}
+          {libraryBooks.length < 20 && <GettingStarted steps={steps} />}
+
+          <section className="card p-4 sm:p-6">
+            <h2 className="mb-4 text-sm font-medium text-stone-900">Pages lues</h2>
+            <ContributionGraph activities={activities} />
+            <details className="group mt-4 border-t border-stone-100 pt-3">
+              <summary className="flex min-h-11 cursor-pointer list-none items-center text-sm font-medium text-stone-600 hover:text-stone-900">
+                Corriger les pages d&apos;une journée
+              </summary>
+              <div className="pt-2">
+                <AddReadingActivity />
+              </div>
+            </details>
           </section>
-        )}
+
+          {randomQuote && (
+            <figure className="card relative overflow-hidden p-6 sm:p-8">
+              <Quotes
+                className="text-accent-100 absolute -top-2 right-4 h-20 w-20"
+                weight="fill"
+                aria-hidden="true"
+              />
+              <blockquote className="relative line-clamp-6 font-serif text-lg leading-relaxed whitespace-pre-line text-stone-800 sm:text-xl">
+                {randomQuote.content}
+              </blockquote>
+              <figcaption className="relative mt-3 flex flex-wrap items-baseline justify-between gap-2 text-sm text-stone-500">
+                <span>
+                  <Link
+                    href={`/books/${randomQuote.bookId}`}
+                    className="font-medium text-stone-700 hover:underline"
+                  >
+                    {randomQuote.title}
+                  </Link>
+                  , {randomQuote.author}
+                </span>
+                <Link
+                  href="/books/citations"
+                  className="font-medium text-stone-600 transition hover:text-stone-900"
+                >
+                  Vos citations
+                </Link>
+              </figcaption>
+            </figure>
+          )}
+
+          {recentlyFinished.length > 0 && (
+            <section>
+              <div className="mb-3 flex items-baseline justify-between gap-4">
+                <h2 className="text-sm font-medium text-stone-500">Terminés récemment</h2>
+                <Link
+                  href="/books?status=FINISHED"
+                  className="text-sm font-medium text-stone-600 transition hover:text-stone-900"
+                >
+                  Tout voir
+                </Link>
+              </div>
+              <ul className="grid grid-cols-3 gap-3 sm:grid-cols-6 sm:gap-4">
+                {recentlyFinished.map((entry) => (
+                  <li key={entry.id}>
+                    <Link href={`/books/${entry.id}`} className="group block" title={entry.title}>
+                      <BookCover
+                        coverUrl={entry.coverUrl}
+                        alt={entry.title}
+                        author={entry.author}
+                        tactile
+                        className="aspect-[2/3] w-full rounded-[var(--radius-sm)]"
+                      />
+                      {entry.userRating && (
+                        <p className="mt-1 flex items-center gap-0.5 text-xs text-stone-500">
+                          <StarIcon className="h-3 w-3 text-amber-500" />
+                          {entry.userRating}/5
+                        </p>
+                      )}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </div>
       </main>
 
       {/* Réservé au desktop : sur mobile, la barre de navigation basse a déjà un onglet

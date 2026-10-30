@@ -2,6 +2,8 @@ import type { BookStatus } from "@/lib/book-status";
 export interface SeriesBook {
   id: string;
   title: string;
+  /** Pour la couverture de remplacement, quand le tome n'a pas d'image. */
+  author?: string;
   coverUrl: string | null;
   status: BookStatus;
   seriesName: string | null;

@@ -43,6 +43,7 @@ export function NextReads({ books, title, isPremium }: NextReadsProps) {
               <BookCover
                 coverUrl={entry.coverUrl}
                 alt={entry.title}
+                author={entry.author}
                 className="h-20 w-14 shrink-0 rounded-[var(--radius-sm)]"
               />
               <div className="min-w-0">

@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import {
   Bell,
   BookOpen,
-  ChartBar,
   Desktop,
   DeviceMobile,
   Download,
@@ -26,7 +25,6 @@ import { BuyMeACoffeeButton } from "@/components/buy-me-a-coffee";
 import { PwaInstallSection } from "@/components/pwa-install";
 import { ReminderSettings } from "@/components/reminder-settings";
 import { apiFetch } from "@/lib/api-client";
-import type { ReadingStats } from "@/lib/reading-stats";
 
 interface SessionRow {
   id: string;
@@ -74,7 +72,6 @@ function SectionCard({
 }
 
 interface AccountViewProps {
-  stats: ReadingStats;
   /** Identité fournie par le serveur, qui la connaît déjà. Sans elle, le rendu serveur
    *  affiche le squelette de chargement (useSession n'est résolu qu'au client) tandis que
    *  le client affiche le contenu : l'hydratation échoue et la page se re-rend entièrement. */
@@ -90,7 +87,6 @@ interface AccountViewProps {
 }
 
 export function AccountView({
-  stats,
   userName,
   userEmail,
   initialBooksRead,
@@ -201,6 +197,7 @@ export function AccountView({
               {userName || "Mon compte"}
             </h1>
             <p className="text-muted-foreground truncate text-sm">{userEmail}</p>
+            <p className="text-muted-foreground text-xs">Membre depuis le {memberSince}</p>
           </div>
         </div>
         <Button
@@ -217,86 +214,16 @@ export function AccountView({
       {subscription}
 
       <SectionCard
-        icon={<ChartBar size={18} aria-hidden="true" />}
-        title="Vos statistiques"
-        description={`Membre depuis le ${memberSince}.`}
-      >
-        <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          {[
-            { label: "Livres lus", value: stats.totalBooks },
-            { label: "Pages lues", value: stats.totalPagesRead },
-            {
-              label: "Note moyenne",
-              value: stats.averageRating > 0 ? stats.averageRating.toFixed(1) : "—",
-            },
-            { label: "Notes écrites", value: stats.commentsCount },
-          ].map((tile) => (
-            <div key={tile.label}>
-              <dt className="text-muted-foreground text-xs">{tile.label}</dt>
-              <dd className="font-serif text-2xl text-stone-900 tabular-nums">{tile.value}</dd>
-            </div>
-          ))}
-        </dl>
-
-        {(stats.topAuthors[0] || stats.topGenres[0]) && (
-          <dl className="mt-6 grid grid-cols-1 gap-4 border-t border-stone-100 pt-6 sm:grid-cols-2">
-            {stats.topAuthors[0] && (
-              <div>
-                <dt className="text-muted-foreground text-xs">Auteur le plus lu</dt>
-                <dd className="font-medium text-stone-900">
-                  {stats.topAuthors[0].author}{" "}
-                  <span className="text-muted-foreground text-sm">
-                    ({stats.topAuthors[0].count})
-                  </span>
-                </dd>
-              </div>
-            )}
-            {stats.topGenres[0] && (
-              <div>
-                <dt className="text-muted-foreground text-xs">Genre préféré</dt>
-                <dd className="font-medium text-stone-900">{stats.topGenres[0]}</dd>
-              </div>
-            )}
-          </dl>
-        )}
-
-        {stats.pagesPerYear.length > 0 && (
-          <div className="mt-6 border-t border-stone-100 pt-6">
-            <p className="text-muted-foreground mb-3 text-xs">Pages lues par année</p>
-            <ul className="space-y-2">
-              {stats.pagesPerYear.map((entry) => {
-                const max = Math.max(...stats.pagesPerYear.map((y) => y.pages));
-                return (
-                  <li key={entry.year} className="flex items-center gap-3">
-                    <span className="w-10 text-xs text-stone-500 tabular-nums">{entry.year}</span>
-                    <span className="h-2 flex-1 overflow-hidden rounded-full bg-stone-100">
-                      <span
-                        className="bg-accent-400 block h-full rounded-full"
-                        style={{ width: `${Math.max(2, (entry.pages / max) * 100)}%` }}
-                      />
-                    </span>
-                    <span className="text-muted-foreground w-16 text-right text-xs tabular-nums">
-                      {entry.pages}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        )}
-      </SectionCard>
-
-      <SectionCard
         icon={<BookOpen size={18} aria-hidden="true" />}
         title="Profil de lecture"
-        description="Votre nom d'affichage et les livres lus avant votre inscription."
+        description="Votre prénom, pour vous saluer, et les livres lus avant votre inscription."
       >
         <form onSubmit={handleSaveProfile} className="flex flex-col gap-4 sm:max-w-sm">
           <Field
-            label="Nom"
+            label="Prénom"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            autoComplete="name"
+            autoComplete="given-name"
           />
           <Field
             label="Livres lus avant BookList"

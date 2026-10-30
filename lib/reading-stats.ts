@@ -19,7 +19,7 @@ export interface ReadingStats {
 
 /**
  * Statistiques de lecture d'un utilisateur, partagées par le tableau de bord et la page
- * du compte.
+ * des statistiques.
  *
  * Un seul SELECT sur les livres, puis agrégation en mémoire, plutôt qu'une dizaine
  * d'agrégats SQL séparés : une bibliothèque personnelle se compte en centaines de lignes,
