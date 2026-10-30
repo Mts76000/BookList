@@ -88,6 +88,9 @@ test.describe("Bibliothèque", () => {
     await signUpAndLogIn(page, email);
 
     await page.goto("/dashboard");
+    // Un compte tout neuf arrive sur l'accueil des nouveaux utilisateurs, qui recouvre la page.
+    await page.getByRole("button", { name: "Passer" }).click();
+
     // La saisie d'une journée est repliée sous le graphique.
     await page.getByText("Corriger les pages d'une journée").click();
     await page.getByLabel("Pages lues").fill("42");

@@ -198,6 +198,7 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
             {[
               { label: "Identifiant", value: target.id },
               { label: "Livres lus avant inscription", value: String(target.initialBooksRead) },
+              { label: "Accueil des nouveaux vu", value: target.hasSeenOnboarding ? "Oui" : "Non" },
               {
                 label: "Supprimé le",
                 value: target.anonymizedAt ? formatDateTime(target.anonymizedAt) : "—",
