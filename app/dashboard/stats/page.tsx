@@ -3,8 +3,7 @@ import { ChartBar, Fire, Hourglass, Star, Books, LockSimple } from "@phosphor-ic
 import { requireAuthPage } from "@/lib/permissions";
 import { getUserPlan } from "@/lib/subscription";
 import { getAdvancedStats, type AdvancedStats } from "@/lib/advanced-stats";
-import { isBillingEnabled } from "@/lib/stripe";
-import { PremiumOffer } from "@/components/premium-offer";
+import { PremiumTeaser } from "@/components/premium-teaser";
 import { StatsTabs } from "@/components/stats-tabs";
 import { PREMIUM_STREAK_JOKERS } from "@/lib/plans";
 import { getReadingStats, type ReadingStats } from "@/lib/reading-stats";
@@ -60,7 +59,6 @@ export default async function StatsPage() {
       ) : (
         <StatsPreview
           stats={await getAdvancedStats(session.user.id, year)}
-          billingEnabled={isBillingEnabled()}
           trialAvailable={plan.trialAvailable}
         />
       )}
@@ -84,11 +82,9 @@ export default async function StatsPage() {
  */
 function StatsPreview({
   stats,
-  billingEnabled,
   trialAvailable,
 }: {
   stats: AdvancedStats;
-  billingEnabled: boolean;
   trialAvailable: boolean;
 }) {
   const [topGenre] = stats.genres;
@@ -148,11 +144,10 @@ function StatsPreview({
         </p>
       </section>
 
-      <PremiumOffer
-        billingEnabled={billingEnabled}
+      <PremiumTeaser
         trialAvailable={trialAvailable}
         title="Débloquez vos statistiques détaillées"
-        description="Vos genres et vos notes, vos auteurs, la durée et la longueur moyennes de vos lectures, et le temps qu'il vous faudrait pour finir votre pile à lire."
+        description="Vos genres, vos notes et vos auteurs, la durée et la longueur moyennes de vos lectures, et le temps pour finir votre pile à lire."
       />
     </div>
   );

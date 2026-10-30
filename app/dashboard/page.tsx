@@ -17,7 +17,6 @@ import { recommendNext } from "@/lib/recommendations";
 import { getUserPlan } from "@/lib/subscription";
 import { readingStreaks } from "@/lib/advanced-stats";
 import { PREMIUM_STREAK_JOKERS } from "@/lib/plans";
-import { Onboarding } from "@/components/onboarding";
 import { buttonClasses } from "@/components/ui/button";
 
 // Page privée et personnalisée : rien à y indexer.
@@ -197,8 +196,6 @@ export default async function DashboardPage() {
 
   return (
     <>
-      <Onboarding hasSeenOnboarding={user.hasSeenOnboarding} />
-
       <main
         id="main-content"
         className="animate-fade-in-up mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8"
