@@ -5,7 +5,7 @@ import { randomUUID } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { drizzle } from "drizzle-orm/node-postgres";
+import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import { eq } from "drizzle-orm";
 import { hashPassword } from "better-auth/crypto";
@@ -21,19 +21,27 @@ import {
   YEAR_FAVORITES,
   type DemoBook,
 } from "./demo-library";
+import {
+  FREE_CURRENTLY_READING,
+  FREE_GOAL,
+  FREE_QUOTES,
+  FREE_READING_HISTORY,
+  FREE_TO_READ,
+} from "./demo-library-free";
 
 /**
- * Compte de démonstration : une lectrice avec trois ans d'historique cohérent (voir
- * drizzle/demo-library.ts). Relançable : le compte est supprimé puis recréé à l'identique,
- * les dates étant recalculées pour finir aujourd'hui.
+ * Comptes de démonstration, relançables : chaque compte est supprimé puis recréé à
+ * l'identique, les dates étant recalculées pour finir aujourd'hui.
  *
  *   npm run db:seed:demo
  *
- * Même mot de passe que les comptes de drizzle/seed.ts. Premium est offert pour un an, pour
- * que toutes les fonctions soient visibles ; le retirer depuis l'administration montre la
- * version gratuite.
+ * - demo@booklist.fr : Camille, trois ans d'historique (drizzle/demo-library.ts), Premium
+ *   offert pour un an pour que toutes les fonctions soient visibles ;
+ * - demo-gratuit@booklist.fr : Lucas, inscrit depuis le début de l'année
+ *   (drizzle/demo-library-free.ts), sans Premium, pour voir l'application d'un compte gratuit.
+ *
+ * Même mot de passe que les comptes de drizzle/seed.ts.
  */
-const DEMO_EMAIL = "demo@booklist.fr";
 const DEMO_PASSWORD = "test1234";
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -280,13 +288,42 @@ function scheduleYear(books: DemoBook[], from: Date, to: Date): Reading[] {
 
 // --- Seed ---------------------------------------------------------------------------
 
-async function main() {
-  const databaseUrl = process.env.DATABASE_URL;
-  if (!databaseUrl) throw new Error("DATABASE_URL is not set.");
-  const pool = new Pool({ connectionString: databaseUrl });
-  const db = drizzle(pool, { schema });
+type Quote = { title: string; content: string; page?: number };
+type CurrentBook = DemoBook & { startedDaysAgo: number };
 
-  const today = utcDay(new Date());
+/** Un compte de démonstration prêt à insérer : lectures datées, objectifs et extras. */
+interface DemoAccount {
+  email: string;
+  name: string;
+  premium: boolean;
+  createdAt: Date;
+  readings: Reading[];
+  current: { book: DemoBook; start: Date; days: Map<string, number> }[];
+  toRead: DemoBook[];
+  goals: { year: number; target: number }[];
+  favorites: { year: number; title: string }[];
+  quotes: Quote[];
+  challenges: readonly { title: string; kind: string; target: number; filter: string | null }[];
+}
+
+/**
+ * Lectures en cours : chaque jour depuis leur début, jusqu'à aujourd'hui inclus, pour une
+ * série en cours. La page atteinte est la somme des pages lues.
+ */
+function scheduleCurrent(books: CurrentBook[], today: Date): DemoAccount["current"] {
+  return books.map((book) => {
+    const start = addDays(today, -book.startedDaysAgo);
+    const days = new Map<string, number>();
+    for (let i = 0; i <= book.startedDaysAgo; i++) {
+      days.set(dayKey(addDays(start, i)), Math.round(between(14, 32)));
+    }
+    const currentPage = [...days.values()].reduce((a, b) => a + b, 0);
+    return { book: { ...book, currentPage }, start, days };
+  });
+}
+
+/** Camille : trois ans d'historique, Premium. */
+function premiumAccount(today: Date): DemoAccount {
   const currentYear = today.getUTCFullYear();
   const firstYear = currentYear - 2;
 
@@ -305,24 +342,58 @@ async function main() {
     return scheduleYear(books, from, to);
   });
 
-  // Lectures en cours : chaque jour depuis leur début, jusqu'à aujourd'hui inclus, pour
-  // une série en cours. La page atteinte est la somme des pages lues.
-  const current = CURRENTLY_READING.map((book) => {
-    const start = addDays(today, -book.startedDaysAgo);
-    const days = new Map<string, number>();
-    for (let i = 0; i <= book.startedDaysAgo; i++) {
-      days.set(dayKey(addDays(start, i)), Math.round(between(14, 32)));
-    }
-    const currentPage = [...days.values()].reduce((a, b) => a + b, 0);
-    return { book: { ...book, currentPage }, start, days };
-  });
+  return {
+    email: "demo@booklist.fr",
+    name: "Camille",
+    premium: true,
+    createdAt: new Date(Date.UTC(firstYear, 0, 2)),
+    readings,
+    current: scheduleCurrent(CURRENTLY_READING, today),
+    toRead: TO_READ,
+    goals: Object.values(GOALS).map((target, offset) => ({ year: firstYear + offset, target })),
+    favorites: Object.values(YEAR_FAVORITES).map((title, offset) => ({
+      year: firstYear + offset,
+      title,
+    })),
+    quotes: QUOTES,
+    challenges: CHALLENGES,
+  };
+}
 
-  console.log("Recherche des couvertures...");
-  const metadata = await lookupAll([...READING_HISTORY, ...CURRENTLY_READING, ...TO_READ]);
+/** Lucas : l'année en cours seulement, compte gratuit. */
+function freeAccount(today: Date): DemoAccount {
+  const currentYear = today.getUTCFullYear();
+  const lastHistoricalDay = addDays(today, -(FREE_CURRENTLY_READING[0].startedDaysAgo + 1));
+  return {
+    email: "demo-gratuit@booklist.fr",
+    name: "Lucas",
+    premium: false,
+    createdAt: new Date(Date.UTC(currentYear, 0, 3)),
+    readings: scheduleYear(
+      FREE_READING_HISTORY,
+      new Date(Date.UTC(currentYear, 0, 5)),
+      lastHistoricalDay,
+    ),
+    current: scheduleCurrent(FREE_CURRENTLY_READING, today),
+    toRead: FREE_TO_READ,
+    goals: [{ year: currentYear, target: FREE_GOAL }],
+    favorites: [],
+    quotes: FREE_QUOTES,
+    // Les défis sont réservés à Premium.
+    challenges: [],
+  };
+}
 
-  // Recrée le compte de zéro : la suppression de l'utilisateur emporte en cascade livres,
-  // notes, citations, activité, objectifs, défis et sessions.
-  await db.delete(schema.user).where(eq(schema.user.email, DEMO_EMAIL));
+/** Recrée un compte de démonstration de zéro, avec sa bibliothèque et son activité. */
+async function seedAccount(
+  db: NodePgDatabase<typeof schema>,
+  account: DemoAccount,
+  metadata: Map<string, BookMetadata>,
+  today: Date,
+) {
+  // La suppression de l'utilisateur emporte en cascade livres, notes, citations, activité,
+  // objectifs, défis et sessions.
+  await db.delete(schema.user).where(eq(schema.user.email, account.email));
 
   const userId = randomUUID();
   const usedIsbns = new Set<string>();
@@ -330,13 +401,13 @@ async function main() {
   await db.transaction(async (tx) => {
     await tx.insert(schema.user).values({
       id: userId,
-      name: "Camille",
-      email: DEMO_EMAIL,
+      name: account.name,
+      email: account.email,
       emailVerified: true,
       role: "user",
       hasSeenOnboarding: true,
-      premiumGrantedUntil: addDays(today, 365),
-      createdAt: new Date(Date.UTC(firstYear, 0, 2)),
+      premiumGrantedUntil: account.premium ? addDays(today, 365) : null,
+      createdAt: account.createdAt,
     });
     await tx.insert(schema.account).values({
       id: randomUUID(),
@@ -391,25 +462,25 @@ async function main() {
       }
     };
 
-    for (const reading of readings) {
+    for (const reading of account.readings) {
       await insertBook(reading.book, {
         start: reading.start,
         end: reading.end,
         currentPage: reading.book.status === "ABANDONED" ? reading.book.currentPage : undefined,
       });
     }
-    for (const reading of current) {
+    for (const reading of account.current) {
       await insertBook(reading.book, {
         start: reading.start,
         currentPage: reading.book.currentPage,
       });
     }
-    for (const book of TO_READ) await insertBook(book, {});
+    for (const book of account.toRead) await insertBook(book, {});
 
     // Activité quotidienne : la somme exacte des pages lues chaque jour, tous livres
     // confondus.
     const activity = new Map<string, number>();
-    for (const { days } of [...readings, ...current]) {
+    for (const { days } of [...account.readings, ...account.current]) {
       for (const [day, pages] of days) activity.set(day, (activity.get(day) ?? 0) + pages);
     }
     const activityRows = [...activity].map(([date, pagesRead]) => ({ userId, date, pagesRead }));
@@ -417,16 +488,15 @@ async function main() {
       await tx.insert(schema.readingActivity).values(activityRows.slice(i, i + 500));
     }
 
-    for (const [offset, target] of Object.values(GOALS).entries()) {
-      await tx.insert(schema.readingGoal).values({ userId, year: firstYear + offset, target });
+    for (const goal of account.goals) {
+      await tx.insert(schema.readingGoal).values({ userId, ...goal });
     }
-    for (const [offset, title] of Object.values(YEAR_FAVORITES).entries()) {
-      const bookId = bookIds.get(title);
-      if (bookId) {
-        await tx.insert(schema.yearFavorite).values({ userId, year: firstYear + offset, bookId });
-      }
+    for (const favorite of account.favorites) {
+      const bookId = bookIds.get(favorite.title);
+      if (bookId)
+        await tx.insert(schema.yearFavorite).values({ userId, year: favorite.year, bookId });
     }
-    for (const entry of QUOTES) {
+    for (const entry of account.quotes) {
       const bookId = bookIds.get(entry.title);
       if (bookId) {
         await tx.insert(schema.quote).values({
@@ -437,10 +507,10 @@ async function main() {
         });
       }
     }
-    for (const challenge of CHALLENGES) {
+    for (const challenge of account.challenges) {
       await tx.insert(schema.readingChallenge).values({
         userId,
-        year: currentYear,
+        year: today.getUTCFullYear(),
         title: challenge.title,
         kind: challenge.kind,
         target: challenge.target,
@@ -449,13 +519,43 @@ async function main() {
     }
   });
 
-  const finished = readings.filter((r) => r.book.status === "FINISHED").length;
-  const withCover = [...metadata.values()].filter((m) => m.coverUrl).length;
+  const finished = account.readings.filter((r) => r.book.status === "FINISHED").length;
   console.log(
-    `Compte ${DEMO_EMAIL} créé : ${finished} livres lus, ${current.length} en cours, ` +
-      `${TO_READ.length} à lire, ${withCover}/${metadata.size} couvertures trouvées.`,
+    `Compte ${account.email} (${account.premium ? "Premium" : "gratuit"}) : ${finished} livres lus, ` +
+      `${account.current.length} en cours, ${account.toRead.length} à lire.`,
   );
-  console.log(`Connexion : ${DEMO_EMAIL} / ${DEMO_PASSWORD}`);
+}
+
+async function main() {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) throw new Error("DATABASE_URL is not set.");
+  const pool = new Pool({ connectionString: databaseUrl });
+  const db = drizzle(pool, { schema });
+
+  const today = utcDay(new Date());
+  const accounts = [premiumAccount(today), freeAccount(today)];
+
+  // Une seule recherche par titre, même quand les deux bibliothèques le partagent.
+  const books = new Map<string, DemoBook>();
+  for (const account of accounts) {
+    for (const book of [
+      ...account.readings.map((r) => r.book),
+      ...account.current.map((r) => r.book),
+      ...account.toRead,
+    ]) {
+      if (!books.has(book.title)) books.set(book.title, book);
+    }
+  }
+  console.log("Recherche des couvertures...");
+  const metadata = await lookupAll([...books.values()]);
+  const withCover = [...metadata.values()].filter((m) => m.coverUrl).length;
+  console.log(`${withCover}/${metadata.size} couvertures trouvées.`);
+
+  for (const account of accounts) await seedAccount(db, account, metadata, today);
+
+  console.log(
+    `Connexion : ${accounts.map((account) => account.email).join(" ou ")}, mot de passe ${DEMO_PASSWORD}`,
+  );
   await pool.end();
 }
 
