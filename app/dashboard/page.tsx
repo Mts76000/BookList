@@ -465,9 +465,10 @@ export default async function DashboardPage() {
                   Tout voir
                 </Link>
               </div>
-              <ul className="grid grid-cols-3 gap-3 sm:grid-cols-6 sm:gap-4">
-                {recentlyFinished.map((entry) => (
-                  <li key={entry.id}>
+              {/* Deux par ligne sur mobile, pour des couvertures lisibles : quatre livres suffisent. */}
+              <ul className="grid grid-cols-2 gap-4 sm:grid-cols-6">
+                {recentlyFinished.map((entry, index) => (
+                  <li key={entry.id} className={index >= 4 ? "hidden sm:block" : undefined}>
                     <Link href={`/books/${entry.id}`} className="group block" title={entry.title}>
                       <BookCover
                         coverUrl={entry.coverUrl}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
@@ -165,9 +165,11 @@ export function StartReadingButton({ bookId }: { bookId: string }) {
 const QUICK_STEPS = [10, 25, 50];
 
 /**
- * Mise à jour en un geste pour la lecture mise en avant sur l'accueil : « +10 », « +25 »,
- * « +50 » pages depuis la page actuelle, ou la page exacte au besoin. Même route que la
- * saisie classique : la journée de lecture et la série suivent.
+ * Où en est la lecture mise en avant sur l'accueil : la page actuelle, préremplie, qu'on
+ * corrige au clavier ou avec « +10 », « +25 », « +50 », puis qu'on enregistre. Les
+ * raccourcis ne font qu'ajuster le champ : rien n'est enregistré sans « Enregistrer », et
+ * l'écart avec la dernière fois est affiché avant. Même route que la saisie classique : la
+ * journée de lecture et la série suivent.
  */
 export function QuickProgress({
   bookId,
@@ -180,18 +182,30 @@ export function QuickProgress({
 }) {
   const router = useRouter();
   const { toast } = useToast();
-  const [pending, setPending] = useState<string | null>(null);
-  const [isTyping, setIsTyping] = useState(false);
+  const inputId = useId();
   const [page, setPage] = useState(currentPage?.toString() ?? "");
+  const [isSaving, setIsSaving] = useState(false);
   const [reachedEnd, setReachedEnd] = useState(false);
 
-  async function save(target: number, key: string) {
-    setPending(key);
+  const from = currentPage ?? 0;
+  const typed = Number.parseInt(page, 10);
+  const target = Number.isNaN(typed) ? null : typed;
+  const delta = target === null ? 0 : target - from;
+
+  function addPages(step: number) {
+    const base = target ?? from;
+    setPage(String(pageCount ? Math.min(base + step, pageCount) : base + step));
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (target === null) return;
+    setIsSaving(true);
     const result = await apiFetch<{ reachedEnd: boolean; currentPage: number }>(
       `/api/books/${bookId}/progress`,
       { method: "POST", json: { currentPage: target } },
     );
-    setPending(null);
+    setIsSaving(false);
     if (!result.ok) {
       toast(result.message, "error");
       return;
@@ -199,17 +213,16 @@ export function QuickProgress({
     toast(result.message ?? "Progression mise à jour.", "success");
     setPage(result.data.currentPage.toString());
     setReachedEnd(result.data.reachedEnd);
-    setIsTyping(false);
     router.refresh();
   }
 
   async function markFinished() {
-    setPending("finish");
+    setIsSaving(true);
     const result = await apiFetch(`/api/books/${bookId}`, {
       method: "PATCH",
       json: { status: "FINISHED", userEndDate: new Date().toISOString().slice(0, 10) },
     });
-    setPending(null);
+    setIsSaving(false);
     if (!result.ok) {
       toast(result.message, "error");
       return;
@@ -222,83 +235,60 @@ export function QuickProgress({
     return (
       <div className="bg-moss-50 border-moss-200 flex flex-col gap-3 rounded-[var(--radius-sm)] border p-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-moss-800 text-sm">Dernière page atteinte. Livre terminé ?</p>
-        <Button
-          onClick={markFinished}
-          isLoading={pending === "finish"}
-          className="w-full sm:w-auto"
-        >
+        <Button onClick={markFinished} isLoading={isSaving} className="w-full sm:w-auto">
           Marquer comme terminé
         </Button>
       </div>
     );
   }
 
-  if (isTyping) {
-    return (
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          void save(Number(page), "exact");
-        }}
-        className="flex items-end gap-2"
-      >
-        <div className="w-32">
-          <Field
-            label="J'en suis à la page"
-            hideLabel
-            placeholder="Page"
-            type="number"
-            inputMode="numeric"
-            min={0}
-            max={pageCount ?? undefined}
-            required
-            autoFocus
-            value={page}
-            onChange={(e) => setPage(e.target.value)}
-          />
-        </div>
-        <Button type="submit" isLoading={pending === "exact"}>
+  return (
+    <form onSubmit={handleSubmit}>
+      <label htmlFor={inputId} className="text-sm font-medium text-stone-700">
+        J&apos;en suis à la page
+      </label>
+      <div className="mt-1.5 flex items-center gap-2">
+        <input
+          id={inputId}
+          type="number"
+          inputMode="numeric"
+          min={0}
+          max={pageCount ?? undefined}
+          required
+          value={page}
+          onChange={(e) => setPage(e.target.value)}
+          className="border-border focus:border-accent-400 focus:ring-accent-400/15 w-24 rounded-[var(--radius-sm)] border bg-white px-3 py-2.5 text-center text-lg font-medium text-stone-900 tabular-nums focus:ring-4 focus:outline-none"
+        />
+        {pageCount && <span className="text-sm text-stone-500 tabular-nums">sur {pageCount}</span>}
+        <Button
+          type="submit"
+          isLoading={isSaving}
+          disabled={target === null || target === currentPage}
+          className="ml-auto px-4"
+        >
           Enregistrer
         </Button>
-        <Button type="button" variant="ghost" onClick={() => setIsTyping(false)}>
-          Annuler
-        </Button>
-      </form>
-    );
-  }
-
-  const from = currentPage ?? 0;
-  return (
-    <div>
-      <p className="mb-2 text-xs font-medium text-stone-500">Pages lues depuis la dernière fois</p>
-      <div className="grid grid-cols-4 gap-2 sm:flex">
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
         {QUICK_STEPS.map((step) => (
-          <Button
+          <button
             key={step}
             type="button"
-            variant="secondary"
-            isLoading={pending === String(step)}
-            disabled={pending !== null}
-            onClick={() =>
-              save(pageCount ? Math.min(from + step, pageCount) : from + step, String(step))
-            }
-            className="px-2 tabular-nums sm:min-w-[4.5rem] sm:px-3"
-            aria-label={`${step} pages de plus`}
+            onClick={() => addPages(step)}
+            className="min-h-9 rounded-full border border-stone-200 bg-white px-3 text-sm font-medium text-stone-700 tabular-nums transition hover:border-stone-300 hover:text-stone-900"
+            aria-label={`Ajouter ${step} pages`}
           >
-            +{step}
-          </Button>
+            +{step} p.
+          </button>
         ))}
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={() => setIsTyping(true)}
-          disabled={pending !== null}
-          className="px-2 sm:px-3"
-          aria-label="Indiquer la page exacte"
-        >
-          Page…
-        </Button>
+        <span className="text-xs text-stone-500" aria-live="polite">
+          {delta > 0
+            ? `${delta} page${delta > 1 ? "s" : ""} lue${delta > 1 ? "s" : ""} depuis la dernière fois`
+            : delta < 0
+              ? "Retour en arrière : la page sera corrigée"
+              : ""}
+        </span>
       </div>
-    </div>
+    </form>
   );
 }

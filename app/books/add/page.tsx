@@ -11,6 +11,12 @@ import { useToast } from "@/components/ui/toast";
 import { apiFetch } from "@/lib/api-client";
 import { BOOK_STATUSES, STATUS_ACTIVE, STATUS_LABELS, type BookStatus } from "@/lib/book-status";
 import { BookLimitNotice, usePlan } from "@/components/book-limit-notice";
+import {
+  EMPTY_SERIES_CHOICE,
+  SeriesChoice,
+  type SeriesChoiceValue,
+} from "@/components/series-choice";
+import { seriesForNewBook, type KnownSeriesSummary } from "@/lib/series-detection";
 
 const STATUS_OPTIONS = BOOK_STATUSES.map((value) => ({
   value,
@@ -21,6 +27,7 @@ const STATUS_OPTIONS = BOOK_STATUSES.map((value) => ({
 interface BookSearchResult {
   id: string;
   title: string;
+  subtitle: string | null;
   authors: string[];
   description: string | null;
   coverUrl: string | null;
@@ -42,6 +49,8 @@ export default function AddBookPage() {
   const [manualMode, setManualMode] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [existingByIsbn, setExistingByIsbn] = useState(new Map<string, string>());
+  const [knownSeries, setKnownSeries] = useState<KnownSeriesSummary[]>([]);
+  const [seriesChoice, setSeriesChoice] = useState<SeriesChoiceValue>(EMPTY_SERIES_CHOICE);
   const [plan, refreshPlan] = usePlan();
   const isLibraryFull = plan?.remaining === 0;
 
@@ -122,6 +131,10 @@ export default function AddBookPage() {
         ),
       );
     });
+    // Sagas de la bibliothèque, pour proposer d'y ranger le livre ajouté.
+    void apiFetch<KnownSeriesSummary[]>("/api/series").then((result) => {
+      if (result.ok) setKnownSeries(result.data);
+    });
   }, []);
 
   function selectBook(entry: BookSearchResult) {
@@ -131,10 +144,35 @@ export default function AddBookPage() {
       return;
     }
     setSelectedBook(entry);
+    const detected = seriesForNewBook(
+      entry.title,
+      entry.subtitle,
+      entry.authors.join(", "),
+      knownSeries,
+    );
+    setSeriesChoice(
+      detected
+        ? {
+            enabled: true,
+            name: detected.seriesName,
+            index: detected.seriesIndex?.toString() ?? "",
+            total: detected.seriesTotal?.toString() ?? "",
+            detected: true,
+          }
+        : EMPTY_SERIES_CHOICE,
+    );
   }
 
   async function handleAddBook() {
-    const payload = selectedBook
+    const series =
+      seriesChoice.enabled && seriesChoice.name.trim()
+        ? {
+            seriesName: seriesChoice.name,
+            seriesIndex: seriesChoice.index,
+            seriesTotal: seriesChoice.total,
+          }
+        : {};
+    const bookFields = selectedBook
       ? {
           title: selectedBook.title,
           author: selectedBook.authors.join(", "),
@@ -149,6 +187,7 @@ export default function AddBookPage() {
           status: manualBook.status,
         }
       : manualBook;
+    const payload = { ...bookFields, ...series };
 
     setIsLoading(true);
     const result = await apiFetch<{ id: string }>("/api/books", { method: "POST", json: payload });
@@ -167,6 +206,7 @@ export default function AddBookPage() {
 
   function reset() {
     setSelectedBook(null);
+    setSeriesChoice(EMPTY_SERIES_CHOICE);
     setManualMode(false);
     setSearchResults([]);
     setSearchHint("");
@@ -382,6 +422,8 @@ export default function AddBookPage() {
                   )}
                 </div>
               )}
+
+              <SeriesChoice value={seriesChoice} onChange={setSeriesChoice} known={knownSeries} />
 
               <p className="text-xs text-stone-400">
                 Vous pourrez noter le livre et lire sa description juste après l&apos;ajout.

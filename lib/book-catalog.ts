@@ -30,6 +30,7 @@ const entryColumns = {
   id: catalogBook.id,
   isbn: catalogBook.isbn,
   title: catalogBook.title,
+  subtitle: catalogBook.subtitle,
   authors: catalogBook.authors,
   description: catalogBook.description,
   coverUrl: catalogBook.coverUrl,
@@ -94,6 +95,7 @@ export async function saveSearch(key: string, books: CatalogEntry[]): Promise<vo
           set: {
             isbn: sql`excluded.isbn`,
             title: sql`excluded.title`,
+            subtitle: sql`excluded.subtitle`,
             authors: sql`excluded.authors`,
             description: sql`excluded.description`,
             coverUrl: sql`excluded.cover_url`,

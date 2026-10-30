@@ -16,6 +16,7 @@ const searchLimiter = createRateLimiter("books-search", 30, 60);
 
 interface GoogleBooksVolumeInfo {
   title?: string;
+  subtitle?: string;
   authors?: string[];
   description?: string;
   imageLinks?: { thumbnail?: string; smallThumbnail?: string };
@@ -84,6 +85,7 @@ function toBook(item: GoogleBooksItem): CatalogEntry {
   return {
     id: item.id,
     title: info.title ?? "Sans titre",
+    subtitle: info.subtitle ?? null,
     authors: info.authors ?? ["Auteur inconnu"],
     description: info.description ?? null,
     // Google renvoie encore des URLs en http: ; les réécrire évite le contenu mixte.

@@ -62,11 +62,12 @@ export function NextReads({ books, title, isPremium }: NextReadsProps) {
       </ul>
       {!isPremium && (
         <p className="mt-2 text-xs text-stone-500">
-          Suggestions classées selon vos goûts avec{" "}
+          Ici, les derniers livres ajoutés à votre pile. Avec{" "}
           <Link href="/account#premium" className="text-accent-700 font-medium hover:underline">
             Premium
           </Link>
-          .
+          , votre pile est triée selon vos goûts : suites de sagas, auteurs et genres que vous notez
+          le mieux.
         </p>
       )}
     </section>
