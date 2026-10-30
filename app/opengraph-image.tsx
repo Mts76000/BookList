@@ -20,9 +20,16 @@ export default function OpengraphImage() {
       }}
     >
       <div style={{ display: "flex", flexDirection: "column", maxWidth: 720 }}>
-        <img src={getLogoMark()} width={128} height={83} alt="" style={{ marginBottom: 28 }} />
+        <img src={getLogoMark()} width={104} height={104} alt="" style={{ marginBottom: 28 }} />
         <div style={{ display: "flex", fontSize: 72, fontWeight: 600, color: "#241d15" }}>
-          {env.NEXT_PUBLIC_APP_NAME}
+          {/* « List » en terracotta, comme dans le logo de l'application. */}
+          {env.NEXT_PUBLIC_APP_NAME === "BookList" ? (
+            <>
+              Book<span style={{ color: "#a73e21" }}>List</span>
+            </>
+          ) : (
+            env.NEXT_PUBLIC_APP_NAME
+          )}
         </div>
         <div
           style={{

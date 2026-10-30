@@ -1,49 +1,87 @@
-import Image from "next/image";
+import { LOGO_COLORS, LOGO_SHAPES } from "@/lib/logo-mark";
 
 // Utilisable depuis un composant client comme depuis un Server Component : on lit
 // directement `process.env.NEXT_PUBLIC_*` plutôt que `lib/env.ts`, qui valide des secrets
 // serveur et casse au bundling client (voir AGENTS.md).
 const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "BookList";
 
-// Le fichier est recadré au plus près du dessin : sans marge parasite, centrer le glyphe
-// sur la hauteur du texte suffit à les aligner optiquement.
-const MARK_RATIO = 640 / 416;
-
 const SIZES = {
-  sm: { height: 17, text: "text-sm font-semibold tracking-tight" },
-  md: { height: 21, text: "font-serif text-lg font-medium tracking-tight" },
+  sm: { mark: 26, text: "text-[1.0625rem]" },
+  md: { mark: 30, text: "text-[1.3125rem]" },
 } as const;
 
 type LogoProps = {
   size?: keyof typeof SIZES;
-  /** À activer pour le logo d'en-tête, visible dès le premier rendu. */
+  /** Conservé pour les appels existants : le logo est un SVG en ligne, sans chargement. */
   priority?: boolean;
   className?: string;
 };
 
+/** Le dessin seul : l'étagère sur sa tuile terracotta. */
+export function LogoMark({ size = 30, className = "" }: { size?: number; className?: string }) {
+  const { tile, paper, accent } = LOGO_COLORS;
+  const { standing, leaning, width, bands, shelf } = LOGO_SHAPES;
+  return (
+    <svg
+      viewBox="0 0 48 48"
+      width={size}
+      height={size}
+      className={`shrink-0 ${className}`}
+      aria-hidden="true"
+    >
+      <rect width="48" height="48" rx="12" fill={tile} />
+      {standing.map((book) => (
+        <rect
+          key={book.x}
+          x={book.x}
+          y={book.y}
+          width={width}
+          height={book.height}
+          rx="1.6"
+          fill={paper}
+        />
+      ))}
+      <rect
+        x={leaning.x}
+        y={leaning.y}
+        width={width}
+        height={leaning.height}
+        rx="1.6"
+        fill={accent}
+        transform={leaning.transform}
+      />
+      <path d={bands} stroke={tile} strokeWidth="1.3" strokeOpacity="0.5" />
+      <rect
+        x={shelf.x}
+        y={shelf.y}
+        width={shelf.width}
+        height={shelf.height}
+        rx="1.3"
+        fill={paper}
+      />
+    </svg>
+  );
+}
+
 /**
- * Marque de l'application : le livre ouvert suivi du nom, dans le terracotta du logo. Le
- * glyphe est décoratif (`alt=""`) parce que le nom qui le suit porte déjà l'information
- * aux lecteurs d'écran.
+ * Logo complet : l'étagère suivie du nom, « Book » à l'encre et « List » en terracotta,
+ * dans la serif de l'application. Le dessin est décoratif : le nom qui le suit porte déjà
+ * l'information aux lecteurs d'écran.
  */
-export function Logo({ size = "md", priority = false, className = "" }: LogoProps) {
-  const { height, text } = SIZES[size];
+export function Logo({ size = "md", className = "" }: LogoProps) {
+  const { mark, text } = SIZES[size];
+  // « List » en couleur seulement pour le nom par défaut : un autre nom reste d'un seul ton.
+  const splitAt = APP_NAME === "BookList" ? 4 : APP_NAME.length;
 
   return (
-    <span className={`text-brand inline-flex items-center gap-2 ${className}`}>
-      {/* Le reset Tailwind force `height: auto` sur tout <img>, ce qui casse le ratio fixé
-          par les attributs width/height de next/image (avertissement en dev). On fige donc
-          les deux dimensions via `style`, aux mêmes valeurs que les attributs. */}
-      <Image
-        src="/logo-mark.png"
-        alt=""
-        width={Math.round(height * MARK_RATIO)}
-        height={height}
-        priority={priority}
-        className="shrink-0"
-        style={{ width: Math.round(height * MARK_RATIO), height }}
-      />
-      <span className={`${text} leading-none`}>{APP_NAME}</span>
+    <span className={`inline-flex items-center gap-2 ${className}`}>
+      <LogoMark size={mark} />
+      <span
+        className={`${text} font-serif leading-none font-semibold tracking-[-0.02em] text-stone-900`}
+      >
+        {APP_NAME.slice(0, splitAt)}
+        <span className="text-brand">{APP_NAME.slice(splitAt)}</span>
+      </span>
     </span>
   );
 }
