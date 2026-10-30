@@ -21,13 +21,22 @@ export const PREMIUM_STREAK_JOKERS = 2;
 
 export type BillingInterval = "monthly" | "yearly";
 
-/** Prix affichés. Les montants réellement facturés sont ceux des prix Stripe configurés. */
+/**
+ * Prix affichés (`value` en euros, pour les données structurées). Les montants réellement
+ * facturés sont ceux des prix Stripe configurés.
+ */
 export const PREMIUM_PRICES: Record<
   BillingInterval,
-  { amount: string; period: string; note?: string }
+  { amount: string; period: string; perMonth: string; note?: string; value: number }
 > = {
-  monthly: { amount: "2,99 €", period: "par mois" },
-  yearly: { amount: "24 €", period: "par an", note: "Soit 2 € par mois, 4 mois offerts" },
+  monthly: { amount: "2,99 €", period: "par mois", perMonth: "2,99 €", value: 2.99 },
+  yearly: {
+    amount: "24 €",
+    value: 24,
+    period: "par an",
+    perMonth: "2 €",
+    note: "Soit 2 € par mois, 4 mois offerts",
+  },
 };
 
 /** Avantages Premium, dans l'ordre où ils sont présentés partout dans l'application. */

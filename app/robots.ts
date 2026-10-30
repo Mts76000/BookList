@@ -12,7 +12,9 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/admin", "/account", "/api/"],
+      // Espace connecté : rien à indexer, et inutile d'y envoyer les robots, renvoyés vers
+      // la connexion.
+      disallow: ["/admin", "/account", "/dashboard", "/books", "/api/", "/~offline"],
     },
     sitemap: `${env.NEXT_PUBLIC_APP_URL}/sitemap.xml`,
   };

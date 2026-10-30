@@ -1,6 +1,8 @@
 # syntax=docker/dockerfile:1
 
-FROM node:25-alpine AS base
+# Node 22 (LTS), la version de la CI : les versions impaires de Node (25, 27…) ne sont
+# jamais LTS et cessent d'être maintenues au bout de six mois.
+FROM node:22-alpine AS base
 
 # --- Dependencies ---
 FROM base AS deps

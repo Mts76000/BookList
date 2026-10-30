@@ -87,7 +87,9 @@ export function SubscriptionSection({
         <>
           <div className="border-border bg-card rounded-xl border p-6">
             <div className="flex items-baseline justify-between gap-4">
-              <h2 className="text-card-foreground text-base font-semibold">Compte gratuit</h2>
+              <h2 className="text-card-foreground text-base font-semibold">
+                Votre formule : gratuite
+              </h2>
               <p className="text-sm text-stone-500 tabular-nums">
                 {plan.bookCount} / {FREE_BOOK_LIMIT} livres
               </p>
