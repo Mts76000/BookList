@@ -9,18 +9,25 @@ import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { useToast } from "@/components/ui/toast";
 import { apiFetch } from "@/lib/api-client";
+import { BOOK_STATUSES, STATUS_ACTIVE, STATUS_LABELS, type BookStatus } from "@/lib/book-status";
+import { BookLimitNotice, usePlan } from "@/components/book-limit-notice";
+import {
+  EMPTY_SERIES_CHOICE,
+  SeriesChoice,
+  type SeriesChoiceValue,
+} from "@/components/series-choice";
+import { seriesForNewBook, type KnownSeriesSummary } from "@/lib/series-detection";
 
-type BookStatus = "TO_READ" | "READING" | "FINISHED";
-
-const STATUS_OPTIONS: { value: BookStatus; label: string; activeClass: string }[] = [
-  { value: "TO_READ", label: "À lire", activeClass: "bg-stone-800 text-stone-50 shadow-md" },
-  { value: "READING", label: "En cours", activeClass: "bg-accent-600 text-stone-50 shadow-md" },
-  { value: "FINISHED", label: "Terminé", activeClass: "bg-moss-600 text-stone-50 shadow-md" },
-];
+const STATUS_OPTIONS = BOOK_STATUSES.map((value) => ({
+  value,
+  label: STATUS_LABELS[value],
+  activeClass: STATUS_ACTIVE[value],
+}));
 
 interface BookSearchResult {
   id: string;
   title: string;
+  subtitle: string | null;
   authors: string[];
   description: string | null;
   coverUrl: string | null;
@@ -42,6 +49,10 @@ export default function AddBookPage() {
   const [manualMode, setManualMode] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [existingByIsbn, setExistingByIsbn] = useState(new Map<string, string>());
+  const [knownSeries, setKnownSeries] = useState<KnownSeriesSummary[]>([]);
+  const [seriesChoice, setSeriesChoice] = useState<SeriesChoiceValue>(EMPTY_SERIES_CHOICE);
+  const [plan, refreshPlan] = usePlan();
+  const isLibraryFull = plan?.remaining === 0;
 
   const [manualBook, setManualBook] = useState({
     title: "",
@@ -120,6 +131,10 @@ export default function AddBookPage() {
         ),
       );
     });
+    // Sagas de la bibliothèque, pour proposer d'y ranger le livre ajouté.
+    void apiFetch<KnownSeriesSummary[]>("/api/series").then((result) => {
+      if (result.ok) setKnownSeries(result.data);
+    });
   }, []);
 
   function selectBook(entry: BookSearchResult) {
@@ -129,10 +144,35 @@ export default function AddBookPage() {
       return;
     }
     setSelectedBook(entry);
+    const detected = seriesForNewBook(
+      entry.title,
+      entry.subtitle,
+      entry.authors.join(", "),
+      knownSeries,
+    );
+    setSeriesChoice(
+      detected
+        ? {
+            enabled: true,
+            name: detected.seriesName,
+            index: detected.seriesIndex?.toString() ?? "",
+            total: detected.seriesTotal?.toString() ?? "",
+            detected: true,
+          }
+        : EMPTY_SERIES_CHOICE,
+    );
   }
 
   async function handleAddBook() {
-    const payload = selectedBook
+    const series =
+      seriesChoice.enabled && seriesChoice.name.trim()
+        ? {
+            seriesName: seriesChoice.name,
+            seriesIndex: seriesChoice.index,
+            seriesTotal: seriesChoice.total,
+          }
+        : {};
+    const bookFields = selectedBook
       ? {
           title: selectedBook.title,
           author: selectedBook.authors.join(", "),
@@ -147,6 +187,7 @@ export default function AddBookPage() {
           status: manualBook.status,
         }
       : manualBook;
+    const payload = { ...bookFields, ...series };
 
     setIsLoading(true);
     const result = await apiFetch<{ id: string }>("/api/books", { method: "POST", json: payload });
@@ -154,6 +195,8 @@ export default function AddBookPage() {
 
     if (!result.ok) {
       toast(result.message, "error");
+      // Limite atteinte entre-temps (ajout depuis un autre onglet) : on affiche l'offre.
+      if (result.code === "FORBIDDEN") refreshPlan();
       return;
     }
 
@@ -163,6 +206,7 @@ export default function AddBookPage() {
 
   function reset() {
     setSelectedBook(null);
+    setSeriesChoice(EMPTY_SERIES_CHOICE);
     setManualMode(false);
     setSearchResults([]);
     setSearchHint("");
@@ -179,7 +223,9 @@ export default function AddBookPage() {
           <p className="mt-1 text-sm text-stone-500">Recherche, scan ou saisie manuelle</p>
         </header>
 
-        {!manualMode && !selectedBook && (
+        <BookLimitNotice plan={plan} />
+
+        {!isLibraryFull && !manualMode && !selectedBook && (
           <div className="card p-5 sm:p-6">
             <form
               onSubmit={(e) => {
@@ -262,6 +308,7 @@ export default function AddBookPage() {
                 <BookCover
                   coverUrl={entry.coverUrl}
                   alt={entry.title}
+                  author={entry.authors.join(", ")}
                   className="h-20 w-14 shrink-0 rounded-lg"
                 />
                 <div className="min-w-0">
@@ -287,6 +334,7 @@ export default function AddBookPage() {
                 <BookCover
                   coverUrl={selectedBook.coverUrl}
                   alt={selectedBook.title}
+                  author={selectedBook.authors.join(", ")}
                   className="h-24 w-16 rounded-lg shadow-sm"
                 />
                 <div>
@@ -333,7 +381,7 @@ export default function AddBookPage() {
                 <legend className="mb-1.5 text-sm font-medium tracking-tight text-stone-700">
                   Statut
                 </legend>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                   {STATUS_OPTIONS.map((option) => (
                     <button
                       key={option.value}
@@ -362,9 +410,9 @@ export default function AddBookPage() {
                       setManualBook({ ...manualBook, userStartDate: e.target.value })
                     }
                   />
-                  {manualBook.status === "FINISHED" && (
+                  {(manualBook.status === "FINISHED" || manualBook.status === "ABANDONED") && (
                     <Field
-                      label="Fin"
+                      label={manualBook.status === "ABANDONED" ? "Arrêt" : "Fin"}
                       type="date"
                       value={manualBook.userEndDate}
                       onChange={(e) =>
@@ -374,6 +422,8 @@ export default function AddBookPage() {
                   )}
                 </div>
               )}
+
+              <SeriesChoice value={seriesChoice} onChange={setSeriesChoice} known={knownSeries} />
 
               <p className="text-xs text-stone-400">
                 Vous pourrez noter le livre et lire sa description juste après l&apos;ajout.

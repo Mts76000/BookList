@@ -46,6 +46,15 @@ export default function PrivacyPage() {
             adresse IP et navigateur, à des fins de sécurité.
           </li>
           <li>
+            Si vous activez les rappels de lecture : l&apos;adresse d&apos;abonnement aux
+            notifications fournie par votre navigateur, supprimée dès que vous les désactivez.
+          </li>
+          <li>
+            Si vous souscrivez à Premium : l&apos;état de votre abonnement (formule, date de
+            renouvellement). Le paiement est traité par Stripe, qui reçoit votre e-mail et vos
+            informations de paiement ; BookList ne voit ni ne stocke jamais votre numéro de carte.
+          </li>
+          <li>
             Cookies essentiels au fonctionnement de l&apos;application et de
             l&apos;authentification.
           </li>
@@ -56,8 +65,9 @@ export default function PrivacyPage() {
         <h2 className="text-xl text-stone-900">Finalités du traitement</h2>
         <p className="mt-2 text-stone-600">
           Les données sont utilisées uniquement pour permettre le fonctionnement du service
-          (authentification, sauvegarde de votre bibliothèque, statistiques). Aucune donnée
-          n&apos;est revendue ni utilisée à des fins publicitaires.
+          (authentification, sauvegarde de votre bibliothèque, statistiques, gestion de
+          l&apos;abonnement Premium). Aucune donnée n&apos;est revendue ni utilisée à des fins
+          publicitaires.
         </p>
       </section>
 
@@ -75,7 +85,9 @@ export default function PrivacyPage() {
           Les comptes actifs sont conservés tant que vous les utilisez. À la suppression de votre
           compte, vos livres, notes et activités de lecture sont effacés, et votre compte est
           anonymisé : votre adresse e-mail et votre nom sont remplacés, et aucun moyen de connexion
-          n&apos;est conservé.
+          n&apos;est conservé. Un abonnement Premium en cours est résilié au même moment. Les
+          factures restent conservées par Stripe pendant la durée légale de conservation des pièces
+          comptables.
         </p>
       </section>
 

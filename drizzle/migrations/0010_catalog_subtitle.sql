@@ -1,0 +1,1 @@
+ALTER TABLE "catalog_book" ADD COLUMN "subtitle" text;

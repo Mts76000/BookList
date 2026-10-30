@@ -4,5 +4,5 @@ export const size = { width: 32, height: 32 };
 export const contentType = "image/png";
 
 export default function Icon() {
-  return generateIconResponse(32);
+  return generateIconResponse(32, 0, { rounded: true });
 }

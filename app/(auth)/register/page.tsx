@@ -76,9 +76,9 @@ export default function RegisterPage() {
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <Field
-          label="Nom"
+          label="Prénom"
           type="text"
-          autoComplete="name"
+          autoComplete="given-name"
           required
           value={name}
           onChange={(e) => setName(e.target.value)}

@@ -21,8 +21,8 @@ const STEPS = [
   {
     title: "Suivez votre activité",
     description:
-      "Consultez vos stats, filtrez votre bibliothèque et découvrez vos auteurs et genres préférés.",
-    action: { href: "/account", label: "Voir mon compte" },
+      "Fixez votre objectif de l'année, suivez vos sagas tome par tome et retrouvez vos lectures en chiffres.",
+    action: { href: "/dashboard/stats", label: "Voir mes statistiques" },
   },
 ] as const;
 
@@ -49,7 +49,7 @@ export function Onboarding({ hasSeenOnboarding }: OnboardingProps) {
   const isLastStep = step === STEPS.length - 1;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-stone-900/30 p-4 backdrop-blur-sm sm:items-center">
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-stone-900/30 p-4 backdrop-blur-sm sm:items-center">
       <div
         role="dialog"
         aria-modal="true"

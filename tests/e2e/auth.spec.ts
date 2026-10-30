@@ -17,7 +17,7 @@ test.describe("Inscription, vérification, connexion, déconnexion", () => {
 
     await page.goto("/register");
     await waitForTurnstileReady(page);
-    await page.getByLabel("Nom").fill("E2E Test User");
+    await page.getByLabel("Prénom").fill("E2E Test User");
     await page.getByLabel("Email").fill(email);
     await page.getByLabel("Mot de passe", { exact: true }).fill("password123");
     await page.getByLabel(/J'accepte les/).check();
@@ -50,7 +50,7 @@ test.describe("Inscription, vérification, connexion, déconnexion", () => {
     await mockTurnstile(page);
     await page.goto("/register");
     await waitForTurnstileReady(page);
-    await page.getByLabel("Nom").fill("No Tos");
+    await page.getByLabel("Prénom").fill("No Tos");
     await page.getByLabel("Email").fill(uniqueEmail("no-tos"));
     await page.getByLabel("Mot de passe", { exact: true }).fill("password123");
     await page.getByRole("button", { name: "Créer mon compte" }).click();
@@ -92,7 +92,7 @@ test.describe("Révocation de session à distance", () => {
     await mockTurnstile(setupPage);
     await setupPage.goto("/register");
     await waitForTurnstileReady(setupPage);
-    await setupPage.getByLabel("Nom").fill("Revoke Test");
+    await setupPage.getByLabel("Prénom").fill("Revoke Test");
     await setupPage.getByLabel("Email").fill(email);
     await setupPage.getByLabel("Mot de passe", { exact: true }).fill("password123");
     await setupPage.getByLabel(/J'accepte les/).check();

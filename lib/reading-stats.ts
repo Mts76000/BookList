@@ -19,7 +19,7 @@ export interface ReadingStats {
 
 /**
  * Statistiques de lecture d'un utilisateur, partagées par le tableau de bord et la page
- * du compte.
+ * des statistiques.
  *
  * Un seul SELECT sur les livres, puis agrégation en mémoire, plutôt qu'une dizaine
  * d'agrégats SQL séparés : une bibliothèque personnelle se compte en centaines de lignes,
@@ -38,6 +38,7 @@ export async function getReadingStats(
         pageCount: book.pageCount,
         userRating: book.userRating,
         userEndDate: book.userEndDate,
+        status: book.status,
       })
       .from(book)
       .where(eq(book.userId, userId)),
@@ -61,7 +62,8 @@ export async function getReadingStats(
     }
     booksByAuthor.set(entry.author, (booksByAuthor.get(entry.author) ?? 0) + 1);
 
-    if (entry.userEndDate) {
+    // Un livre abandonné peut porter sa date d'arrêt : il ne compte pas dans l'année.
+    if (entry.userEndDate && entry.status !== "ABANDONED") {
       const year = new Date(entry.userEndDate).getFullYear();
       if (year === currentYear) booksThisYear += 1;
       if (entry.pageCount) {

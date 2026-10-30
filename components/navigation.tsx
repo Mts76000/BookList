@@ -3,12 +3,18 @@
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
+import { ChartBar } from "@phosphor-icons/react";
 import { Logo } from "@/components/logo";
+
+function StatsIcon({ className }: { className?: string }) {
+  return <ChartBar className={className} aria-hidden="true" />;
+}
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Accueil", icon: HomeIcon },
   { href: "/books", label: "Livres", icon: BooksIcon },
   { href: "/books/add", label: "Ajouter", icon: AddIcon },
+  { href: "/dashboard/stats", label: "Stats", icon: StatsIcon },
   { href: "/account", label: "Compte", icon: UserIcon },
 ];
 
@@ -26,6 +32,8 @@ export function Navigation() {
     if (href === "/books") {
       return pathname === "/books" || (pathname.startsWith("/books/") && pathname !== "/books/add");
     }
+    // Le bilan annuel est un onglet de la section Stats.
+    if (href === "/dashboard/stats") return pathname.startsWith("/dashboard/stats");
     return pathname === href;
   };
 
@@ -49,7 +57,7 @@ export function Navigation() {
         aria-label="Navigation principale"
         className="bg-card fixed inset-x-0 bottom-0 z-40 border-t border-stone-200/70 sm:hidden"
       >
-        <div className="mx-auto grid max-w-lg grid-cols-4">
+        <div className="mx-auto grid max-w-lg grid-cols-5">
           {NAV_ITEMS.map((item) => {
             const active = isActive(item.href);
             const Icon = item.icon;

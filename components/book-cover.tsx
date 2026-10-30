@@ -1,10 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { getImageProps } from "next/image";
+import { coverToneFor } from "@/lib/generated-cover";
 
 interface BookCoverProps {
   coverUrl?: string | null;
   alt?: string;
+  /** Affiché sur la couverture de remplacement, sous le titre (pris dans `alt`). */
+  author?: string | null;
   className?: string;
   variant?: "small" | "large";
   /** Ombre « physique » et légère réaction au survol, façon livre posé sur l'étagère. */
@@ -20,20 +24,19 @@ const TACTILE_SHADOW =
   "shadow-[0_2px_2px_rgba(36,29,21,0.08),0_18px_28px_-14px_rgba(36,29,21,0.4)]";
 
 /**
- * Dimensions exactes de l'image « image not available » que Google sert à la place d'une
- * couverture absente à la résolution demandée. C'est toujours le même visuel redimensionné,
- * et son ratio (1,30) est trop banal pour le distinguer autrement : seules ses dimensions
- * exactes le trahissent.
+ * Proportions de l'image « image not available » que Google sert à la place d'une couverture
+ * absente à la résolution demandée (300×391, 575×750 ou 800×1043 : toujours le même visuel).
+ * Les couvertures passant par l'optimiseur d'images, qui les redimensionne, seules ses
+ * proportions survivent : on les reconnaît à 0,006 près, et uniquement pour Google Books.
  *
- * Un faux positif reste possible en théorie — une vraie couverture faisant précisément
- * 575×750 — mais il n'aurait pour effet que de revenir à la résolution d'origine, donc une
- * image moins fine, jamais une image manquante.
+ * Un faux positif — une vraie couverture Google à ces proportions exactes — n'aurait pour
+ * effet que de revenir à la résolution d'origine, donc une image moins fine, jamais une
+ * image manquante.
  */
-const GOOGLE_PLACEHOLDER_SIZES: readonly (readonly [number, number])[] = [
-  [300, 391],
-  [575, 750],
-  [800, 1043],
-];
+const GOOGLE_PLACEHOLDER_RATIO = 1.304;
+
+/** Largeur d'affichage maximale de chaque variante, en pixels CSS (×2 sur écran dense). */
+const DISPLAY_WIDTH = { small: 128, large: 192 } as const;
 
 /**
  * Adapte l'URL d'une couverture à la taille où elle sera affichée.
@@ -69,6 +72,7 @@ function sizedCover(url: string, variant: "small" | "large"): string {
 export function BookCover({
   coverUrl,
   alt,
+  author,
   className,
   variant = "small",
   tactile = false,
@@ -103,9 +107,8 @@ export function BookCover({
       }
 
       const ratio = img.naturalHeight / img.naturalWidth;
-      const isPlaceholder = GOOGLE_PLACEHOLDER_SIZES.some(
-        ([w, h]) => img.naturalWidth === w && img.naturalHeight === h,
-      );
+      const isPlaceholder =
+        coverUrl?.includes("books.google") && Math.abs(ratio - GOOGLE_PLACEHOLDER_RATIO) < 0.006;
 
       // Ratio écrasé : image tronquée. Dimensions du substitut : couverture absente à cette
       // résolution. Dans les deux cas, la version d'origine est souvent la bonne.
@@ -114,7 +117,7 @@ export function BookCover({
         else setUseStoredUrl(true);
       }
     },
-    [useStoredUrl],
+    [useStoredUrl, coverUrl],
   );
 
   // Une image déjà en cache peut être `complete` dès le montage, sans jamais déclencher
@@ -128,28 +131,34 @@ export function BookCover({
 
   if (error || !coverUrl) {
     return (
-      <div
-        className={`relative flex items-center justify-center overflow-hidden bg-stone-100 text-stone-400 ${interactionClasses} ${className ?? ""}`}
-      >
-        <BookIcon className="h-10 w-10" />
-      </div>
+      <GeneratedCover
+        title={alt}
+        author={author}
+        className={`${interactionClasses} ${className ?? ""}`}
+      />
     );
   }
 
   const secureUrl = coverUrl.replace(/^http:/, "https:");
-  // On ne passe pas par `srcSet` en densité : le navigateur y divise `naturalWidth` par le
-  // facteur de densité, ce qui rendrait indétectable le substitut de Google reconnu plus bas
-  // à ses dimensions exactes.
-  const src = useStoredUrl ? secureUrl : sizedCover(secureUrl, variant);
+  // Les couvertures passent par l'optimiseur d'images de Next.js : servies depuis notre
+  // domaine, en WebP à la taille affichée, et gardées en cache par le serveur, le navigateur
+  // et le service worker. Le premier visiteur paie le téléchargement chez Google ou Open
+  // Library, les suivants non.
+  const { props: imageProps } = getImageProps({
+    src: useStoredUrl ? secureUrl : sizedCover(secureUrl, variant),
+    alt: alt ?? "",
+    width: DISPLAY_WIDTH[variant],
+    height: Math.round(DISPLAY_WIDTH[variant] * 1.5),
+  });
 
   return (
-    // Les couvertures viennent d'hôtes tiers aux dimensions inconnues, et on les remplace
-    // par une icône quand elles sont absentes ou trop petites : un <img> natif conserve
-    // onLoad/onError et évite de faire transiter des images distantes par l'optimiseur.
+    // <img> natif avec les attributs calculés par next/image : on garde onLoad/onError pour
+    // repérer les couvertures absentes, et les dimensions viennent de la classe CSS.
     // eslint-disable-next-line @next/next/no-img-element
     <img
       ref={imgRef}
-      src={src}
+      src={imageProps.src}
+      srcSet={imageProps.srcSet}
       alt={alt ?? ""}
       loading={variant === "large" ? "eager" : "lazy"}
       decoding="async"
@@ -157,6 +166,55 @@ export function BookCover({
       onError={() => setError(true)}
       className={`object-cover ${interactionClasses} ${className ?? ""}`}
     />
+  );
+}
+
+function GeneratedCover({
+  title,
+  author,
+  className,
+}: {
+  title?: string;
+  author?: string | null;
+  className?: string;
+}) {
+  if (!title) {
+    return (
+      <div
+        className={`relative flex items-center justify-center overflow-hidden bg-stone-100 text-stone-400 ${className ?? ""}`}
+      >
+        <BookIcon className="h-10 w-10" />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      role="img"
+      aria-label={title}
+      className={`@container relative flex flex-col overflow-hidden text-stone-50 ${className ?? ""}`}
+      style={{ backgroundColor: coverToneFor(title) }}
+    >
+      {/* Pli de la reliure, à gauche, comme sur une vraie couverture. */}
+      <span className="absolute inset-y-0 left-[5%] w-px bg-white/15" aria-hidden="true" />
+      <div className="flex flex-1 flex-col justify-between p-[11%] pl-[16%]">
+        <p
+          className="line-clamp-5 font-serif leading-[1.1] font-medium break-words hyphens-auto"
+          style={{ fontSize: "clamp(7px, 13cqw, 30px)" }}
+          lang="fr"
+        >
+          {title}
+        </p>
+        {author && (
+          <p
+            className="line-clamp-2 leading-tight text-stone-50/75"
+            style={{ fontSize: "clamp(5px, 8.5cqw, 15px)" }}
+          >
+            {author}
+          </p>
+        )}
+      </div>
+    </div>
   );
 }
 

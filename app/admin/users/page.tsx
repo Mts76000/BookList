@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { book, user } from "@/drizzle/schema";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
+import { isPremiumActive } from "@/lib/plans";
 import { AdminPageHeader, RoleBadge, StatusBadge } from "@/app/admin/admin-ui";
 
 export const metadata: Metadata = {
@@ -51,6 +52,8 @@ export default async function AdminUsersPage({
         emailVerified: user.emailVerified,
         isAnonymized: user.isAnonymized,
         createdAt: user.createdAt,
+        premiumUntil: user.premiumUntil,
+        premiumGrantedUntil: user.premiumGrantedUntil,
         // ::int explicite : sans lui, Postgres renvoie un bigint que le pilote livre en chaîne.
         bookCount: sql<number>`coalesce(${bookCounts.value}, 0)::int`,
       })
@@ -125,6 +128,10 @@ export default async function AdminUsersPage({
                   </div>
                   <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-stone-400">
                     <RoleBadge role={entry.role} />
+                    {(isPremiumActive(entry.premiumUntil) ||
+                      isPremiumActive(entry.premiumGrantedUntil)) && (
+                      <span className="badge bg-accent-50 text-accent-700">Premium</span>
+                    )}
                     <span>
                       {entry.bookCount} livre{entry.bookCount !== 1 ? "s" : ""}
                     </span>
@@ -171,6 +178,10 @@ export default async function AdminUsersPage({
                     </td>
                     <td className="px-4 py-3">
                       <RoleBadge role={entry.role} />
+                      {(isPremiumActive(entry.premiumUntil) ||
+                        isPremiumActive(entry.premiumGrantedUntil)) && (
+                        <span className="badge bg-accent-50 text-accent-700">Premium</span>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <StatusBadge

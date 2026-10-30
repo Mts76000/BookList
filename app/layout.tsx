@@ -6,7 +6,7 @@ import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
 import { SerwistProvider } from "@serwist/turbopack/react";
 import { DevServiceWorkerCleanup } from "@/components/dev-service-worker-cleanup";
 import { CookieConsent } from "@/components/cookie-consent";
-import { APP_DESCRIPTION, canonicalUrl, organizationJsonLd } from "@/lib/seo";
+import { APP_DESCRIPTION, jsonLdScript, organizationJsonLd } from "@/lib/seo";
 import { env } from "@/lib/env";
 import "./globals.css";
 
@@ -38,17 +38,25 @@ export const metadata: Metadata = {
   description,
   keywords: [
     "suivi de lecture",
+    "carnet de lecture",
+    "application lecture",
     "bibliothèque personnelle",
-    "tracker de livres",
+    "alternative Goodreads",
+    "objectif de lecture",
     "statistiques de lecture",
     "scan ISBN",
   ],
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 },
+  },
   applicationName: appName,
-  alternates: { canonical: canonicalUrl("/") },
+  // Ni adresse canonique ni og:url par défaut : hérités par une page qui oublie les siens,
+  // ils la déclareraient copie de l'accueil. Chaque page indexable fixe les siens.
   openGraph: {
     title: appName,
     description,
-    url: canonicalUrl("/"),
     siteName: appName,
     locale: "fr_FR",
     type: "website",
@@ -84,7 +92,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd()) }}
+          dangerouslySetInnerHTML={jsonLdScript(organizationJsonLd())}
         />
       </head>
       {/* suppressHydrationWarning: browser extensions (ColorZilla, Grammarly, etc.) inject

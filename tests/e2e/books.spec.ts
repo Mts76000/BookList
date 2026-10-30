@@ -20,7 +20,7 @@ async function signUpAndLogIn(page: import("@playwright/test").Page, email: stri
 
   await page.goto("/register");
   await waitForTurnstileReady(page);
-  await page.getByLabel("Nom").fill("Lecteur E2E");
+  await page.getByLabel("Prénom").fill("Lecteur E2E");
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Mot de passe", { exact: true }).fill("password123");
   await page.getByLabel(/J'accepte les/).check();
@@ -70,13 +70,15 @@ test.describe("Bibliothèque", () => {
     await expect(page.getByText("Une prose magnifique.")).toBeVisible();
 
     await page.goto("/books");
-    await expect(page.getByText("Le Nom du vent")).toBeVisible();
+    // Le titre seul : sans image, la couverture générée l'affiche aussi.
+    await expect(page.getByRole("heading", { name: "Le Nom du vent" })).toBeVisible();
     await expect(page.getByText("1 livre dans votre bibliothèque")).toBeVisible();
 
-    await page.getByText("Le Nom du vent").first().click();
+    await page.getByRole("heading", { name: "Le Nom du vent" }).click();
     await page.getByRole("button", { name: "Supprimer le livre" }).click();
     await page.getByRole("button", { name: "Oui, supprimer" }).click();
-    await expect(page).toHaveURL(/\/books$/);
+    // Les filtres de la liste ajoutent leur tri par défaut à l'URL (`?sort=date`).
+    await expect(page).toHaveURL(/\/books(\?|$)/);
     await expect(page.getByText("Aucun livre trouvé")).toBeVisible();
   });
 
@@ -89,10 +91,12 @@ test.describe("Bibliothèque", () => {
     // Un compte tout neuf arrive sur l'accueil des nouveaux utilisateurs, qui recouvre la page.
     await page.getByRole("button", { name: "Passer" }).click();
 
+    // La saisie d'une journée est repliée sous le graphique.
+    await page.getByText("Corriger les pages d'une journée").click();
     await page.getByLabel("Pages lues").fill("42");
     await page.getByRole("button", { name: "Enregistrer" }).click();
 
-    await expect(page.getByText(/42 pages/)).toBeVisible();
+    await expect(page.getByText("42 pages, dont 42 aujourd'hui")).toBeVisible();
   });
 });
 

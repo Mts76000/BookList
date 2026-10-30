@@ -10,8 +10,20 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
 import { apiFetch } from "@/lib/api-client";
 import { parseGenres } from "@/lib/genres";
-
-type BookStatus = "TO_READ" | "READING" | "FINISHED";
+import {
+  BOOK_FORMATS,
+  BOOK_STATUSES,
+  FORMAT_LABELS,
+  STATUS_ACTIVE,
+  STATUS_BADGE,
+  STATUS_DOT,
+  STATUS_LABELS,
+  isBookFormat,
+  type BookStatus,
+} from "@/lib/book-status";
+import { Select } from "@/components/ui/select";
+import { ReadingProgress } from "@/components/reading-progress";
+import type { KnownSeries } from "@/lib/series-store";
 
 interface Comment {
   id: string;
@@ -32,39 +44,29 @@ interface Book {
   userStartDate: string | Date | null;
   userEndDate: string | Date | null;
   status: BookStatus;
+  currentPage: number | null;
+  format: string | null;
+  tags: string[] | null;
+  seriesName: string | null;
+  seriesIndex: number | null;
+  seriesTotal: number | null;
   comments: Comment[];
 }
 
 interface BookDetailsProps {
   book: Book;
+  /** Sagas de la bibliothèque, proposées à la saisie du nom de série. */
+  knownSeries?: KnownSeries[];
 }
 
 /** Au-delà, la description est repliée derrière un « Voir plus ». */
 const DESCRIPTION_PREVIEW_LENGTH = 260;
 
-const STATUS_OPTIONS: { value: BookStatus; label: string; activeClass: string }[] = [
-  { value: "TO_READ", label: "À lire", activeClass: "bg-stone-800 text-stone-50 shadow-md" },
-  { value: "READING", label: "En cours", activeClass: "bg-accent-600 text-stone-50 shadow-md" },
-  { value: "FINISHED", label: "Terminé", activeClass: "bg-moss-600 text-stone-50 shadow-md" },
-];
-
-const STATUS_LABELS: Record<BookStatus, string> = {
-  TO_READ: "À lire",
-  READING: "En cours",
-  FINISHED: "Terminé",
-};
-
-const STATUS_STYLES: Record<BookStatus, string> = {
-  TO_READ: "bg-stone-100 text-stone-600",
-  READING: "bg-accent-50 text-accent-700",
-  FINISHED: "bg-moss-100 text-moss-800",
-};
-
-const STATUS_DOT: Record<BookStatus, string> = {
-  TO_READ: "bg-stone-400",
-  READING: "bg-accent-500",
-  FINISHED: "bg-moss-500",
-};
+const STATUS_OPTIONS = BOOK_STATUSES.map((value) => ({
+  value,
+  label: STATUS_LABELS[value],
+  activeClass: STATUS_ACTIVE[value],
+}));
 
 /** Formate une date pour un champ `type="date"`, qui n'accepte que `YYYY-MM-DD`. */
 function toDateInput(value: string | Date | null): string {
@@ -76,7 +78,7 @@ function formatDate(value: string | Date | null): string {
   return value ? new Date(value).toLocaleDateString("fr-FR") : "?";
 }
 
-export function BookDetails({ book }: BookDetailsProps) {
+export function BookDetails({ book, knownSeries = [] }: BookDetailsProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [newComment, setNewComment] = useState("");
@@ -98,6 +100,11 @@ export function BookDetails({ book }: BookDetailsProps) {
     userStartDate: toDateInput(book.userStartDate),
     userEndDate: toDateInput(book.userEndDate),
     status: book.status,
+    format: book.format ?? "",
+    tags: book.tags?.join(", ") ?? "",
+    seriesName: book.seriesName ?? "",
+    seriesIndex: book.seriesIndex?.toString() ?? "",
+    seriesTotal: book.seriesTotal?.toString() ?? "",
   });
 
   async function handleAddComment() {
@@ -158,6 +165,11 @@ export function BookDetails({ book }: BookDetailsProps) {
           userStartDate: editForm.userStartDate,
           userEndDate: editForm.userEndDate,
           status: editForm.status,
+          format: editForm.format,
+          tags: editForm.tags,
+          seriesName: editForm.seriesName,
+          seriesIndex: editForm.seriesIndex,
+          seriesTotal: editForm.seriesTotal,
         },
       });
       if (!result.ok) {
@@ -297,7 +309,7 @@ export function BookDetails({ book }: BookDetailsProps) {
               <legend className="mb-1.5 text-sm font-medium tracking-tight text-stone-700">
                 Statut
               </legend>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {STATUS_OPTIONS.map((option) => (
                   <button
                     key={option.value}
@@ -313,6 +325,89 @@ export function BookDetails({ book }: BookDetailsProps) {
                     {option.label}
                   </button>
                 ))}
+              </div>
+            </fieldset>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Select
+                label="Format"
+                value={editForm.format}
+                onChange={(e) => setEditForm({ ...editForm, format: e.target.value })}
+              >
+                <option value="">Non précisé</option>
+                {BOOK_FORMATS.map((format) => (
+                  <option key={format} value={format}>
+                    {FORMAT_LABELS[format]}
+                  </option>
+                ))}
+              </Select>
+              <Field
+                label="Étagères"
+                placeholder="Favoris, Prêtés..."
+                helperText="Séparées par des virgules."
+                value={editForm.tags}
+                onChange={(e) => setEditForm({ ...editForm, tags: e.target.value })}
+              />
+            </div>
+
+            <fieldset>
+              <legend className="mb-1.5 text-sm font-medium tracking-tight text-stone-700">
+                Saga
+              </legend>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_6rem_6rem]">
+                <Field
+                  label="Nom de la série"
+                  hideLabel
+                  placeholder="Nom de la série (ex : Dune)"
+                  list="known-series"
+                  autoComplete="off"
+                  value={editForm.seriesName}
+                  onChange={(e) => {
+                    const seriesName = e.target.value;
+                    // Une saga existante choisie : on propose le tome suivant et son nombre
+                    // de tomes, sans écraser ce qui est déjà saisi.
+                    const known = knownSeries.find(
+                      (entry) => entry.name.toLowerCase() === seriesName.trim().toLowerCase(),
+                    );
+                    setEditForm({
+                      ...editForm,
+                      seriesName,
+                      seriesIndex:
+                        editForm.seriesIndex || !known
+                          ? editForm.seriesIndex
+                          : String(known.nextIndex),
+                      seriesTotal:
+                        editForm.seriesTotal || !known?.total
+                          ? editForm.seriesTotal
+                          : String(known.total),
+                    });
+                  }}
+                />
+                <datalist id="known-series">
+                  {knownSeries.map((entry) => (
+                    <option key={entry.name} value={entry.name} />
+                  ))}
+                </datalist>
+                <Field
+                  label="Tome"
+                  hideLabel
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  placeholder="Tome"
+                  value={editForm.seriesIndex}
+                  onChange={(e) => setEditForm({ ...editForm, seriesIndex: e.target.value })}
+                />
+                <Field
+                  label="Nombre de tomes"
+                  hideLabel
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  placeholder="Sur"
+                  value={editForm.seriesTotal}
+                  onChange={(e) => setEditForm({ ...editForm, seriesTotal: e.target.value })}
+                />
               </div>
             </fieldset>
 
@@ -332,9 +427,9 @@ export function BookDetails({ book }: BookDetailsProps) {
                   value={editForm.userStartDate}
                   onChange={(e) => setEditForm({ ...editForm, userStartDate: e.target.value })}
                 />
-                {editForm.status === "FINISHED" && (
+                {(editForm.status === "FINISHED" || editForm.status === "ABANDONED") && (
                   <Field
-                    label="Fin"
+                    label={editForm.status === "ABANDONED" ? "Arrêt" : "Fin"}
                     type="date"
                     value={editForm.userEndDate}
                     onChange={(e) => setEditForm({ ...editForm, userEndDate: e.target.value })}
@@ -357,18 +452,26 @@ export function BookDetails({ book }: BookDetailsProps) {
             <BookCover
               coverUrl={book.coverUrl}
               alt={book.title}
+              author={book.author}
               className="mx-auto h-56 w-40 shrink-0 rounded-[var(--radius-sm)] sm:mx-0"
               variant="large"
               tactile
             />
 
             <div className="flex-1">
-              <span className={`badge ${STATUS_STYLES[book.status]}`}>
+              <span className={`badge ${STATUS_BADGE[book.status]}`}>
                 <span className={`status-dot ${STATUS_DOT[book.status]}`} />
                 {STATUS_LABELS[book.status]}
               </span>
               <h1 className="mt-2 font-serif text-xl text-stone-900 sm:text-2xl">{book.title}</h1>
               <p className="mt-1 text-stone-500">{book.author}</p>
+              {book.seriesName && (
+                <p className="mt-1 text-sm text-stone-600">
+                  {book.seriesName}
+                  {book.seriesIndex !== null &&
+                    `, tome ${book.seriesIndex}${book.seriesTotal ? ` sur ${book.seriesTotal}` : ""}`}
+                </p>
+              )}
 
               {book.genre && (
                 <div className="mt-3 flex flex-wrap gap-1.5">
@@ -376,6 +479,25 @@ export function BookDetails({ book }: BookDetailsProps) {
                     <span key={genre} className="badge bg-stone-100 text-stone-600">
                       {genre}
                     </span>
+                  ))}
+                </div>
+              )}
+
+              {(isBookFormat(book.format) || (book.tags && book.tags.length > 0)) && (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {isBookFormat(book.format) && (
+                    <span className="badge border border-stone-200 text-stone-600">
+                      {FORMAT_LABELS[book.format]}
+                    </span>
+                  )}
+                  {book.tags?.map((tag) => (
+                    <Link
+                      key={tag}
+                      href={`/books?tag=${encodeURIComponent(tag)}`}
+                      className="badge bg-accent-50 text-accent-700 hover:bg-accent-100"
+                    >
+                      {tag}
+                    </Link>
                   ))}
                 </div>
               )}
@@ -402,6 +524,14 @@ export function BookDetails({ book }: BookDetailsProps) {
                   </div>
                 )}
               </dl>
+
+              {(book.status === "READING" || book.status === "TO_READ") && (
+                <ReadingProgress
+                  bookId={book.id}
+                  currentPage={book.currentPage}
+                  pageCount={book.pageCount}
+                />
+              )}
 
               <div className="mt-5">
                 <p className="mb-2 text-sm font-medium text-stone-700">Votre note</p>

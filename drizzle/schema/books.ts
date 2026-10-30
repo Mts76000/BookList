@@ -15,7 +15,7 @@ import { user } from "@/drizzle/schema/auth";
  * Statut de lecture d'un livre. Les valeurs reprennent à l'identique l'enum BookStatus de
  * BookList v1 (Prisma) : la migration des données recopie la colonne telle quelle.
  */
-export const bookStatus = pgEnum("book_status", ["TO_READ", "READING", "FINISHED"]);
+export const bookStatus = pgEnum("book_status", ["TO_READ", "READING", "FINISHED", "ABANDONED"]);
 
 /**
  * Identifiants en `text` et non en `uuid` comme les tables techniques du socle : les données
@@ -54,6 +54,19 @@ export const book = pgTable(
     userStartDate: timestamp("user_start_date"),
     userEndDate: timestamp("user_end_date"),
     status: bookStatus("status").notNull().default("FINISHED"),
+    // Saga : nom de la série, numéro du tome et nombre de tomes connus. Saisis à la main
+    // ou déduits d'un titre Goodreads « Titre (Série, #3) » à l'import.
+    // Page où en est la lecture. Mise à jour via /api/books/[id]/progress, qui enregistre
+    // aussi les pages lues du jour dans `reading_activity`.
+    currentPage: integer("current_page"),
+    // Format lu : "paper", "ebook" ou "audio" (voir lib/book-status.ts).
+    format: text("format"),
+    // Étagères personnelles (« Prêtés », « Favoris »...), reprises des étagères Goodreads et
+    // des tags StoryGraph à l'import.
+    tags: text("tags").array(),
+    seriesName: text("series_name"),
+    seriesIndex: integer("series_index"),
+    seriesTotal: integer("series_total"),
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
@@ -70,6 +83,7 @@ export const book = pgTable(
     index("book_userId_idx").on(table.userId),
     index("book_userRating_idx").on(table.userRating),
     index("book_status_idx").on(table.status),
+    index("book_userId_seriesName_idx").on(table.userId, table.seriesName),
   ],
 );
 
@@ -126,17 +140,133 @@ export const readingActivity = pgTable(
 );
 
 /**
+ * Objectif annuel de lecture : un nombre de livres à terminer dans l'année civile. Une ligne
+ * par utilisateur et par année, pour garder l'historique des objectifs passés et l'afficher
+ * dans le bilan de chaque année.
+ * Suppression physique en cascade depuis l'utilisateur, et effacée explicitement à
+ * l'anonymisation (la ligne `user` y survit).
+ */
+export const readingGoal = pgTable(
+  "reading_goal",
+  {
+    id: entityId(),
+    year: integer("year").notNull(),
+    target: integer("target").notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at")
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [uniqueIndex("reading_goal_userId_year_idx").on(table.userId, table.year)],
+);
+
+/**
+ * Coup de cœur choisi par l'utilisateur pour une année, affiché dans son bilan à la place du
+ * choix automatique (le livre le mieux noté). Une ligne par utilisateur et par année.
+ * Suppression physique en cascade depuis l'utilisateur et depuis le livre : retirer le livre
+ * de la bibliothèque rend la main au choix automatique.
+ */
+export const yearFavorite = pgTable(
+  "year_favorite",
+  {
+    id: entityId(),
+    year: integer("year").notNull(),
+    bookId: text("book_id")
+      .notNull()
+      .references(() => book.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at")
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    uniqueIndex("year_favorite_userId_year_idx").on(table.userId, table.year),
+    index("year_favorite_bookId_idx").on(table.bookId),
+  ],
+);
+
+/**
+ * Citation relevée dans un livre, avec la page où elle se trouve.
+ * Suppression physique en cascade depuis le livre et depuis l'utilisateur.
+ */
+export const quote = pgTable(
+  "quote",
+  {
+    id: entityId(),
+    content: text("content").notNull(),
+    page: integer("page"),
+    bookId: text("book_id")
+      .notNull()
+      .references(() => book.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at")
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index("quote_bookId_idx").on(table.bookId),
+    index("quote_userId_idx").on(table.userId),
+  ],
+);
+
+/**
+ * Défi de lecture personnel (Premium) sur une année : un objectif chiffré d'un type donné
+ * (voir `CHALLENGE_KINDS` dans lib/challenges.ts), avec un filtre pour les types qui en
+ * prennent un (genre, auteur). La progression se calcule à partir des livres terminés,
+ * rien n'est stocké en double.
+ * Suppression physique en cascade depuis l'utilisateur.
+ */
+export const readingChallenge = pgTable(
+  "reading_challenge",
+  {
+    id: entityId(),
+    year: integer("year").notNull(),
+    title: text("title").notNull(),
+    kind: text("kind").notNull(),
+    target: integer("target").notNull(),
+    filter: text("filter"),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [index("reading_challenge_userId_year_idx").on(table.userId, table.year)],
+);
+
+/**
  * Relations déclarées pour l'API `db.query...with` de Drizzle. Sans elles, un `with:
  * { comments: true }` échoue à l'exécution — et le typecheck ne l'aurait pas signalé.
  */
 export const bookRelations = relations(book, ({ one, many }) => ({
   user: one(user, { fields: [book.userId], references: [user.id] }),
   comments: many(comment),
+  quotes: many(quote),
+}));
+
+export const quoteRelations = relations(quote, ({ one }) => ({
+  book: one(book, { fields: [quote.bookId], references: [book.id] }),
+  user: one(user, { fields: [quote.userId], references: [user.id] }),
 }));
 
 export const commentRelations = relations(comment, ({ one }) => ({
   book: one(book, { fields: [comment.bookId], references: [book.id] }),
   user: one(user, { fields: [comment.userId], references: [user.id] }),
+}));
+
+export const readingGoalRelations = relations(readingGoal, ({ one }) => ({
+  user: one(user, { fields: [readingGoal.userId], references: [user.id] }),
 }));
 
 export const readingActivityRelations = relations(readingActivity, ({ one }) => ({
