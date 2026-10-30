@@ -76,6 +76,14 @@ const nextConfig: NextConfig = {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
   images: {
+    // Les couvertures passent par l'optimiseur (voir components/book-cover.tsx) : téléchargées
+    // une fois, converties en WebP à la taille affichée et gardées sur le disque du serveur.
+    // Une couverture ne change pas pour une même URL : on la garde 31 jours.
+    minimumCacheTTL: 31 * 24 * 60 * 60,
+    formats: ["image/webp"],
+    maximumDiskCacheSize: 500_000_000,
+    // Une couverture pèse quelques centaines de Ko : inutile d'accepter les 50 Mo par défaut.
+    maximumResponseBody: 5_000_000,
     remotePatterns: [
       // Google account avatars (better-auth Google OAuth profile images)
       { protocol: "https", hostname: "lh3.googleusercontent.com" },

@@ -71,7 +71,8 @@ export function BooksFilter({ sortBy, genre, status, tag, genres, tags }: BooksF
         placeholder="Rechercher un titre ou auteur..."
       />
 
-      <div className="flex flex-wrap gap-2">
+      {/* Centrés sur mobile : une ligne incomplète ne reste pas collée à gauche. */}
+      <div className="flex flex-wrap justify-center gap-2 sm:justify-start">
         <Select
           label="Trier par"
           hideLabel

@@ -194,6 +194,11 @@
     "isbn": "9782702436769",
     "description": "Roger Ackroyd se confie un soir à son vieil ami le Dr Sheppard. Il était sur le point d’épouser une jeune et richissime veuve quand celle-ci a mis fin à ses jours pour échapper à un affreux chantage. Dans sa dernière lettre elle lui livre un secret terrible : un an plus tôt, elle a assassiné son mari ! Traduit de l’anglais par Françoise Jamoul"
   },
+  "Le Mystère de la chambre jaune": {
+    "coverUrl": "https://covers.openlibrary.org/b/id/2132525-L.jpg",
+    "isbn": "9780613807692",
+    "description": null
+  },
   "Le Nom du vent": {
     "coverUrl": "https://covers.openlibrary.org/b/id/11480483-L.jpg",
     "isbn": null,
@@ -303,5 +308,10 @@
     "coverUrl": "https://books.google.com/books/content?id=t4hMBgAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api",
     "isbn": "9782852299665",
     "description": "Bienvenue dans la collection Les Fiches de lecture d’Universalis L’année de la parution du poème de T. S. Eliot, La Terre vaine (1922), parut Ulysse de l’écrivain irlandais James Joyce (1882-1941), autre tournant majeur de la révolution moderniste. Une fiche de lecture spécialement conçue pour le numérique, pour tout savoir sur Ulysse de James Joyce Chaque fiche de lecture présente une œuvre clé de la littérature ou de la pensée. Cette présentation est couplée avec un article de synthèse sur l’auteur de l’œuvre. A propos de l’Encyclopaedia Universalis : Reconnue mondialement pour la qualité et la fiabilité incomparable de ses publications, Encyclopaedia Universalis met la connaissance à la portée de tous. Écrite par plus de 7 400 auteurs spécialistes et riche de près de 30 000 médias (vidéos, photos, cartes, dessins...), l’Encyclopaedia Universalis est la plus fiable collection de référence disponible en français. Elle aborde tous les domaines du savoir."
+  },
+  "Vingt mille lieues sous les mers": {
+    "coverUrl": "https://covers.openlibrary.org/b/id/6573517-L.jpg",
+    "isbn": "9781459011700",
+    "description": null
   }
 }

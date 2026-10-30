@@ -8,6 +8,7 @@ import { getLogoMark } from "@/lib/pwa-icon";
 import { getYearReview } from "@/lib/year-review";
 import { getUserPlan } from "@/lib/subscription";
 import { REVIEW_THEMES, isReviewTheme } from "@/lib/review-themes";
+import { coverToneFor } from "@/lib/generated-cover";
 
 const imageLimiter = createRateLimiter("year-review-image", 20, 60);
 
@@ -199,15 +200,31 @@ export const GET = withApiErrorHandling(async (request: Request) => {
                 style={{ borderRadius: 12, objectFit: "cover" }}
               />
             ) : (
+              // Même couverture générée que dans l'application : titre et auteur sur la
+              // teinte propre au livre.
               <div
                 style={{
                   display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
                   width: 150,
                   height: 228,
                   borderRadius: 12,
-                  background: theme.accent,
+                  padding: "18px 14px 16px 22px",
+                  background: coverToneFor(review.favoriteBook.title),
+                  color: "#f8f3ea",
+                  borderLeft: "3px solid rgba(255,255,255,0.15)",
                 }}
-              />
+              >
+                <div style={{ display: "flex", fontSize: 21, fontWeight: 700, lineHeight: 1.15 }}>
+                  {review.favoriteBook.title.length > 48
+                    ? `${review.favoriteBook.title.slice(0, 45)}...`
+                    : review.favoriteBook.title}
+                </div>
+                <div style={{ display: "flex", fontSize: 14, opacity: 0.75, lineHeight: 1.2 }}>
+                  {review.favoriteBook.author}
+                </div>
+              </div>
             )}
             <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
               <div style={{ display: "flex", fontSize: 30, color: theme.muted }}>Coup de cœur</div>

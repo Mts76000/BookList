@@ -28,12 +28,29 @@ const crossOriginImageCache: RuntimeCaching = {
   }),
 };
 
+// Couvertures optimisées par Next.js (/_next/image) : une URL donnée renvoie toujours la
+// même image, on la sert donc depuis le cache sans revalider. La règle par défaut de Serwist
+// n'en garde que 64, moins qu'une bibliothèque moyenne.
+const optimizedCoverCache: RuntimeCaching = {
+  matcher: ({ url, sameOrigin }) => sameOrigin && url.pathname === "/_next/image",
+  handler: new CacheFirst({
+    cacheName: "book-covers",
+    plugins: [
+      new CacheableResponsePlugin({ statuses: [200] }),
+      new ExpirationPlugin({
+        maxEntries: 1000,
+        maxAgeSeconds: 30 * 24 * 60 * 60,
+      }),
+    ],
+  }),
+};
+
 const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
   skipWaiting: true,
   clientsClaim: true,
   navigationPreload: true,
-  runtimeCaching: [crossOriginImageCache, ...defaultCache],
+  runtimeCaching: [optimizedCoverCache, crossOriginImageCache, ...defaultCache],
   fallbacks: {
     entries: [
       {

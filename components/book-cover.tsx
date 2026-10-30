@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { getImageProps } from "next/image";
+import { coverToneFor } from "@/lib/generated-cover";
 
 interface BookCoverProps {
   coverUrl?: string | null;
@@ -22,20 +24,19 @@ const TACTILE_SHADOW =
   "shadow-[0_2px_2px_rgba(36,29,21,0.08),0_18px_28px_-14px_rgba(36,29,21,0.4)]";
 
 /**
- * Dimensions exactes de l'image « image not available » que Google sert à la place d'une
- * couverture absente à la résolution demandée. C'est toujours le même visuel redimensionné,
- * et son ratio (1,30) est trop banal pour le distinguer autrement : seules ses dimensions
- * exactes le trahissent.
+ * Proportions de l'image « image not available » que Google sert à la place d'une couverture
+ * absente à la résolution demandée (300×391, 575×750 ou 800×1043 : toujours le même visuel).
+ * Les couvertures passant par l'optimiseur d'images, qui les redimensionne, seules ses
+ * proportions survivent : on les reconnaît à 0,006 près, et uniquement pour Google Books.
  *
- * Un faux positif reste possible en théorie — une vraie couverture faisant précisément
- * 575×750 — mais il n'aurait pour effet que de revenir à la résolution d'origine, donc une
- * image moins fine, jamais une image manquante.
+ * Un faux positif — une vraie couverture Google à ces proportions exactes — n'aurait pour
+ * effet que de revenir à la résolution d'origine, donc une image moins fine, jamais une
+ * image manquante.
  */
-const GOOGLE_PLACEHOLDER_SIZES: readonly (readonly [number, number])[] = [
-  [300, 391],
-  [575, 750],
-  [800, 1043],
-];
+const GOOGLE_PLACEHOLDER_RATIO = 1.304;
+
+/** Largeur d'affichage maximale de chaque variante, en pixels CSS (×2 sur écran dense). */
+const DISPLAY_WIDTH = { small: 128, large: 192 } as const;
 
 /**
  * Adapte l'URL d'une couverture à la taille où elle sera affichée.
@@ -106,9 +107,8 @@ export function BookCover({
       }
 
       const ratio = img.naturalHeight / img.naturalWidth;
-      const isPlaceholder = GOOGLE_PLACEHOLDER_SIZES.some(
-        ([w, h]) => img.naturalWidth === w && img.naturalHeight === h,
-      );
+      const isPlaceholder =
+        coverUrl?.includes("books.google") && Math.abs(ratio - GOOGLE_PLACEHOLDER_RATIO) < 0.006;
 
       // Ratio écrasé : image tronquée. Dimensions du substitut : couverture absente à cette
       // résolution. Dans les deux cas, la version d'origine est souvent la bonne.
@@ -117,7 +117,7 @@ export function BookCover({
         else setUseStoredUrl(true);
       }
     },
-    [useStoredUrl],
+    [useStoredUrl, coverUrl],
   );
 
   // Une image déjà en cache peut être `complete` dès le montage, sans jamais déclencher
@@ -140,19 +140,25 @@ export function BookCover({
   }
 
   const secureUrl = coverUrl.replace(/^http:/, "https:");
-  // On ne passe pas par `srcSet` en densité : le navigateur y divise `naturalWidth` par le
-  // facteur de densité, ce qui rendrait indétectable le substitut de Google reconnu plus bas
-  // à ses dimensions exactes.
-  const src = useStoredUrl ? secureUrl : sizedCover(secureUrl, variant);
+  // Les couvertures passent par l'optimiseur d'images de Next.js : servies depuis notre
+  // domaine, en WebP à la taille affichée, et gardées en cache par le serveur, le navigateur
+  // et le service worker. Le premier visiteur paie le téléchargement chez Google ou Open
+  // Library, les suivants non.
+  const { props: imageProps } = getImageProps({
+    src: useStoredUrl ? secureUrl : sizedCover(secureUrl, variant),
+    alt: alt ?? "",
+    width: DISPLAY_WIDTH[variant],
+    height: Math.round(DISPLAY_WIDTH[variant] * 1.5),
+  });
 
   return (
-    // Les couvertures viennent d'hôtes tiers aux dimensions inconnues, et on les remplace
-    // par une icône quand elles sont absentes ou trop petites : un <img> natif conserve
-    // onLoad/onError et évite de faire transiter des images distantes par l'optimiseur.
+    // <img> natif avec les attributs calculés par next/image : on garde onLoad/onError pour
+    // repérer les couvertures absentes, et les dimensions viennent de la classe CSS.
     // eslint-disable-next-line @next/next/no-img-element
     <img
       ref={imgRef}
-      src={src}
+      src={imageProps.src}
+      srcSet={imageProps.srcSet}
       alt={alt ?? ""}
       loading={variant === "large" ? "eager" : "lazy"}
       decoding="async"
@@ -163,25 +169,6 @@ export function BookCover({
   );
 }
 
-/**
- * Teintes des couvertures de remplacement, prises dans la palette (terracotta, mousse,
- * brun). Sombres, pour que le titre en crème reste lisible.
- */
-const GENERATED_TONES = ["#79331a", "#4f6a41", "#504536", "#93401e", "#33452c", "#5f2a18"];
-
-/** Même titre, même teinte : la couverture ne change pas d'une page à l'autre. */
-function toneFor(text: string): string {
-  let hash = 0;
-  for (const char of text) hash = (hash * 31 + char.charCodeAt(0)) | 0;
-  return GENERATED_TONES[Math.abs(hash) % GENERATED_TONES.length];
-}
-
-/**
- * Couverture typographique quand aucune image n'existe : une tranche de livre colorée avec
- * le titre et l'auteur, plutôt qu'une icône grise qui, répétée sur une étagère, donne
- * l'impression d'une page cassée. Le texte suit la taille de la couverture (unités `cqw`),
- * d'une miniature de 48 pixels à la grande couverture de la fiche.
- */
 function GeneratedCover({
   title,
   author,
@@ -206,7 +193,7 @@ function GeneratedCover({
       role="img"
       aria-label={title}
       className={`@container relative flex flex-col overflow-hidden text-stone-50 ${className ?? ""}`}
-      style={{ backgroundColor: toneFor(title) }}
+      style={{ backgroundColor: coverToneFor(title) }}
     >
       {/* Pli de la reliure, à gauche, comme sur une vraie couverture. */}
       <span className="absolute inset-y-0 left-[5%] w-px bg-white/15" aria-hidden="true" />
