@@ -37,7 +37,12 @@ export const GET = withApiErrorHandling(async (request: Request) => {
 
   const [sagaBooks, library, plan] = await Promise.all([
     db
-      .select({ title: book.title, author: book.author, seriesIndex: book.seriesIndex })
+      .select({
+        id: book.id,
+        title: book.title,
+        author: book.author,
+        seriesIndex: book.seriesIndex,
+      })
       .from(book)
       .where(inSeries(userId, name))
       .orderBy(asc(book.seriesIndex)),
@@ -70,5 +75,7 @@ export const GET = withApiErrorHandling(async (request: Request) => {
     missingCount: missing.length,
     missing: plan.isPremium ? missing : [],
     author,
+    // Tomes possédés : leur ISBN sert à choisir l'édition des tomes manquants.
+    referenceBookIds: sagaBooks.map((entry) => entry.id),
   });
 });

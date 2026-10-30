@@ -10,6 +10,8 @@ import { useToast } from "@/components/ui/toast";
 import { SeriesEditor, type EditorBook, type SeriesDraft } from "@/components/series-editor";
 import { apiFetch } from "@/lib/api-client";
 import { addSeriesVolume, type VolumeToAdd } from "@/lib/add-series-volume";
+import { useSeriesEditions } from "@/lib/use-series-editions";
+import { MissingVolumeCover } from "@/components/missing-volume-cover";
 
 export interface SuggestionView {
   key: string;
@@ -129,7 +131,8 @@ function SuggestionCard({
   const router = useRouter();
   const { toast } = useToast();
   const [identified, setIdentified] = useState<Identified | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
+  // Progression de « Créer la saga et les tomes manquants » : tomes ajoutés sur le total.
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
 
   // Identification sur Wikidata après l'affichage : quelques secondes la première fois,
   // instantanée ensuite grâce au cache partagé.
@@ -147,6 +150,16 @@ function SuggestionCard({
   }, [suggestion.books]);
 
   const wikidata = identified?.found ? identified : null;
+  // Couvertures des tomes manquants, dans la collection des livres repérés (Premium).
+  const editions = useSeriesEditions(
+    isPremium && wikidata && wikidata.missing.length > 0
+      ? {
+          titles: wikidata.missing.map((volume) => volume.title),
+          author: wikidata.author,
+          referenceBookIds: suggestion.books.map((entry) => entry.id),
+        }
+      : null,
+  );
   // Une saga existante garde le nom que l'utilisateur lui a donné ; une nouvelle prend celui
   // de Wikidata, plus fiable que les mots communs aux titres.
   const name = suggestion.existing ? suggestion.name : (wikidata?.name ?? suggestion.name);
@@ -162,7 +175,7 @@ function SuggestionCard({
 
   async function createWithMissing() {
     if (!wikidata) return;
-    setIsCreating(true);
+    setProgress({ done: 0, total: wikidata.missing.length });
     const saved = await apiFetch<{ name: string }>("/api/series", {
       method: "PUT",
       json: {
@@ -173,7 +186,7 @@ function SuggestionCard({
       },
     });
     if (!saved.ok) {
-      setIsCreating(false);
+      setProgress(null);
       toast(saved.message, "error");
       return;
     }
@@ -185,14 +198,16 @@ function SuggestionCard({
         author: wikidata.author,
         seriesName: saved.data.name,
         total: wikidata.total,
+        edition: editions?.get(volume.title),
       });
       if (!result.ok) {
         toast(result.message, "error");
         break;
       }
       added += 1;
+      setProgress({ done: added, total: wikidata.missing.length });
     }
-    setIsCreating(false);
+    setProgress(null);
     toast(
       added > 0
         ? `Saga « ${saved.data.name} » créée, ${added} tome${added > 1 ? "s" : ""} ajouté${added > 1 ? "s" : ""} à votre pile.`
@@ -208,13 +223,19 @@ function SuggestionCard({
         <p className="font-serif text-lg text-stone-900">
           {suggestion.existing ? `Ajouter à « ${name} » ?` : `Une saga « ${name} » ?`}
         </p>
-        <p className="text-xs text-stone-500">
+        <p className="flex items-center gap-1.5 text-xs text-stone-500" aria-live="polite">
+          {(identified === null || (wikidata && isPremium && editions === null)) && (
+            <span
+              className="border-t-accent-500 size-3 shrink-0 animate-spin rounded-full border-2 border-stone-200"
+              aria-hidden="true"
+            />
+          )}
           {wikidata
             ? `${wikidata.total} tomes, vous en avez ${suggestion.books.length}${
                 wikidata.missingCount > 0 ? `, il en manque ${wikidata.missingCount}` : ""
               }.`
             : identified === null
-              ? "Recherche des autres tomes…"
+              ? "Recherche des autres tomes de la saga…"
               : suggestion.reason === "title"
                 ? "Le numéro de tome figure dans le titre."
                 : suggestion.existing
@@ -222,9 +243,11 @@ function SuggestionCard({
                   : "Même auteur, titres proches : vérifiez l'ordre des tomes."}
         </p>
       </div>
-      <ul className="flex gap-2">
+      {/* Livres possédés, puis tomes manquants (couverture réelle pour Premium). Pendant la
+          recherche Wikidata, des emplacements qui pulsent annoncent la suite. */}
+      <ul className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
         {suggestion.books.slice(0, 5).map((entry) => (
-          <li key={entry.id} className="w-12" title={entry.title}>
+          <li key={entry.id} className="w-12 shrink-0" title={entry.title}>
             <BookCover
               coverUrl={entry.coverUrl}
               alt={entry.title}
@@ -233,8 +256,34 @@ function SuggestionCard({
             />
           </li>
         ))}
-        {wikidata && wikidata.missingCount > 0 && (
-          <li className="flex w-12 items-center justify-center rounded-[4px] border border-dashed border-stone-300 text-xs text-stone-500">
+        {identified === null &&
+          [0, 1, 2].map((index) => (
+            <li
+              key={`pending-${index}`}
+              className="aspect-[2/3] w-12 shrink-0 animate-pulse rounded-[4px] bg-stone-200/70"
+              style={{ animationDelay: `${index * 150}ms` }}
+              aria-hidden="true"
+            />
+          ))}
+        {wikidata &&
+          isPremium &&
+          wikidata.missing.map((volume) => (
+            <li
+              key={volume.id}
+              className="w-12 shrink-0"
+              title={`Tome ${volume.index} : ${volume.title}`}
+            >
+              <MissingVolumeCover
+                title={volume.title}
+                author={wikidata.author}
+                edition={editions?.get(volume.title)}
+                loading={editions === null}
+                className="p-0.5"
+              />
+            </li>
+          ))}
+        {wikidata && !isPremium && wikidata.missingCount > 0 && (
+          <li className="flex w-12 shrink-0 items-center justify-center rounded-[4px] border border-dashed border-stone-300 text-xs text-stone-500">
             +{wikidata.missingCount}
           </li>
         )}
@@ -247,12 +296,12 @@ function SuggestionCard({
               <Button
                 type="button"
                 onClick={createWithMissing}
-                isLoading={isCreating}
+                isLoading={progress !== null}
                 className="w-full"
               >
-                {suggestion.existing ? "Ajouter" : "Créer la saga"} et les {wikidata.missing.length}{" "}
-                tome{wikidata.missing.length > 1 ? "s" : ""} manquant
-                {wikidata.missing.length > 1 ? "s" : ""}
+                {progress
+                  ? `Ajout du tome ${Math.min(progress.done + 1, progress.total)} sur ${progress.total}…`
+                  : `${suggestion.existing ? "Ajouter" : "Créer la saga"} et les ${wikidata.missing.length} tome${wikidata.missing.length > 1 ? "s" : ""} manquant${wikidata.missing.length > 1 ? "s" : ""}`}
               </Button>
               <SeriesEditor
                 key={JSON.stringify(draft)}

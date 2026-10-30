@@ -221,3 +221,10 @@ export const deleteSeriesSchema = z.object({
 export const identifySeriesSchema = z.object({
   bookIds: z.array(z.string().min(1)).min(1).max(20),
 });
+
+/** Tomes manquants dont on cherche l'édition, et livres de la saga servant de référence. */
+export const seriesEditionsSchema = z.object({
+  titles: z.array(z.string().trim().min(1).max(MAX_TEXT)).min(1).max(20),
+  author: z.string().trim().min(1).max(MAX_TEXT),
+  referenceBookIds: z.array(z.string().min(1)).max(50).default([]),
+});
