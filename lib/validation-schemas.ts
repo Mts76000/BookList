@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { parseTags } from "@/lib/book-status";
 
 export const registerSchema = z.object({
   name: z.string().min(1, "Le nom est requis.").max(100),
@@ -67,7 +68,7 @@ const readingDateSchema = emptyToNull(
     .refine((d) => d.getTime() <= Date.now() + 86_400_000, "Date dans le futur."),
 );
 
-export const bookStatusSchema = z.enum(["TO_READ", "READING", "FINISHED"]);
+export const bookStatusSchema = z.enum(["TO_READ", "READING", "FINISHED", "ABANDONED"]);
 
 /** Champs modifiables d'un livre, tous optionnels — base des schémas création et mise à jour. */
 const bookFieldsSchema = z.object({
@@ -83,6 +84,19 @@ const bookFieldsSchema = z.object({
   userStartDate: readingDateSchema,
   userEndDate: readingDateSchema,
   status: bookStatusSchema,
+  format: emptyToNull(z.enum(["paper", "ebook", "audio"])),
+  // Étagères : liste, ou chaîne séparée par des virgules (formulaire, import CSV).
+  tags: z
+    .union([z.array(z.string()), z.string()])
+    .nullish()
+    .transform((value) => {
+      const tags = parseTags(value);
+      return tags.length > 0 ? tags : null;
+    }),
+  currentPage: emptyToNull(z.coerce.number().int().min(0).max(100_000)),
+  seriesName: optionalText(MAX_TEXT),
+  seriesIndex: emptyToNull(z.coerce.number().int().min(0).max(1000)),
+  seriesTotal: emptyToNull(z.coerce.number().int().min(1).max(1000)),
 });
 
 /** Création : titre et auteur obligatoires, le reste facultatif. */
@@ -111,6 +125,57 @@ export const readingActivitySchema = z.object({
     .optional(),
 });
 
+/** Objectif de lecture de l'année en cours, en nombre de livres. */
+export const readingGoalSchema = z.object({
+  target: z.coerce
+    .number()
+    .int("Nombre de livres entier attendu.")
+    .min(1, "Objectif d'au moins un livre.")
+    .max(1000, "Objectif de 1000 livres maximum."),
+});
+
+/** Coup de cœur d'une année du bilan. */
+export const yearFavoriteSchema = z.object({
+  year: z.coerce.number().int().min(1900).max(3000),
+  bookId: z.string().min(1, "Livre requis.").max(64),
+});
+
+export const quoteSchema = z.object({
+  content: z
+    .string()
+    .trim()
+    .min(1, "La citation ne peut pas être vide.")
+    .max(2000, "La citation ne peut pas dépasser 2000 caractères."),
+  page: emptyToNull(z.coerce.number().int().min(0).max(100_000)),
+});
+
+export const challengeSchema = z
+  .object({
+    title: z.string().trim().min(1, "Donnez un nom à votre défi.").max(120),
+    kind: z.enum(["books", "pages", "long_books", "genre", "author"], {
+      error: "Type de défi inconnu.",
+    }),
+    target: z.coerce.number().int().min(1, "Objectif d'au moins 1.").max(100_000),
+    filter: optionalText(200),
+  })
+  .refine((value) => !["genre", "author"].includes(value.kind) || !!value.filter, {
+    message: "Précisez le genre ou l'auteur du défi.",
+    path: ["filter"],
+  });
+
+export const pushSubscriptionSchema = z.object({
+  endpoint: z.url().max(2000),
+  keys: z.object({ p256dh: z.string().min(1).max(500), auth: z.string().min(1).max(500) }),
+});
+
+export const progressSchema = z.object({
+  currentPage: z.coerce.number().int().min(0, "Page invalide.").max(100_000),
+});
+
+export const checkoutSchema = z.object({
+  interval: z.enum(["monthly", "yearly"], { error: "Formule inconnue." }),
+});
+
 export const updateProfileSchema = z
   .object({
     name: z.string().trim().min(1, "Le nom ne peut pas être vide.").max(200).optional(),
@@ -127,5 +192,5 @@ export const importBooksSchema = z.object({
     .string()
     .trim()
     .min(1, "Fichier CSV requis.")
-    .max(2 * 1024 * 1024, "Fichier CSV trop volumineux (2 Mo max)."),
+    .max(5 * 1024 * 1024, "Fichier CSV trop volumineux (5 Mo max)."),
 });

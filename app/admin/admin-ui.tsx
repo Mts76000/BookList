@@ -92,3 +92,36 @@ export function StatusBadge({
   if (!emailVerified) return <span className="badge bg-amber-100 text-amber-600">Non vérifié</span>;
   return <span className="badge bg-moss-100 text-moss-800">Actif</span>;
 }
+
+const SUBSCRIPTION_BADGE: Record<string, string> = {
+  paying: "bg-moss-100 text-moss-800",
+  trial: "bg-accent-50 text-accent-700",
+  past_due: "bg-amber-100 text-amber-700",
+  cancel_scheduled: "bg-stone-100 text-stone-600",
+  granted: "bg-accent-100 text-accent-800",
+  ended: "bg-stone-100 text-stone-400",
+};
+
+/** Situation d'abonnement d'un compte (voir lib/admin-subscriptions.ts). */
+export function SubscriptionBadge({ kind, label }: { kind: string; label: string }) {
+  return <span className={`badge ${SUBSCRIPTION_BADGE[kind] ?? ""}`}>{label}</span>;
+}
+
+/** Montant Stripe (en centimes) au format monétaire français. */
+export function formatMoney(cents: number, currency = "eur"): string {
+  return (cents / 100).toLocaleString("fr-FR", { style: "currency", currency });
+}
+
+/** Encart affiché à la place des écrans Stripe tant que la clé n'est pas configurée. */
+export function StripeNotConfigured() {
+  return (
+    <div className="card p-6 text-sm text-stone-600">
+      <p className="font-medium text-stone-900">Stripe n&apos;est pas configuré</p>
+      <p className="mt-1">
+        Renseignez <code className="font-mono text-xs">STRIPE_SECRET_KEY</code> et les identifiants
+        de prix (voir <code className="font-mono text-xs">.env.example</code>) pour gérer les
+        paiements depuis l&apos;administration.
+      </p>
+    </div>
+  );
+}

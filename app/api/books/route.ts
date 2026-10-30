@@ -7,6 +7,8 @@ import { validateBody } from "@/lib/validation";
 import { createBookSchema } from "@/lib/validation-schemas";
 import { createRateLimiter } from "@/lib/rate-limit";
 import { requestMetadata } from "@/lib/audit-log";
+import { getUserPlan } from "@/lib/subscription";
+import { FREE_BOOK_LIMIT } from "@/lib/plans";
 
 const createLimiter = createRateLimiter("books-create", 30, 60);
 const listLimiter = createRateLimiter("books-list", 60, 60);
@@ -32,6 +34,17 @@ export const POST = withApiErrorHandling(async (request: Request) => {
       where: and(eq(book.userId, session.user.id), eq(book.isbn, fields.isbn)),
     });
     if (existing) return apiSuccess(existing, "Ce livre est déjà dans votre bibliothèque.");
+  }
+
+  // Après le contrôle de doublon : rescanner un livre déjà possédé reste possible même
+  // une fois la limite atteinte.
+  const plan = await getUserPlan(session.user.id);
+  if (plan.remaining <= 0) {
+    return apiError(
+      "FORBIDDEN",
+      `Votre bibliothèque gratuite est pleine (${FREE_BOOK_LIMIT} livres). Passez à Premium pour continuer à ajouter des livres.`,
+      { reason: "BOOK_LIMIT_REACHED", limit: FREE_BOOK_LIMIT },
+    );
   }
 
   const [created] = await db

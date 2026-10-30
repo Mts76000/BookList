@@ -5,10 +5,20 @@ import Link from "next/link";
 import { Button, buttonClasses } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { apiFetch } from "@/lib/api-client";
+import { BookLimitNotice, usePlan } from "@/components/book-limit-notice";
+
+const FORMAT_LABELS = {
+  booklist: "modèle BookList",
+  goodreads: "export Goodreads",
+  storygraph: "export StoryGraph",
+} as const;
 
 interface ImportResult {
+  format: keyof typeof FORMAT_LABELS;
   imported: number;
   skipped: number;
+  /** Lignes valides non importées faute de place dans la bibliothèque gratuite. */
+  overLimit: number;
   failed: number;
   errors: { line: number; message: string }[];
 }
@@ -23,6 +33,7 @@ export default function ImportBooksPage() {
   const [csvContent, setCsvContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
+  const [plan, refreshPlan] = usePlan();
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -45,6 +56,7 @@ export default function ImportBooksPage() {
       return;
     }
     setResult(response.data);
+    refreshPlan();
   }
 
   function downloadTemplate() {
@@ -65,9 +77,36 @@ export default function ImportBooksPage() {
         <header className="mb-6">
           <h1 className="font-serif text-2xl text-stone-900">Importer des livres</h1>
           <p className="mt-1 text-sm text-stone-500">
-            Importez votre bibliothèque depuis un fichier CSV (500 lignes maximum).
+            Déposez tel quel votre export Goodreads ou StoryGraph, ou un fichier au format BookList
+            (2000 lignes maximum).
           </p>
         </header>
+
+        {!result && <BookLimitNotice plan={plan} />}
+
+        <details className="card group mb-4 p-5 text-sm sm:p-6">
+          <summary className="cursor-pointer font-medium text-stone-900 marker:text-stone-400">
+            Comment récupérer mon export ?
+          </summary>
+          <div className="mt-4 space-y-4 text-stone-600">
+            <div>
+              <p className="font-medium text-stone-900">Goodreads</p>
+              <p>
+                Sur goodreads.com : My Books, puis Import and export, puis Export Library. Le
+                fichier <span className="font-mono text-xs">goodreads_library_export.csv</span>{" "}
+                arrive quelques minutes plus tard.
+              </p>
+            </div>
+            <div>
+              <p className="font-medium text-stone-900">StoryGraph</p>
+              <p>Sur app.thestorygraph.com : Manage Account, puis Export StoryGraph Library.</p>
+            </div>
+            <p className="text-xs text-stone-500">
+              Statuts, notes et dates de lecture sont repris. Les couvertures et résumés sont
+              complétés quand le livre est déjà connu de BookList.
+            </p>
+          </div>
+        </details>
 
         <div className="card p-5 sm:p-6">
           <button
@@ -96,10 +135,24 @@ export default function ImportBooksPage() {
             <div className="mt-4 space-y-2">
               <div className="border-moss-200 bg-moss-50 text-moss-700 rounded-[var(--radius-sm)] border px-4 py-3 text-sm">
                 {result.imported} livre{result.imported !== 1 ? "s" : ""} importé
-                {result.imported !== 1 ? "s" : ""}
+                {result.imported !== 1 ? "s" : ""} depuis votre {FORMAT_LABELS[result.format]}
                 {result.skipped > 0 && `, ${result.skipped} déjà en bibliothèque`}
                 {result.failed > 0 && `, ${result.failed} ligne(s) ignorée(s)`}
               </div>
+              {result.overLimit > 0 && (
+                <div className="border-accent-200 bg-accent-50 text-accent-800 rounded-[var(--radius-sm)] border px-4 py-3 text-sm">
+                  {result.overLimit} livre{result.overLimit > 1 ? "s" : ""} non importé
+                  {result.overLimit > 1 ? "s" : ""} : la bibliothèque gratuite est limitée à{" "}
+                  {plan?.bookLimit ?? 50} livres.{" "}
+                  <Link
+                    href="/account#premium"
+                    className="font-medium underline underline-offset-2"
+                  >
+                    Passez à Premium
+                  </Link>{" "}
+                  puis relancez l&apos;import : les livres déjà importés ne seront pas dupliqués.
+                </div>
+              )}
               {result.errors.length > 0 && (
                 <div className="border-accent-200 bg-accent-50 text-accent-800 max-h-48 overflow-y-auto rounded-[var(--radius-sm)] border px-4 py-3 text-xs">
                   {result.errors.map((entry) => (

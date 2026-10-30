@@ -22,6 +22,55 @@
       "when": 1787834416447,
       "tag": "0002_cuddly_reavers",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793291436786,
+      "tag": "0003_shared_book_catalog",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793292761860,
+      "tag": "0004_premium_goals",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793294581359,
+      "tag": "0005_year_favorite",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793295049239,
+      "tag": "0006_quotes_challenges_series_push",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793295695917,
+      "tag": "0007_trial",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793296461239,
+      "tag": "0008_progress_format_tags_abandoned",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793297106906,
+      "tag": "0009_premium_grant",
+      "breakpoints": true
     }
   ]
 }

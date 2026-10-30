@@ -18,6 +18,9 @@ export async function Footer() {
           © {new Date().getFullYear()} {env.NEXT_PUBLIC_APP_NAME}. Tous droits réservés.
         </p>
         <nav className="flex flex-wrap justify-center gap-x-4 gap-y-2">
+          <Link href="/#tarifs" className="hover:text-foreground">
+            Tarifs
+          </Link>
           <a href={`mailto:${env.CONTACT_EMAIL}`} className="hover:text-foreground">
             Contact
           </a>
@@ -25,7 +28,7 @@ export async function Footer() {
             Mentions légales
           </Link>
           <Link href="/legal/terms" className="hover:text-foreground">
-            CGU
+            CGU et CGV
           </Link>
           <Link href="/legal/privacy" className="hover:text-foreground">
             Confidentialité

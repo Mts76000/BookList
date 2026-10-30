@@ -4,6 +4,7 @@ import { desc } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { auditLogs, user } from "@/drizzle/schema";
 import { getAdminStats } from "@/lib/admin-stats";
+import { getSubscriptionOverview } from "@/lib/admin-subscriptions";
 import { AdminPageHeader, RoleBadge, StatTile, StatusBadge } from "@/app/admin/admin-ui";
 import { auditActionLabel } from "@/lib/audit-actions";
 
@@ -26,7 +27,7 @@ function formatDateTime(value: Date): string {
 }
 
 export default async function AdminOverviewPage() {
-  const [stats, latestUsers, latestEvents] = await Promise.all([
+  const [stats, latestUsers, latestEvents, subscriptions] = await Promise.all([
     getAdminStats(),
     db.query.user.findMany({
       orderBy: [desc(user.createdAt)],
@@ -45,7 +46,9 @@ export default async function AdminOverviewPage() {
       orderBy: [desc(auditLogs.createdAt)],
       limit: 5,
     }),
+    getSubscriptionOverview(),
   ]);
+  const payingCount = subscriptions.counts.paying + subscriptions.counts.cancel_scheduled;
 
   const activeUsers = stats.totalUsers - stats.deletedUsers;
 
@@ -79,6 +82,28 @@ export default async function AdminOverviewPage() {
           hint="ont ajouté un livre sur 30 jours"
         />
       </div>
+
+      <Link
+        href="/admin/subscriptions"
+        className="card card-interactive mt-4 flex flex-wrap items-center justify-between gap-4 p-5 sm:p-6"
+      >
+        <div>
+          <p className="text-xs font-medium tracking-wide text-stone-500 uppercase">Premium</p>
+          <p className="mt-1 text-sm text-stone-700">
+            <span className="font-serif text-2xl text-stone-900 tabular-nums">{payingCount}</span>{" "}
+            payant{payingCount !== 1 ? "s" : ""}, {subscriptions.counts.trial} en essai,{" "}
+            {subscriptions.counts.granted} offert{subscriptions.counts.granted !== 1 ? "s" : ""}
+            {subscriptions.counts.past_due > 0 && `, ${subscriptions.counts.past_due} impayé(s)`}
+          </p>
+        </div>
+        <p className="text-accent-600 font-serif text-2xl tabular-nums">
+          {(subscriptions.mrrCents / 100).toLocaleString("fr-FR", {
+            style: "currency",
+            currency: "EUR",
+          })}
+          <span className="ml-1 font-sans text-sm text-stone-500">/ mois</span>
+        </p>
+      </Link>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         <section className="card p-5 sm:p-6">

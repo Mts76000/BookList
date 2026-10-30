@@ -5,11 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 
-const STATUS_LABELS: Record<string, string> = {
-  TO_READ: "À lire",
-  READING: "En cours",
-  FINISHED: "Terminé",
-};
+import { STATUS_LABELS } from "@/lib/book-status";
 
 const SORT_LABELS: Record<string, string> = {
   date: "Plus récents",
@@ -23,10 +19,12 @@ interface BooksFilterProps {
   sortBy: string;
   genre?: string;
   status?: string;
+  tag?: string;
   genres: string[];
+  tags: string[];
 }
 
-export function BooksFilter({ sortBy, genre, status, genres }: BooksFilterProps) {
+export function BooksFilter({ sortBy, genre, status, tag, genres, tags }: BooksFilterProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(searchParams.get("search") || "");
@@ -40,15 +38,16 @@ export function BooksFilter({ sortBy, genre, status, genres }: BooksFilterProps)
       params.set("sort", sortBy);
       if (genre) params.set("genre", genre);
       if (status) params.set("status", status);
+      if (tag) params.set("tag", tag);
 
       const query = params.toString();
       router.push(query ? `/books?${query}` : "/books");
     }, 300);
 
     return () => clearTimeout(timeout);
-  }, [search, sortBy, genre, status, router]);
+  }, [search, sortBy, genre, status, tag, router]);
 
-  const buildUrl = (updates: { sort?: string; genre?: string; status?: string }) => {
+  const buildUrl = (updates: { sort?: string; genre?: string; status?: string; tag?: string }) => {
     const params = new URLSearchParams();
     if (search) params.set("search", search);
     params.set("sort", updates.sort ?? sortBy);
@@ -56,6 +55,8 @@ export function BooksFilter({ sortBy, genre, status, genres }: BooksFilterProps)
     if (nextGenre) params.set("genre", nextGenre);
     const nextStatus = "status" in updates ? updates.status : status;
     if (nextStatus) params.set("status", nextStatus);
+    const nextTag = "tag" in updates ? updates.tag : tag;
+    if (nextTag) params.set("tag", nextTag);
     return `/books?${params.toString()}`;
   };
 
@@ -112,6 +113,23 @@ export function BooksFilter({ sortBy, genre, status, genres }: BooksFilterProps)
             {genres.map((g) => (
               <option key={g} value={g}>
                 {g}
+              </option>
+            ))}
+          </Select>
+        )}
+
+        {tags.length > 0 && (
+          <Select
+            label="Filtrer par étagère"
+            hideLabel
+            value={tag || ""}
+            onChange={(e) => router.push(buildUrl({ tag: e.target.value }))}
+            className="w-auto min-w-[10rem]"
+          >
+            <option value="">Étagère : Toutes</option>
+            {tags.map((t) => (
+              <option key={t} value={t}>
+                {t}
               </option>
             ))}
           </Select>

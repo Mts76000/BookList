@@ -1,6 +1,19 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { account, book, comment, readingActivity, session, user } from "@/drizzle/schema";
+import { getStripe } from "@/lib/stripe";
+import {
+  account,
+  book,
+  comment,
+  readingActivity,
+  readingGoal,
+  yearFavorite,
+  quote,
+  readingChallenge,
+  pushSubscription,
+  session,
+  user,
+} from "@/drizzle/schema";
 
 /** Domaine de façade des comptes anonymisés — il n'existe pas, rien ne peut y être envoyé. */
 const ANONYMIZED_EMAIL_DOMAIN = "anonymized.booklist";
@@ -20,11 +33,21 @@ const ANONYMIZED_EMAIL_DOMAIN = "anonymized.booklist";
  * (`/api/admin/users/[id]`) : les deux chemins doivent laisser la base dans le même état.
  */
 export async function anonymizeUser(userId: string): Promise<void> {
+  // Avant toute écriture : un compte supprimé ne doit plus jamais être prélevé. Si Stripe est
+  // injoignable, la suppression échoue et pourra être relancée, plutôt que de laisser un
+  // abonnement actif rattaché à un compte qui n'existe plus.
+  await cancelSubscriptionOf(userId);
+
   // Transaction : un compte à moitié anonymisé laisserait des données personnelles derrière
   // lui tout en ayant l'air supprimé.
   await db.transaction(async (tx) => {
     await tx.delete(comment).where(eq(comment.userId, userId));
     await tx.delete(readingActivity).where(eq(readingActivity.userId, userId));
+    await tx.delete(readingGoal).where(eq(readingGoal.userId, userId));
+    await tx.delete(yearFavorite).where(eq(yearFavorite.userId, userId));
+    await tx.delete(quote).where(eq(quote.userId, userId));
+    await tx.delete(readingChallenge).where(eq(readingChallenge.userId, userId));
+    await tx.delete(pushSubscription).where(eq(pushSubscription.userId, userId));
     await tx.delete(book).where(eq(book.userId, userId));
     await tx.delete(account).where(eq(account.userId, userId));
     await tx.delete(session).where(eq(session.userId, userId));
@@ -37,9 +60,29 @@ export async function anonymizeUser(userId: string): Promise<void> {
         emailVerified: false,
         initialBooksRead: 0,
         hasSeenOnboarding: false,
+        premiumUntil: null,
+        premiumGrantedUntil: null,
+        subscriptionInterval: null,
+        trialStartedAt: null,
+        stripeCustomerId: null,
+        stripeSubscriptionId: null,
+        subscriptionStatus: null,
+        subscriptionCancelAtPeriodEnd: false,
         isAnonymized: true,
         anonymizedAt: new Date(),
       })
       .where(eq(user.id, userId));
   });
+}
+
+async function cancelSubscriptionOf(userId: string): Promise<void> {
+  const [account] = await db
+    .select({ subscriptionId: user.stripeSubscriptionId, status: user.subscriptionStatus })
+    .from(user)
+    .where(eq(user.id, userId));
+  if (!account?.subscriptionId || account.status === "canceled") return;
+
+  const stripe = getStripe();
+  if (!stripe) throw new Error("Stripe is not configured but the user has a subscription");
+  await stripe.subscriptions.cancel(account.subscriptionId);
 }

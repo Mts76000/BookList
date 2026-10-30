@@ -42,3 +42,19 @@ describe("csvRowsToObjects", () => {
     expect(csvRowsToObjects([])).toEqual([]);
   });
 });
+
+describe("toCsv", () => {
+  it("produit un CSV relu à l'identique par parseCsv", async () => {
+    const { toCsv, parseCsv } = await import("@/lib/csv");
+    const rows = [
+      ["title", "tags"],
+      ['Le "Grand" Meaulnes', "favoris, prêtés"],
+      ["Ligne\nsur deux", null],
+    ];
+    expect(parseCsv(toCsv(rows))).toEqual([
+      ["title", "tags"],
+      ['Le "Grand" Meaulnes', "favoris, prêtés"],
+      ["Ligne\nsur deux", ""],
+    ]);
+  });
+});

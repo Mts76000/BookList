@@ -4,6 +4,13 @@ import { createRateLimiter } from "@/lib/rate-limit";
 import { requestMetadata } from "@/lib/audit-log";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
+import {
+  findCatalogBookByIsbn,
+  getCachedSearch,
+  saveSearch,
+  searchCacheKey,
+  type CatalogEntry,
+} from "@/lib/book-catalog";
 
 const searchLimiter = createRateLimiter("books-search", 30, 60);
 
@@ -64,7 +71,7 @@ function buildUrl(query: string): string {
   return `https://www.googleapis.com/books/v1/volumes?${params}`;
 }
 
-function toBook(item: GoogleBooksItem) {
+function toBook(item: GoogleBooksItem): CatalogEntry {
   const info = item.volumeInfo ?? {};
   const identifiers = info.industryIdentifiers ?? [];
   // ISBN-13 prioritaire sur ISBN-10 : c'est le format des codes-barres scannés.
@@ -88,8 +95,66 @@ function toBook(item: GoogleBooksItem) {
   };
 }
 
+type GoogleResult = { books: CatalogEntry[] } | { unavailable: Unavailable; message: string };
+
+/** Interroge Google Books, avec le repli en texte libre pour les ISBN introuvables. */
+async function searchGoogle(search: { isbn: string } | { q: string }): Promise<GoogleResult> {
+  try {
+    let response = await fetchWithRetry(
+      buildUrl("isbn" in search ? `isbn:${search.isbn}` : search.q),
+    );
+
+    // L'index `isbn:` de Google est strict et ignore certains codes pourtant valides ;
+    // une recherche en texte libre sur le numéro nu les retrouve souvent.
+    if ("isbn" in search && response.ok) {
+      const firstTry = await response.clone().json();
+      if (!firstTry.items?.length) {
+        const fallback = await fetchWithRetry(buildUrl(search.isbn));
+        if (fallback.ok) response = fallback;
+      }
+    }
+
+    if (response.status === 429) {
+      return {
+        unavailable: "API_LIMIT_EXCEEDED",
+        message: "Le quota de l'API Google Books est dépassé. Utilisez la saisie manuelle.",
+      };
+    }
+
+    if (RETRYABLE_STATUSES.includes(response.status)) {
+      return {
+        unavailable: "API_UNAVAILABLE",
+        message:
+          "Le service Google Books est momentanément indisponible. Réessayez ou saisissez le livre à la main.",
+      };
+    }
+
+    if (!response.ok) {
+      logger.error({ status: response.status }, "Google Books API returned an unexpected status");
+      return {
+        unavailable: "API_ERROR",
+        message: "Erreur lors de la recherche. Utilisez la saisie manuelle.",
+      };
+    }
+
+    const data = (await response.json()) as { items?: GoogleBooksItem[] };
+    return { books: (data.items ?? []).map(toBook) };
+  } catch (err) {
+    logger.error({ err }, "Google Books search failed");
+    return {
+      unavailable: "API_ERROR",
+      message: "Erreur lors de la recherche. Utilisez la saisie manuelle.",
+    };
+  }
+}
+
 /**
- * Recherche de livres via l'API Google Books, par texte libre (`q`) ou par ISBN (`isbn`).
+ * Recherche de livres par texte libre (`q`) ou par ISBN (`isbn`).
+ *
+ * Le catalogue partagé (`lib/book-catalog.ts`) est consulté avant Google Books, dont le
+ * quota quotidien est limité : un ISBN déjà connu, ou une recherche déjà faite par un autre
+ * utilisateur, ne coûte aucun appel. Seules les réponses réussies de Google sont mises en
+ * cache — une panne ou un quota dépassé ne doit pas rester mémorisé.
  *
  * Réservée aux utilisateurs connectés — la route consomme le quota de notre clé API, et son
  * seul appelant est l'écran d'ajout, lui-même protégé.
@@ -108,53 +173,37 @@ export const GET = withApiErrorHandling(async (request: Request) => {
   }
 
   const { searchParams } = new URL(request.url);
-  const query = searchParams.get("q");
-  const isbn = searchParams.get("isbn");
+  const query = searchParams.get("q")?.trim();
+  const isbn = searchParams.get("isbn")?.replace(/[-\s]/g, "");
 
   if (!query && !isbn) {
     return apiError("VALIDATION_ERROR", "Un titre ou un ISBN est requis.");
   }
 
-  const unavailable = (reason: Unavailable, message: string) =>
-    apiSuccess({ books: [], unavailable: reason }, message);
+  const search = isbn ? { isbn } : { q: query! };
+  const found = (books: CatalogEntry[]) => apiSuccess({ books, unavailable: null });
+
+  if (isbn) {
+    const known = await findCatalogBookByIsbn(isbn);
+    if (known) return found([known]);
+  }
+
+  const key = searchCacheKey(search);
+  const cached = await getCachedSearch(key);
+  if (cached) return found(cached);
+
+  const result = await searchGoogle(search);
+  if ("unavailable" in result) {
+    return apiSuccess({ books: [], unavailable: result.unavailable }, result.message);
+  }
 
   try {
-    const cleanIsbn = isbn ? isbn.replace(/[-\s]/g, "") : "";
-    let response = await fetchWithRetry(buildUrl(isbn ? `isbn:${cleanIsbn}` : query!));
-
-    // L'index `isbn:` de Google est strict et ignore certains codes pourtant valides ;
-    // une recherche en texte libre sur le numéro nu les retrouve souvent.
-    if (isbn && response.ok) {
-      const firstTry = await response.clone().json();
-      if (!firstTry.items?.length) {
-        const fallback = await fetchWithRetry(buildUrl(cleanIsbn));
-        if (fallback.ok) response = fallback;
-      }
-    }
-
-    if (response.status === 429) {
-      return unavailable(
-        "API_LIMIT_EXCEEDED",
-        "Le quota de l'API Google Books est dépassé. Utilisez la saisie manuelle.",
-      );
-    }
-
-    if (RETRYABLE_STATUSES.includes(response.status)) {
-      return unavailable(
-        "API_UNAVAILABLE",
-        "Le service Google Books est momentanément indisponible. Réessayez ou saisissez le livre à la main.",
-      );
-    }
-
-    if (!response.ok) {
-      logger.error({ status: response.status }, "Google Books API returned an unexpected status");
-      return unavailable("API_ERROR", "Erreur lors de la recherche. Utilisez la saisie manuelle.");
-    }
-
-    const data = (await response.json()) as { items?: GoogleBooksItem[] };
-    return apiSuccess({ books: (data.items ?? []).map(toBook), unavailable: null });
+    await saveSearch(key, result.books);
   } catch (err) {
-    logger.error({ err }, "Google Books search failed");
-    return unavailable("API_ERROR", "Erreur lors de la recherche. Utilisez la saisie manuelle.");
+    // Le cache n'est qu'une économie de quota : son échec ne prive pas l'utilisateur des
+    // résultats déjà obtenus.
+    logger.error({ err }, "Failed to cache book search results");
   }
+
+  return found(result.books);
 });

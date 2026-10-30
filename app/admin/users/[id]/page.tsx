@@ -7,8 +7,24 @@ import { requireRole } from "@/lib/permissions";
 import { getReadingStats } from "@/lib/reading-stats";
 import { formatIp, formatUserAgent } from "@/lib/format-session";
 import { auditActionLabel, isAdminAction } from "@/lib/audit-actions";
-import { AdminPageHeader, RoleBadge, StatTile, StatusBadge } from "@/app/admin/admin-ui";
+import {
+  AdminPageHeader,
+  RoleBadge,
+  StatTile,
+  StatusBadge,
+  SubscriptionBadge,
+} from "@/app/admin/admin-ui";
 import { UserActions } from "@/app/admin/users/[id]/user-actions";
+import { SubscriptionActions } from "@/app/admin/users/[id]/subscription-actions";
+import {
+  SUBSCRIPTION_KIND_LABELS,
+  stripeCustomerUrl,
+  subscriptionKind,
+} from "@/lib/admin-subscriptions";
+import { isPremiumActive } from "@/lib/plans";
+import { getStripe } from "@/lib/stripe";
+import { listPayments } from "@/lib/admin-stripe";
+import { PaymentList } from "@/app/admin/payment-list";
 
 export const metadata: Metadata = {
   title: "Fiche utilisateur",
@@ -41,6 +57,12 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
   ]);
 
   const displayName = target.isAnonymized ? "Compte supprimé" : target.name;
+  const kind = subscriptionKind(target);
+  const hasEverSubscribed = !!target.stripeSubscriptionId || !!target.premiumGrantedUntil;
+  const hasActiveSubscription =
+    !!target.stripeSubscriptionId &&
+    target.subscriptionStatus !== "canceled" &&
+    isPremiumActive(target.premiumUntil);
 
   return (
     <>
@@ -56,6 +78,9 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
       <div className="mb-6 flex flex-wrap items-center gap-2">
         <RoleBadge role={target.role} />
         <StatusBadge isAnonymized={target.isAnonymized} emailVerified={target.emailVerified} />
+        {hasEverSubscribed && (
+          <SubscriptionBadge kind={kind} label={`Premium : ${SUBSCRIPTION_KIND_LABELS[kind]}`} />
+        )}
         <span className="text-xs text-stone-400">
           Inscrit le {formatDateTime(target.createdAt)}
         </span>
@@ -86,6 +111,85 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
           activeSessions={sessions.length}
         />
       </section>
+
+      {!target.isAnonymized && (
+        <section className="card mt-6 p-5 sm:p-6">
+          <div className="flex flex-wrap items-baseline justify-between gap-3">
+            <h2 className="font-serif text-lg text-stone-900">Abonnement</h2>
+            {target.stripeCustomerId && (
+              <a
+                href={stripeCustomerUrl(target.stripeCustomerId)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="link text-sm"
+              >
+                Ouvrir dans Stripe
+              </a>
+            )}
+          </div>
+          <dl className="mt-4 grid grid-cols-1 gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
+            {[
+              {
+                label: "Situation",
+                value: hasEverSubscribed ? SUBSCRIPTION_KIND_LABELS[kind] : "Compte gratuit",
+              },
+              {
+                label: "Formule",
+                value:
+                  target.subscriptionInterval === "yearly"
+                    ? "Annuelle"
+                    : target.subscriptionInterval === "monthly"
+                      ? "Mensuelle"
+                      : "—",
+              },
+              { label: "Statut Stripe", value: target.subscriptionStatus ?? "—" },
+              {
+                label: "Fin de période Stripe",
+                value: target.premiumUntil ? formatDateTime(target.premiumUntil) : "—",
+              },
+              {
+                label: "Premium offert jusqu'au",
+                value: target.premiumGrantedUntil
+                  ? formatDateTime(target.premiumGrantedUntil)
+                  : "—",
+              },
+              {
+                label: "Essai utilisé le",
+                value: target.trialStartedAt ? formatDateTime(target.trialStartedAt) : "—",
+              },
+            ].map((detail) => (
+              <div key={detail.label} className="flex justify-between gap-4">
+                <dt className="shrink-0 text-stone-500">{detail.label}</dt>
+                <dd className="min-w-0 truncate text-right font-medium text-stone-900">
+                  {detail.value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+          <div className="mt-5 border-t border-stone-100 pt-5">
+            <SubscriptionActions
+              userId={target.id}
+              hasActiveSubscription={hasActiveSubscription}
+              cancelAtPeriodEnd={target.subscriptionCancelAtPeriodEnd}
+              hasGrant={isPremiumActive(target.premiumGrantedUntil)}
+              isTrialing={target.subscriptionStatus === "trialing"}
+              interval={target.subscriptionInterval}
+            />
+          </div>
+        </section>
+      )}
+
+      {target.stripeCustomerId && getStripe() && (
+        <section className="card mt-6 overflow-hidden">
+          <h2 className="border-b border-stone-100 px-5 pt-5 pb-3 font-serif text-lg text-stone-900 sm:px-6">
+            Paiements
+          </h2>
+          <PaymentList
+            payments={await listPayments({ customerId: target.stripeCustomerId, limit: 20 })}
+            showCustomer={false}
+          />
+        </section>
+      )}
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         <section className="card p-5 sm:p-6">

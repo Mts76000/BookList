@@ -11,6 +11,11 @@ function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+/**
+ * Correction du total de pages d'une journée. Secondaire : mettre à jour la page d'un livre
+ * en cours alimente déjà la journée ; ce formulaire sert aux lectures hors bibliothèque ou à
+ * rectifier un jour. Il remplace le total du jour, il ne s'y ajoute pas.
+ */
 export function AddReadingActivity() {
   const router = useRouter();
   const { toast } = useToast();
@@ -44,13 +49,11 @@ export function AddReadingActivity() {
   }
 
   return (
-    <div className="card p-5 sm:p-6">
-      <h3 className="text-sm font-medium text-stone-900">Enregistrer votre lecture</h3>
-
-      <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+    <div>
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field
-            label="Pages lues"
+            label="Total de pages lues"
             type="number"
             inputMode="numeric"
             min={0}

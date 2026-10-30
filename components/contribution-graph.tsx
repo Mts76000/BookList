@@ -12,14 +12,17 @@ interface ContributionGraphProps {
   activities: ReadingActivity[];
 }
 
+/**
+ * Sur un mois, une grille de semaines n'aurait que quatre ou cinq colonnes : elle laissait
+ * l'essentiel de la carte vide. On y affiche plutôt un histogramme d'un trait par jour, qui
+ * remplit la largeur et donne à lire les volumes. Sur 6 mois et un an, la grille façon
+ * calendrier reste la plus lisible.
+ */
 const PERIODS = [
-  { label: "1 mois", weeks: 4 },
-  { label: "6 mois", weeks: 26 },
-  { label: "1 an", weeks: 52 },
+  { label: "1 mois", days: 30, view: "bars" },
+  { label: "6 mois", days: 26 * 7, view: "grid" },
+  { label: "1 an", days: 52 * 7, view: "grid" },
 ] as const;
-
-/** Côté d'une case, partagé avec les étiquettes de jour pour qu'elles restent alignées. */
-const CELL_SIZE = 14;
 
 const MONTHS = [
   "Jan",
@@ -35,6 +38,8 @@ const MONTHS = [
   "Nov",
   "Déc",
 ];
+
+const DAY_LABELS = ["L", "", "M", "", "V", "", "D"];
 
 /** Intensité de la case selon le nombre de pages lues ce jour-là. */
 function colorFor(pagesRead: number): string {
@@ -52,26 +57,112 @@ function dayOffset(daysAgo: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+function formatDay(date: string): string {
+  return new Date(date).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+}
+
+type Day = { date: string; pagesRead: number };
+
 export function ContributionGraph({ activities }: ContributionGraphProps) {
   const [periodIndex, setPeriodIndex] = useState(0);
+  const period = PERIODS[periodIndex];
 
-  const totalDays = PERIODS[periodIndex].weeks * 7;
   const activityMap = new Map(activities.map((a) => [a.date, a.pagesRead]));
-
-  const days = Array.from({ length: totalDays }, (_, i) => {
-    const date = dayOffset(totalDays - 1 - i);
+  const days: Day[] = Array.from({ length: period.days }, (_, i) => {
+    const date = dayOffset(period.days - 1 - i);
     return { date, pagesRead: activityMap.get(date) ?? 0 };
   });
 
-  const weeks: (typeof days)[] = [];
-  for (let i = 0; i < days.length; i += 7) {
-    weeks.push(days.slice(i, i + 7));
-  }
+  const totalPages = days.reduce((sum, d) => sum + d.pagesRead, 0);
+  const activeDays = days.filter((d) => d.pagesRead > 0).length;
+  const average = activeDays > 0 ? Math.round(totalPages / activeDays) : 0;
 
-  // Le nom du mois n'apparaît qu'à la semaine où il change — et seulement s'il reste assez
-  // de colonnes avant le suivant : une colonne fait 14px, un libellé environ 20px, donc deux
-  // mois trop rapprochés se chevaucheraient ("JuilAoû").
-  const MIN_WEEKS_BETWEEN_LABELS = 2;
+  return (
+    <div>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs text-stone-500">
+          <span className="font-medium text-stone-900 tabular-nums">{totalPages}</span> pages,{" "}
+          <span className="font-medium text-stone-900 tabular-nums">{activeDays}</span> jour
+          {activeDays !== 1 ? "s" : ""} actif{activeDays !== 1 ? "s" : ""}
+          {average > 0 && `, ${average} pages par jour actif`}
+        </p>
+        <div className="flex gap-1 rounded-lg bg-stone-100 p-0.5">
+          {PERIODS.map((entry, index) => (
+            <button
+              key={entry.label}
+              type="button"
+              onClick={() => setPeriodIndex(index)}
+              aria-pressed={index === periodIndex}
+              className={`min-h-8 rounded-md px-2.5 py-1 text-xs font-medium transition ${
+                index === periodIndex
+                  ? "bg-card text-stone-900 shadow-sm"
+                  : "text-stone-500 hover:text-stone-700"
+              }`}
+            >
+              {entry.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {period.view === "bars" ? <DailyBars days={days} /> : <CalendarGrid days={days} />}
+    </div>
+  );
+}
+
+/** Un trait par jour, hauteur proportionnelle au jour le plus chargé de la période. */
+function DailyBars({ days }: { days: Day[] }) {
+  const max = Math.max(...days.map((d) => d.pagesRead), 1);
+
+  return (
+    <div>
+      <div className="flex h-40 items-end gap-[3px] sm:gap-1">
+        {days.map((day) => (
+          <div
+            key={day.date}
+            className="group relative flex h-full flex-1 items-end"
+            title={`${formatDay(day.date)} : ${day.pagesRead} pages`}
+          >
+            <div
+              className={`w-full rounded-t-[3px] transition-colors ${
+                day.pagesRead > 0
+                  ? "bg-accent-400 group-hover:bg-accent-600"
+                  : "bg-stone-100 group-hover:bg-stone-200"
+              }`}
+              style={{
+                height: day.pagesRead > 0 ? `${Math.max((day.pagesRead / max) * 100, 4)}%` : "3px",
+              }}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="mt-2 flex justify-between text-[10px] text-stone-400">
+        <span>{formatDay(days[0].date)}</span>
+        <span>{formatDay(days[Math.floor(days.length / 2)].date)}</span>
+        <span>Aujourd&apos;hui</span>
+      </div>
+      <p className="sr-only">
+        {days
+          .filter((d) => d.pagesRead > 0)
+          .map((d) => `${formatDay(d.date)} : ${d.pagesRead} pages`)
+          .join(", ")}
+      </p>
+    </div>
+  );
+}
+
+/**
+ * Grille calendrier : une colonne par semaine, une ligne par jour. Les colonnes se partagent
+ * la largeur disponible (cases carrées, 10px minimum), si bien que la grille remplit la carte
+ * quelle que soit la période ; sous ce minimum, sur mobile pour l'année, elle défile.
+ */
+function CalendarGrid({ days }: { days: Day[] }) {
+  const weeks: Day[][] = [];
+  for (let i = 0; i < days.length; i += 7) weeks.push(days.slice(i, i + 7));
+
+  // Le nom du mois n'apparaît qu'à la semaine où il change, et seulement s'il reste assez
+  // de colonnes avant le suivant pour ne pas chevaucher le libellé voisin ("JuilAoû").
+  const MIN_WEEKS_BETWEEN_LABELS = 3;
   let lastLabelIndex = -Infinity;
   const monthLabels = weeks.map((week, index) => {
     const current = new Date(week[0].date).getMonth();
@@ -82,87 +173,44 @@ export function ContributionGraph({ activities }: ContributionGraphProps) {
     return MONTHS[current];
   });
 
-  const totalPages = days.reduce((sum, d) => sum + d.pagesRead, 0);
-  const activeDays = days.filter((d) => d.pagesRead > 0).length;
-  // Colonnes à largeur fixe, et non en fractions de la largeur disponible : sur « 1 mois »
-  // il n'y a que quatre colonnes, qui s'étiraient alors sur tout l'écran et transformaient
-  // les cases en barres horizontales. Le conteneur défile pour la période « 1 an ».
-  const gridColumns = `repeat(${weeks.length}, ${CELL_SIZE}px)`;
-
   return (
     <div>
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <p className="text-xs text-stone-500">
-          {totalPages} pages · {activeDays} jour{activeDays !== 1 ? "s" : ""} actif
-          {activeDays !== 1 ? "s" : ""}
-        </p>
-        <div className="flex gap-1 rounded-lg bg-stone-100 p-0.5">
-          {PERIODS.map((period, index) => (
-            <button
-              key={period.label}
-              type="button"
-              onClick={() => setPeriodIndex(index)}
-              aria-pressed={index === periodIndex}
-              className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${
-                index === periodIndex
-                  ? "bg-card text-stone-900 shadow-sm"
-                  : "text-stone-500 hover:text-stone-700"
-              }`}
-            >
-              {period.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="-mx-1 overflow-x-auto overflow-y-visible px-1">
-        <div className="flex w-full gap-1.5">
-          <div className="flex shrink-0 flex-col gap-[3px] pt-[17px]">
-            {["L", "", "M", "", "V", "", "D"].map((day, i) => (
-              <div
-                key={i}
-                className="flex w-4 items-center text-[10px] text-stone-400"
-                style={{ height: `${CELL_SIZE}px` }}
-              >
-                {day}
-              </div>
-            ))}
-          </div>
-
-          <div className="min-w-0 flex-1">
+      <div className="-mx-1 overflow-x-auto px-1 pb-1">
+        <div
+          className="grid gap-[3px]"
+          style={{
+            gridTemplateColumns: `1rem repeat(${weeks.length}, minmax(10px, 1fr))`,
+            gridTemplateRows: "auto",
+            minWidth: `${weeks.length * 13 + 20}px`,
+          }}
+        >
+          <div />
+          {weeks.map((week, weekIndex) => (
             <div
-              className="relative mb-[3px] grid gap-[3px]"
-              style={{ gridTemplateColumns: gridColumns, height: "12px" }}
+              key={`label-${week[0].date}`}
+              className="h-4 overflow-visible text-[10px] whitespace-nowrap text-stone-400"
             >
-              {weeks.map((week, weekIndex) =>
-                monthLabels[weekIndex] ? (
-                  <div
-                    key={week[0].date}
-                    className="overflow-visible text-[10px] whitespace-nowrap text-stone-400"
-                  >
-                    {monthLabels[weekIndex]}
-                  </div>
-                ) : (
-                  <div key={week[0].date} />
-                ),
-              )}
+              {monthLabels[weekIndex]}
             </div>
+          ))}
 
-            <div className="grid gap-[3px]" style={{ gridTemplateColumns: gridColumns }}>
-              {weeks.map((week) => (
-                <div key={week[0].date} className="grid gap-[3px]">
-                  {week.map((day) => (
-                    <div
-                      key={day.date}
-                      className={`rounded-[3px] ${colorFor(day.pagesRead)}`}
-                      style={{ height: `${CELL_SIZE}px`, width: `${CELL_SIZE}px` }}
-                      title={`${new Date(day.date).toLocaleDateString("fr-FR")} : ${day.pagesRead} pages`}
-                    />
-                  ))}
-                </div>
-              ))}
+          {DAY_LABELS.map((label, dayIndex) => (
+            <div key={`row-${dayIndex}`} className="contents">
+              <div className="flex items-center text-[10px] text-stone-400">{label}</div>
+              {weeks.map((week) => {
+                const day = week[dayIndex];
+                return day ? (
+                  <div
+                    key={day.date}
+                    className={`aspect-square w-full rounded-[3px] ${colorFor(day.pagesRead)}`}
+                    title={`${formatDay(day.date)} : ${day.pagesRead} pages`}
+                  />
+                ) : (
+                  <div key={`${week[0].date}-${dayIndex}`} />
+                );
+              })}
             </div>
-          </div>
+          ))}
         </div>
       </div>
 

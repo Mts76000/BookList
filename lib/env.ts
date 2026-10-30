@@ -39,6 +39,18 @@ const envSchema = z.object({
   UPSTASH_REDIS_REST_URL: optional(z.url()),
   UPSTASH_REDIS_REST_TOKEN: optional(z.string().min(1)),
 
+  // Optionnel : abonnement Premium via Stripe. Tant que ces clés manquent, les offres sont
+  // affichées mais le bouton d'abonnement est désactivé (voir lib/stripe.ts).
+  STRIPE_SECRET_KEY: optional(z.string().startsWith("sk_")),
+  STRIPE_WEBHOOK_SECRET: optional(z.string().startsWith("whsec_")),
+  STRIPE_PRICE_MONTHLY: optional(z.string().startsWith("price_")),
+  STRIPE_PRICE_YEARLY: optional(z.string().startsWith("price_")),
+
+  // Optionnel : rappels de lecture par notification (Web Push). Paire de clés VAPID générée
+  // une fois avec `npx web-push generate-vapid-keys`. Sans elles, l'option est masquée.
+  NEXT_PUBLIC_VAPID_PUBLIC_KEY: optional(z.string().min(1)),
+  VAPID_PRIVATE_KEY: optional(z.string().min(1)),
+
   // Optional: shows a "Buy me a coffee" widget on the account page when set.
   NEXT_PUBLIC_BUYMEACOFFEE_SLUG: optional(z.string().min(1)),
 

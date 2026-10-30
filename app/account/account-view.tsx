@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  Bell,
   BookOpen,
   ChartBar,
   Desktop,
@@ -23,6 +24,7 @@ import { useToast } from "@/components/ui/toast";
 import { formatUserAgent, formatIp } from "@/lib/format-session";
 import { BuyMeACoffeeButton } from "@/components/buy-me-a-coffee";
 import { PwaInstallSection } from "@/components/pwa-install";
+import { ReminderSettings } from "@/components/reminder-settings";
 import { apiFetch } from "@/lib/api-client";
 import type { ReadingStats } from "@/lib/reading-stats";
 
@@ -41,18 +43,20 @@ function initialsFrom(name: string) {
 }
 
 function SectionCard({
+  id,
   icon,
   title,
   description,
   children,
 }: {
+  id?: string;
   icon: React.ReactNode;
   title: string;
   description?: string;
   children: React.ReactNode;
 }) {
   return (
-    <section className="border-border bg-card rounded-xl border p-6">
+    <section id={id} className="border-border bg-card scroll-mt-20 rounded-xl border p-6">
       <div className="mb-5 flex items-start gap-3">
         <span className="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-lg">
           {icon}
@@ -81,6 +85,8 @@ interface AccountViewProps {
   /** Déjà formatée côté serveur : formater une date ici produit un rendu différent de
    *  celui du serveur (locale et fuseau du processus Node), et casse l'hydratation. */
   memberSince: string;
+  /** Bloc d'abonnement, rendu côté serveur (il lit le plan en base). */
+  subscription?: React.ReactNode;
 }
 
 export function AccountView({
@@ -89,6 +95,7 @@ export function AccountView({
   userEmail,
   initialBooksRead,
   memberSince,
+  subscription,
 }: AccountViewProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -206,6 +213,8 @@ export function AccountView({
           Se déconnecter
         </Button>
       </div>
+
+      {subscription}
 
       <SectionCard
         icon={<ChartBar size={18} aria-hidden="true" />}
@@ -406,16 +415,26 @@ export function AccountView({
       <SectionCard
         icon={<ShieldCheck size={18} aria-hidden="true" />}
         title="Données et confidentialité"
-        description="Téléchargez une copie de vos données personnelles."
+        description="Téléchargez vos données, gratuitement et à tout moment. Le fichier CSV se réimporte tel quel dans BookList."
       >
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={() => window.open("/api/account/export", "_blank")}
-        >
-          <Download size={16} aria-hidden="true" />
-          Exporter mes données
-        </Button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => window.open("/api/books/export", "_blank")}
+          >
+            <Download size={16} aria-hidden="true" />
+            Mes livres (CSV)
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => window.open("/api/account/export", "_blank")}
+          >
+            <Download size={16} aria-hidden="true" />
+            Toutes mes données (JSON)
+          </Button>
+        </div>
       </SectionCard>
 
       <SectionCard
@@ -424,6 +443,15 @@ export function AccountView({
         description="Ajoutez-la à votre écran d'accueil pour un accès rapide, comme une app native."
       >
         <PwaInstallSection />
+      </SectionCard>
+
+      <SectionCard
+        id="rappels"
+        icon={<Bell size={18} aria-hidden="true" />}
+        title="Rappels de lecture"
+        description="Une notification quand votre journée de lecture n'est pas encore faite."
+      >
+        <ReminderSettings />
       </SectionCard>
 
       <section className="border-destructive/30 bg-destructive/5 rounded-xl border p-6">
