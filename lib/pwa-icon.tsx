@@ -1,33 +1,20 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { ImageResponse } from "next/og";
+import { LOGO_COLORS, logoMarkDataUri } from "@/lib/logo-mark";
 
-const BACKGROUND = "#f8f3ea";
-
-// Satori ne résout ni URL ni chemin public : il lui faut les octets de l'image. Le fichier
-// est lu une seule fois par processus, et seulement au build puisque toutes les routes qui
-// appellent cette fonction sont statiques.
-let markDataUri: string | undefined;
-
+/** Le logo sur sa tuile, pour les images générées (partage, Open Graph). */
 export function getLogoMark(): string {
-  markDataUri ??= `data:image/png;base64,${readFileSync(
-    join(process.cwd(), "public", "logo-mark.png"),
-  ).toString("base64")}`;
-
-  return markDataUri;
+  return logoMarkDataUri();
 }
 
 /**
  * Générateur partagé de toutes les icônes de l'application (favicon, apple-icon, icônes du
- * manifest PWA) : le livre ouvert du logo, centré sur le fond crème de la marque.
- * `padding` réserve la marge de sécurité des icônes maskable, que le système d'exploitation
- * rogne pour appliquer son propre masque.
+ * manifest PWA) : l'étagère du logo sur un fond terracotta plein, que le système arrondit
+ * lui-même. Le favicon garde les coins arrondis de la tuile, puisque l'onglet du navigateur
+ * l'affiche tel quel. `padding` réserve la marge de sécurité des icônes maskable, que le
+ * système d'exploitation rogne pour appliquer son propre masque.
  */
-const MARK_RATIO = 640 / 416;
-
-export function generateIconResponse(px: number, padding = 0) {
-  const width = Math.round((px - padding * 2) * 0.82);
-  const height = Math.round(width / MARK_RATIO);
+export function generateIconResponse(px: number, padding = 0, { rounded = false } = {}) {
+  const glyph = px - padding * 2;
 
   return new ImageResponse(
     <div
@@ -37,11 +24,12 @@ export function generateIconResponse(px: number, padding = 0) {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: BACKGROUND,
+        background: LOGO_COLORS.tile,
+        borderRadius: rounded ? px / 4 : 0,
       }}
     >
       {/* eslint-disable-next-line @next/next/no-img-element -- rendu par satori, hors DOM */}
-      <img src={getLogoMark()} width={width} height={height} alt="" />
+      <img src={logoMarkDataUri({ tile: false })} width={glyph} height={glyph} alt="" />
     </div>,
     { width: px, height: px },
   );

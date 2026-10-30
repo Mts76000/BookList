@@ -95,7 +95,7 @@ export const GET = withApiErrorHandling(async (request: Request, context: RouteC
         }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element -- Satori ne rend que <img> */}
-        <img src={getLogoMark()} width={46} height={30} alt="" />
+        <img src={getLogoMark()} width={36} height={36} alt="" />
         <div style={{ display: "flex" }}>{new URL(env.NEXT_PUBLIC_APP_URL).host}</div>
       </div>
     </div>,

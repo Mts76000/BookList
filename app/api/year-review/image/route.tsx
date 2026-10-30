@@ -105,7 +105,7 @@ export const GET = withApiErrorHandling(async (request: Request) => {
     >
       <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
         {/* eslint-disable-next-line @next/next/no-img-element -- Satori ne rend que <img> */}
-        <img src={getLogoMark()} width={74} height={48} alt="" />
+        <img src={getLogoMark()} width={56} height={56} alt="" />
         <div style={{ display: "flex", fontSize: 38, fontWeight: 600 }}>
           {env.NEXT_PUBLIC_APP_NAME}
         </div>
