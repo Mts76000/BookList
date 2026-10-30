@@ -32,9 +32,10 @@ export default function TermsPage() {
       <section className="mt-8">
         <h2 className="text-xl text-stone-900">Compte gratuit</h2>
         <p className="mt-2 text-stone-600">
-          Le compte gratuit permet d&apos;enregistrer jusqu&apos;à {FREE_BOOK_LIMIT} livres. Une
-          fois cette limite atteinte, les livres déjà enregistrés restent consultables, modifiables
-          et exportables ; seul l&apos;ajout de nouveaux livres est réservé à Premium.
+          Le compte gratuit permet d&apos;ajouter jusqu&apos;à {FREE_BOOK_LIMIT} livres un par un ;
+          l&apos;import d&apos;une bibliothèque existante n&apos;est pas limité. Une fois cette
+          limite atteinte, les livres déjà enregistrés restent consultables, modifiables et
+          exportables ; seul l&apos;ajout de nouveaux livres est réservé à Premium.
         </p>
       </section>
 

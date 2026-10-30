@@ -103,7 +103,7 @@ describe("limite du compte gratuit", () => {
     expect(res.status).toBe(201);
   });
 
-  it("n'importe que les places restantes et compte le reste", async () => {
+  it("importe toute la bibliothèque, même au-delà de la limite du compte gratuit", async () => {
     const userId = await createUser();
     await seedBooks(userId, FREE_BOOK_LIMIT - 2);
 
@@ -112,7 +112,7 @@ describe("limite du compte gratuit", () => {
       "Un,A,9781111111111",
       "Deux,A,9782222222222",
       "Trois,A,9783333333333",
-      // Doublon d'un livre déjà possédé : ne consomme pas de place.
+      // Doublon d'un livre déjà possédé : ignoré.
       "Livre 0,Auteur,9780000000000",
     ].join("\n");
 
@@ -121,9 +121,9 @@ describe("limite du compte gratuit", () => {
     );
     const { data } = await res.json();
 
-    expect(data.imported).toBe(2);
-    expect(data.overLimit).toBe(1);
+    expect(data.imported).toBe(3);
     expect(data.skipped).toBe(1);
+    // La bibliothèque dépasse la limite : seul l'ajout d'un nouveau livre est bloqué.
     expect((await getUserPlan(userId)).remaining).toBe(0);
   });
 

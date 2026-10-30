@@ -1,4 +1,6 @@
+import type { SeriesCatalogVolume } from "@/drizzle/schema";
 import { parseSeriesFromTitle } from "@/lib/series";
+import type { FetchedSeries } from "@/lib/wikidata";
 
 /**
  * Repérage des sagas, sans réseau ni base : utilisé côté serveur pour les suggestions de la
@@ -290,4 +292,67 @@ export function seriesForNewBook(
         existing: true,
       }
     : null;
+}
+
+// --- Sagas Wikidata ------------------------------------------------------------------
+
+/**
+ * Deux titres désignent-ils le même livre ? Égaux, ou le plus court suivi seulement d'un
+ * marqueur de tome (« Dune » et « Dune - Tome 1 »). Pas un simple préfixe : « Fondation »
+ * et « Fondation foudroyée » sont deux livres.
+ */
+function sameBook(a: string, b: string): boolean {
+  const x = normalizeText(a);
+  const y = normalizeText(b);
+  if (!x || !y) return false;
+  if (x === y) return true;
+  const [short, long] = x.length < y.length ? [x, y] : [y, x];
+  return (
+    long.startsWith(`${short} `) &&
+    /^(tome|t|vol|volume|livre|book)\b/.test(long.slice(short.length + 1))
+  );
+}
+
+export interface SagaBook {
+  title: string;
+  seriesIndex: number | null;
+}
+
+/**
+ * La saga Wikidata qui correspond le mieux aux tomes de l'utilisateur : celle qui en
+ * contient le plus, et à égalité la plus courte (« Fondation » existe en trilogie et en
+ * cycle de sept tomes : avec les trois premiers en bibliothèque, c'est la trilogie).
+ */
+export function chooseSeries(candidates: FetchedSeries[], books: SagaBook[]): FetchedSeries | null {
+  let best: { series: FetchedSeries; score: number; size: number } | null = null;
+  for (const series of candidates) {
+    const score = books.filter((book) =>
+      series.volumes.some((volume) => sameBook(volume.title, book.title)),
+    ).length;
+    const size = series.volumes.filter((volume) => volume.index !== null).length;
+    if (score === 0 || size === 0) continue;
+    if (!best || score > best.score || (score === best.score && size < best.size)) {
+      best = { series, score, size };
+    }
+  }
+  return best?.series ?? null;
+}
+
+/**
+ * Tomes numérotés de la saga absents de la bibliothèque : ni le même numéro dans la saga de
+ * l'utilisateur, ni le même titre ailleurs dans sa bibliothèque (un tome peut y être sans
+ * avoir été rangé dans la saga). Les hors-séries ne sont pas proposés.
+ */
+export function missingVolumes(
+  series: FetchedSeries,
+  sagaBooks: SagaBook[],
+  libraryTitles: string[],
+): SeriesCatalogVolume[] {
+  const ownedIndexes = new Set(sagaBooks.map((book) => book.seriesIndex).filter((i) => i !== null));
+  return series.volumes.filter(
+    (volume) =>
+      volume.index !== null &&
+      !ownedIndexes.has(volume.index) &&
+      !libraryTitles.some((title) => sameBook(title, volume.title)),
+  );
 }

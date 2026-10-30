@@ -8,13 +8,7 @@ import { Footer } from "@/components/footer";
 import { Logo } from "@/components/logo";
 import { env } from "@/lib/env";
 import { CheckCircle } from "@phosphor-icons/react/ssr";
-import {
-  FREE_BOOK_LIMIT,
-  FREE_QUOTE_LIMIT,
-  PREMIUM_FEATURES,
-  PREMIUM_PRICES,
-  TRIAL_DAYS,
-} from "@/lib/plans";
+import { FREE_BOOK_LIMIT, PREMIUM_FEATURES, PREMIUM_PRICES, TRIAL_DAYS } from "@/lib/plans";
 
 const FEATURES = [
   {
@@ -65,11 +59,11 @@ const STEPS = [
 ];
 
 const FREE_FEATURES = [
-  `Jusqu'à ${FREE_BOOK_LIMIT} livres`,
+  `Jusqu'à ${FREE_BOOK_LIMIT} livres ajoutés, import complet`,
   "Scan, recherche et saisie manuelle",
   "Objectif annuel, série de lecture et rappels",
-  "Badges et bilan annuel à partager",
-  `${FREE_QUOTE_LIMIT} citations et suivi des tomes`,
+  "Statistiques de base, badges et bilan annuel",
+  "Sagas et citations, sans limite",
   "Import Goodreads et StoryGraph",
   "Export de vos données, toujours",
 ];
@@ -82,7 +76,7 @@ const FAQ = [
   {
     question: `Que se passe-t-il quand j'atteins ${FREE_BOOK_LIMIT} livres ?`,
     answer:
-      "Rien ne disparaît : vos livres restent consultables, modifiables et exportables. Seul l'ajout de nouveaux livres demande Premium.",
+      "Rien ne disparaît : vos livres restent consultables, modifiables et exportables. Seul l'ajout de nouveaux livres un par un demande Premium ; l'import de votre bibliothèque Goodreads ou StoryGraph passe toujours en entier.",
   },
   {
     question: "Puis-je résilier quand je veux ?",
