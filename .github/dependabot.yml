@@ -8,6 +8,15 @@ updates:
       dev-dependencies:
         dependency-type: "development"
     open-pull-requests-limit: 10
+    # Versions majeures à faire volontairement : @types/node suit le Node de production
+    # (24 LTS), TypeScript et ESLint changent de comportement d'une majeure à l'autre.
+    ignore:
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -18,3 +27,8 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    # On passe d'une version LTS de Node à la suivante à la main : les versions impaires
+    # (25, 27…) ne sont jamais LTS.
+    ignore:
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]
