@@ -93,6 +93,36 @@ function originalWord(title: string, word: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
+/**
+ * Nom de saga commun à plusieurs titres : la plus longue suite de mots du titre le plus
+ * court, contenant `word`, qu'on retrouve telle quelle dans tous les autres (« Harry
+ * Potter à l'école des sorciers » et « … et la Chambre des secrets » donnent « Harry
+ * Potter », pas seulement « Harry »).
+ */
+function commonName(titles: string[], word: string): string {
+  const [shortest, ...others] = [...titles].sort((a, b) => a.length - b.length);
+  const tokens = shortest.split(/\s+/).filter(Boolean);
+  const containsAll = (phrase: string) =>
+    others.every((title) => ` ${normalizeText(title)} `.includes(` ${phrase} `));
+
+  let best: string[] = [];
+  for (let start = 0; start < tokens.length; start++) {
+    for (let end = start + 1; end <= tokens.length; end++) {
+      const run = tokens.slice(start, end);
+      const phrase = normalizeText(run.join(" "));
+      if (!phrase.split(" ").includes(word) || !containsAll(phrase)) continue;
+      if (run.length > best.length) best = run;
+    }
+  }
+  // Pas d'article ni de ponctuation en bord de nom (« la Chambre » → « Chambre »).
+  while (best.length > 1 && STOPWORDS.has(normalizeText(best[0]))) best = best.slice(1);
+  while (best.length > 1 && STOPWORDS.has(normalizeText(best[best.length - 1]))) {
+    best = best.slice(0, -1);
+  }
+  const name = best.join(" ").replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "");
+  return name ? name.charAt(0).toUpperCase() + name.slice(1) : originalWord(shortest, word);
+}
+
 export interface LibraryBook {
   id: string;
   title: string;
@@ -215,8 +245,10 @@ export function suggestSeries(books: LibraryBook[]): SeriesSuggestion[] {
     for (const [word, group] of candidates) {
       const available = group.filter((book) => !taken.has(book.id));
       if (available.length < 2) continue;
-      const shortest = [...available].sort((a, b) => a.title.length - b.title.length)[0];
-      const name = originalWord(shortest.title, word);
+      const name = commonName(
+        available.map((book) => book.title),
+        word,
+      );
       available
         .sort((a, b) => yearOf(a.publishedDate) - yearOf(b.publishedDate))
         .forEach((book, position) => add(name, "author", book, position + 1));
@@ -311,6 +343,11 @@ function sameBook(a: string, b: string): boolean {
     long.startsWith(`${short} `) &&
     /^(tome|t|vol|volume|livre|book)\b/.test(long.slice(short.length + 1))
   );
+}
+
+/** Le tome de la saga correspondant à un titre, s'il y en a un. */
+export function volumeForTitle(series: FetchedSeries, title: string): SeriesCatalogVolume | null {
+  return series.volumes.find((volume) => sameBook(volume.title, title)) ?? null;
 }
 
 export interface SagaBook {

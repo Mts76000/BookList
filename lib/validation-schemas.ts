@@ -216,3 +216,8 @@ export const saveSeriesSchema = z.object({
 export const deleteSeriesSchema = z.object({
   name: z.string().trim().min(1).max(MAX_TEXT),
 });
+
+/** Livres d'une saga repérée, à identifier sur Wikidata. */
+export const identifySeriesSchema = z.object({
+  bookIds: z.array(z.string().min(1)).min(1).max(20),
+});
