@@ -4,8 +4,9 @@ import { book, comment } from "@/drizzle/schema";
 import { countGenres } from "@/lib/genres";
 
 export interface ReadingStats {
-  /** Livres en bibliothèque, augmentés de ceux lus avant l'inscription. */
+  /** Livres terminés, augmentés de ceux lus avant l'inscription. */
   totalBooks: number;
+  /** Pages des livres terminés, plus la page atteinte dans les autres. */
   totalPagesRead: number;
   /** Moyenne des notes attribuées, 0 si aucun livre n'est noté. */
   averageRating: number;
@@ -36,6 +37,7 @@ export async function getReadingStats(
         author: book.author,
         genre: book.genre,
         pageCount: book.pageCount,
+        currentPage: book.currentPage,
         userRating: book.userRating,
         userEndDate: book.userEndDate,
         status: book.status,
@@ -49,13 +51,18 @@ export async function getReadingStats(
   const pagesByYear = new Map<number, number>();
   const booksByAuthor = new Map<string, number>();
 
+  let finishedBooks = 0;
   let totalPagesRead = 0;
   let ratingSum = 0;
   let ratedBooks = 0;
   let booksThisYear = 0;
 
   for (const entry of books) {
-    if (entry.pageCount) totalPagesRead += entry.pageCount;
+    // Un livre à lire ou en cours est dans la bibliothèque sans être lu : seuls les livres
+    // terminés comptent, et des autres seule la page atteinte.
+    const finished = entry.status === "FINISHED";
+    if (finished) finishedBooks += 1;
+    totalPagesRead += (finished ? entry.pageCount : entry.currentPage) ?? 0;
     if (entry.userRating) {
       ratingSum += entry.userRating;
       ratedBooks += 1;
@@ -63,7 +70,7 @@ export async function getReadingStats(
     booksByAuthor.set(entry.author, (booksByAuthor.get(entry.author) ?? 0) + 1);
 
     // Un livre abandonné peut porter sa date d'arrêt : il ne compte pas dans l'année.
-    if (entry.userEndDate && entry.status !== "ABANDONED") {
+    if (entry.userEndDate && finished) {
       const year = new Date(entry.userEndDate).getFullYear();
       if (year === currentYear) booksThisYear += 1;
       if (entry.pageCount) {
@@ -83,7 +90,7 @@ export async function getReadingStats(
     .map(([genre]) => genre);
 
   return {
-    totalBooks: books.length + initialBooksRead,
+    totalBooks: finishedBooks + initialBooksRead,
     totalPagesRead,
     averageRating: ratedBooks > 0 ? ratingSum / ratedBooks : 0,
     booksThisYear,

@@ -87,7 +87,7 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-        <StatTile label="Livres" value={stats.totalBooks} />
+        <StatTile label="Livres lus" value={stats.totalBooks} />
         <StatTile label="Pages lues" value={stats.totalPagesRead} />
         <StatTile
           label="Note moyenne"
