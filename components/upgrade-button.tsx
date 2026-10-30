@@ -8,7 +8,10 @@ import type { BillingInterval } from "@/lib/plans";
 
 interface UpgradeButtonProps {
   interval: BillingInterval;
-  /** Faux tant que Stripe n'est pas configuré : le bouton reste visible mais inactif. */
+  /**
+   * Faux quand les variables Stripe manquent sur le serveur (clé secrète et deux prix, voir
+   * lib/stripe.ts) : le bouton reste visible mais inactif.
+   */
   billingEnabled: boolean;
   variant?: "primary" | "secondary";
   className?: string;
@@ -49,7 +52,7 @@ export function UpgradeButton({
       disabled={!billingEnabled}
       className={className}
     >
-      {billingEnabled ? children : "Bientôt disponible"}
+      {billingEnabled ? children : "Paiement indisponible pour le moment"}
     </Button>
   );
 }
