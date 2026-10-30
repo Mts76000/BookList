@@ -15,6 +15,7 @@ vi.mock("@/lib/permissions", async (importOriginal) => {
 });
 
 const { GET: getMissing } = await import("@/app/api/series/missing/route");
+const { POST: identify } = await import("@/app/api/series/identify/route");
 
 /** Réponse réelle de Wikidata pour Harry Potter (voir tests/fixtures). */
 const wikidataResponse = readFileSync(
@@ -118,5 +119,39 @@ describe("GET /api/series/missing", () => {
     await createUser(true);
     const res = await getMissing(request("Inconnue"));
     expect(res.status).toBe(404);
+  });
+});
+
+describe("POST /api/series/identify", () => {
+  it("donne le vrai nom, le numéro des livres possédés et les tomes manquants", async () => {
+    const userId = await createUser(true);
+    const ids = (
+      await db
+        .insert(book)
+        .values([
+          { userId, title: "Harry Potter à l'école des sorciers", author: "J. K. Rowling" },
+          { userId, title: "Harry Potter et la Chambre des secrets", author: "J. K. Rowling" },
+        ])
+        .returning({ id: book.id })
+    ).map((row) => row.id);
+    vi.spyOn(globalThis, "fetch").mockImplementation(
+      async () => new Response(wikidataResponse, { status: 200 }),
+    );
+
+    const res = await identify(
+      new Request("http://localhost:3000/api/series/identify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-forwarded-for": "10.0.9.251" },
+        body: JSON.stringify({ bookIds: ids }),
+      }),
+    );
+    const { data } = await res.json();
+
+    expect(data).toMatchObject({ found: true, name: "Harry Potter", total: 7, missingCount: 5 });
+    expect(data.owned).toEqual([
+      { bookId: ids[0], seriesIndex: 1 },
+      { bookId: ids[1], seriesIndex: 2 },
+    ]);
+    expect(data.missing.map((volume: { index: number }) => volume.index)).toEqual([3, 4, 5, 6, 7]);
   });
 });

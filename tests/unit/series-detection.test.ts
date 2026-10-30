@@ -110,6 +110,15 @@ describe("suggestSeries", () => {
     ).toEqual([]);
   });
 
+  it("nomme la saga d'après tous les mots communs aux titres", () => {
+    const suggestions = suggestSeries([
+      book("a", "Harry Potter à l'école des sorciers", "J. K. Rowling"),
+      book("b", "Harry Potter et la Chambre des secrets", "J.K. Rowling"),
+    ]);
+    expect(suggestions).toHaveLength(1);
+    expect(suggestions[0].name).toBe("Harry Potter");
+  });
+
   it("donne une clé stable, indépendante de l'ordre des livres", () => {
     const books = [
       book("a", "Hypérion", "Dan Simmons"),

@@ -27,9 +27,9 @@
           "type": "literal",
           "value": "Harry Potter et la Chambre des Secrets"
         },
-        "seriesNameFr": {
+        "seriesNameMul": {
           "type": "literal",
-          "xml:lang": "fr",
+          "xml:lang": "mul",
           "value": "Harry Potter"
         }
       },
@@ -56,9 +56,9 @@
           "type": "literal",
           "value": "Harry Potter et l'Ordre du phénix"
         },
-        "seriesNameFr": {
+        "seriesNameMul": {
           "type": "literal",
-          "xml:lang": "fr",
+          "xml:lang": "mul",
           "value": "Harry Potter"
         }
       },
@@ -85,9 +85,9 @@
           "type": "literal",
           "value": "Harry Potter et le Prince de sang-mêlé"
         },
-        "seriesNameFr": {
+        "seriesNameMul": {
           "type": "literal",
-          "xml:lang": "fr",
+          "xml:lang": "mul",
           "value": "Harry Potter"
         }
       },
@@ -114,9 +114,9 @@
           "type": "literal",
           "value": "Harry Potter à l'école des sorciers"
         },
-        "seriesNameFr": {
+        "seriesNameMul": {
           "type": "literal",
-          "xml:lang": "fr",
+          "xml:lang": "mul",
           "value": "Harry Potter"
         }
       },
@@ -143,9 +143,9 @@
           "type": "literal",
           "value": "Harry Potter et le Prisonnier d'Azkaban"
         },
-        "seriesNameFr": {
+        "seriesNameMul": {
           "type": "literal",
-          "xml:lang": "fr",
+          "xml:lang": "mul",
           "value": "Harry Potter"
         }
       },
@@ -168,9 +168,9 @@
           "type": "literal",
           "value": "Harry Potter et l'enfant maudit"
         },
-        "seriesNameFr": {
+        "seriesNameMul": {
           "type": "literal",
-          "xml:lang": "fr",
+          "xml:lang": "mul",
           "value": "Harry Potter"
         }
       },
@@ -192,9 +192,9 @@
           "type": "literal",
           "value": "Harry Potter et les Reliques de la Mort"
         },
-        "seriesNameFr": {
+        "seriesNameMul": {
           "type": "literal",
-          "xml:lang": "fr",
+          "xml:lang": "mul",
           "value": "Harry Potter"
         }
       },
@@ -221,9 +221,9 @@
           "type": "literal",
           "value": "Prologue à Harry Potter"
         },
-        "seriesNameFr": {
+        "seriesNameMul": {
           "type": "literal",
-          "xml:lang": "fr",
+          "xml:lang": "mul",
           "value": "Harry Potter"
         }
       },
@@ -246,9 +246,9 @@
           "type": "literal",
           "value": "Harry Potter et l'enfant maudit"
         },
-        "seriesNameFr": {
+        "seriesNameMul": {
           "type": "literal",
-          "xml:lang": "fr",
+          "xml:lang": "mul",
           "value": "Harry Potter"
         }
       },
@@ -275,9 +275,9 @@
           "type": "literal",
           "value": "Harry Potter et la Coupe de feu"
         },
-        "seriesNameFr": {
+        "seriesNameMul": {
           "type": "literal",
-          "xml:lang": "fr",
+          "xml:lang": "mul",
           "value": "Harry Potter"
         }
       }

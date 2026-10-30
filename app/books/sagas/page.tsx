@@ -61,8 +61,9 @@ export default async function SeriesPage() {
 
   // Une suggestion pour une saga existante reprend ses tomes actuels, suivis des nouveaux.
   const detected = suggestSeries(library);
-  // Un compte gratuit n'apprend que le nombre de sagas repérées, pas leur contenu.
-  const suggestions: SuggestionView[] = (plan.isPremium ? detected : []).map((suggestion) => {
+  // Suggestions montrées à tous (ce sont ses propres livres) ; la création en un clic et les
+  // tomes manquants sont réservés à Premium (voir SeriesSuggestions).
+  const suggestions: SuggestionView[] = detected.map((suggestion) => {
     const current = suggestion.existing
       ? (allSeries.find((entry) => entry.name === suggestion.name)?.books ?? [])
       : [];
@@ -113,6 +114,7 @@ export default async function SeriesPage() {
         suggestions={suggestions}
         library={editorLibrary}
         existingNames={existingNames}
+        isPremium={plan.isPremium}
       />
 
       {series.length === 0 ? (
@@ -208,11 +210,7 @@ export default async function SeriesPage() {
         <PremiumTeaser
           className="mt-4"
           trialAvailable={plan.trialAvailable}
-          title={
-            detected.length > 0
-              ? `Premium a repéré ${detected.length === 1 ? "une saga" : `${detected.length} sagas`} dans votre bibliothèque`
-              : "Des sagas complètes, sans rien chercher"
-          }
+          title="Des sagas complètes, sans rien chercher"
           description="Avec Premium, BookList repère vos sagas, trouve les tomes qui vous manquent et les ajoute à votre pile en un clic."
         />
       )}

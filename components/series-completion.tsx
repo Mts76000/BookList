@@ -8,7 +8,7 @@ import { BookCover } from "@/components/book-cover";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { apiFetch } from "@/lib/api-client";
-import { normalizeText } from "@/lib/series-detection";
+import { addSeriesVolume } from "@/lib/add-series-volume";
 
 interface MissingVolume {
   id: string;
@@ -20,17 +20,6 @@ interface MissingVolume {
 type Completion =
   | { found: false }
   | { found: true; total: number; missingCount: number; missing: MissingVolume[]; author: string };
-
-interface SearchResult {
-  title: string;
-  authors: string[];
-  description: string | null;
-  coverUrl: string | null;
-  pageCount: number | null;
-  publishedDate: string | null;
-  isbn: string | null;
-  genres: string[] | null;
-}
 
 /**
  * Tomes manquants d'une saga, d'après Wikidata, sous la carte de la saga. Chargés après
@@ -76,47 +65,17 @@ export function SeriesCompletion({ name, isPremium }: { name: string; isPremium:
     );
   }
 
-  /** Ajoute un tome à la pile, avec couverture et ISBN si la recherche les trouve. */
-  async function addVolume(volume: MissingVolume): Promise<boolean> {
-    const search = await apiFetch<{ books: SearchResult[] }>(
-      `/api/books/search?${new URLSearchParams({ q: `${volume.title} ${author}` })}`,
-    );
-    const wanted = normalizeText(volume.title);
-    const match = search.ok
-      ? search.data.books.find((entry) => {
-          const title = normalizeText(entry.title);
-          return title === wanted || title.includes(wanted) || wanted.includes(title);
-        })
-      : undefined;
-
-    const result = await apiFetch("/api/books", {
-      method: "POST",
-      json: {
-        title: volume.title,
-        author,
-        status: "TO_READ",
-        seriesName: name,
-        seriesIndex: volume.index,
-        seriesTotal: total,
-        publishedDate: match?.publishedDate ?? volume.year?.toString() ?? null,
-        coverUrl: match?.coverUrl ?? null,
-        isbn: match?.isbn ?? null,
-        description: match?.description ?? null,
-        pageCount: match?.pageCount ?? null,
-        genre: match?.genres?.join(", ") ?? null,
-      },
-    });
-    if (!result.ok) toast(result.message, "error");
-    return result.ok;
-  }
-
   async function add(volumes: MissingVolume[]) {
     setAdding(new Set(volumes.map((volume) => volume.id)));
     const added: string[] = [];
     // L'un après l'autre : les recherches et ajouts sont limités en débit.
     for (const volume of volumes) {
-      if (await addVolume(volume)) added.push(volume.id);
-      else break;
+      const result = await addSeriesVolume({ volume, author, seriesName: name, total });
+      if (!result.ok) {
+        toast(result.message, "error");
+        break;
+      }
+      added.push(volume.id);
     }
     setAdding(new Set());
     // Les tomes ajoutés quittent la liste tout de suite, sans attendre un nouvel appel.

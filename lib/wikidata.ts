@@ -33,7 +33,7 @@ function sparqlString(value: string): string {
  * sont gardées : pas les films ni les jeux d'une même franchise.
  */
 export function buildSeriesQuery(title: string): string {
-  return `SELECT DISTINCT ?series ?seriesNameFr ?seriesNameEn ?book ?bookLabel ?ordinal ?date WHERE {
+  return `SELECT DISTINCT ?series ?seriesNameFr ?seriesNameMul ?seriesNameEn ?book ?bookLabel ?ordinal ?date WHERE {
   SERVICE wikibase:mwapi {
     bd:serviceParam wikibase:endpoint "www.wikidata.org"; wikibase:api "EntitySearch";
       mwapi:search ${sparqlString(title.slice(0, 200))}; mwapi:language "fr"; mwapi:limit "5" .
@@ -45,8 +45,9 @@ export function buildSeriesQuery(title: string): string {
   ?book wdt:P31/wdt:P279* wd:Q7725634 .
   OPTIONAL { ?book wdt:P577 ?date }
   OPTIONAL { ?series rdfs:label ?seriesNameFr FILTER(LANG(?seriesNameFr) = "fr") }
+  OPTIONAL { ?series rdfs:label ?seriesNameMul FILTER(LANG(?seriesNameMul) = "mul") }
   OPTIONAL { ?series rdfs:label ?seriesNameEn FILTER(LANG(?seriesNameEn) = "en") }
-  SERVICE wikibase:label { bd:serviceParam wikibase:language "fr,en". }
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "fr,mul,en". }
 } LIMIT 400`;
 }
 
@@ -81,7 +82,10 @@ export function parseSeriesResponse(json: { results: { bindings: Binding[] } }):
     const seriesId = entityId(row.series.value);
     const bookId = entityId(row.book.value);
     const entry = series.get(seriesId) ?? {
-      name: row.seriesNameFr?.value ?? row.seriesNameEn?.value ?? seriesId,
+      // « mul » : libellé commun à toutes les langues, que Wikidata utilise de plus en plus
+      // pour les noms propres (« Harry Potter ») à la place des libellés fr et en.
+      name:
+        row.seriesNameFr?.value ?? row.seriesNameMul?.value ?? row.seriesNameEn?.value ?? seriesId,
       volumes: new Map(),
     };
     series.set(seriesId, entry);
@@ -99,7 +103,8 @@ export function parseSeriesResponse(json: { results: { bindings: Binding[] } }):
       title,
       index: previous?.index ?? index,
       year: previous?.year && year ? Math.min(previous.year, year) : (previous?.year ?? year),
-      french: row.bookLabel?.["xml:lang"] === "fr",
+      // Un libellé « mul » vaut pour le français aussi.
+      french: ["fr", "mul"].includes(row.bookLabel?.["xml:lang"] ?? ""),
     });
   }
 
