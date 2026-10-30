@@ -41,7 +41,9 @@ const envSchema = z.object({
 
   // Optionnel : abonnement Premium via Stripe. Tant que ces clés manquent, les offres sont
   // affichées mais le bouton d'abonnement est désactivé (voir lib/stripe.ts).
-  STRIPE_SECRET_KEY: optional(z.string().startsWith("sk_")),
+  // Clé secrète (sk_) ou clé restreinte (rk_), conseillée en production : elle n'ouvre pas
+  // les opérations qui font sortir des fonds (virements, transferts).
+  STRIPE_SECRET_KEY: optional(z.string().regex(/^(sk|rk)_(test|live)_/)),
   STRIPE_WEBHOOK_SECRET: optional(z.string().startsWith("whsec_")),
   STRIPE_PRICE_MONTHLY: optional(z.string().startsWith("price_")),
   STRIPE_PRICE_YEARLY: optional(z.string().startsWith("price_")),

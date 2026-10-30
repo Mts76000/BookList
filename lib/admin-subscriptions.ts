@@ -54,7 +54,7 @@ export function subscriptionKind(row: {
 
 /** Lien vers le client dans le Dashboard Stripe, en mode test ou réel selon la clé. */
 export function stripeCustomerUrl(customerId: string): string {
-  const testMode = env.STRIPE_SECRET_KEY?.startsWith("sk_test") ?? true;
+  const testMode = env.STRIPE_SECRET_KEY ? /^(sk|rk)_test_/.test(env.STRIPE_SECRET_KEY) : true;
   return `https://dashboard.stripe.com/${testMode ? "test/" : ""}customers/${customerId}`;
 }
 

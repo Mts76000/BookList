@@ -28,6 +28,15 @@ describe("envSchema", () => {
     expect(result.success).toBe(false);
   });
 
+  it("accepts a Stripe secret or restricted key, and rejects a publishable one", () => {
+    for (const key of ["sk_live_abc", "sk_test_abc", "rk_live_abc", "rk_test_abc"]) {
+      expect(envSchema.safeParse({ ...validEnv, STRIPE_SECRET_KEY: key }).success).toBe(true);
+    }
+    expect(envSchema.safeParse({ ...validEnv, STRIPE_SECRET_KEY: "pk_live_abc" }).success).toBe(
+      false,
+    );
+  });
+
   it("treats an empty optional variable as unset instead of failing format validation", () => {
     const result = envSchema.safeParse({
       ...validEnv,
