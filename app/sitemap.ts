@@ -1,23 +1,37 @@
 import type { MetadataRoute } from "next";
 import { env } from "@/lib/env";
 
-// Only public, indexable pages. Auth pages and /account are low-value for search indexing
-// and are left out on purpose.
-export default function sitemap(): MetadataRoute.Sitemap {
-  const lastModified = new Date();
+/**
+ * Pages publiques indexables. Les dates de modification sont celles du contenu, mises à
+ * jour à la main quand une page change : une date qui bouge à chaque visite n'apprend rien
+ * aux moteurs de recherche, qui finissent par l'ignorer.
+ */
+const PAGES: {
+  path: string;
+  lastModified: string;
+  changeFrequency: "monthly" | "yearly";
+  priority: number;
+}[] = [
+  { path: "/", lastModified: "2026-10-30", changeFrequency: "monthly", priority: 1 },
+  { path: "/tarifs", lastModified: "2026-10-30", changeFrequency: "monthly", priority: 0.8 },
+  {
+    path: "/alternative-goodreads",
+    lastModified: "2026-10-30",
+    changeFrequency: "monthly",
+    priority: 0.8,
+  },
+  { path: "/register", lastModified: "2026-10-30", changeFrequency: "yearly", priority: 0.5 },
+  { path: "/legal/notice", lastModified: "2026-10-30", changeFrequency: "yearly", priority: 0.2 },
+  { path: "/legal/terms", lastModified: "2026-10-30", changeFrequency: "yearly", priority: 0.2 },
+  { path: "/legal/privacy", lastModified: "2026-10-30", changeFrequency: "yearly", priority: 0.2 },
+  { path: "/legal/cookies", lastModified: "2026-10-30", changeFrequency: "yearly", priority: 0.2 },
+];
 
-  return [
-    {
-      url: env.NEXT_PUBLIC_APP_URL,
-      lastModified,
-      changeFrequency: "monthly",
-      priority: 1,
-    },
-    ...["/legal/notice", "/legal/terms", "/legal/privacy", "/legal/cookies"].map((path) => ({
-      url: `${env.NEXT_PUBLIC_APP_URL}${path}`,
-      lastModified,
-      changeFrequency: "yearly" as const,
-      priority: 0.3,
-    })),
-  ];
+export default function sitemap(): MetadataRoute.Sitemap {
+  return PAGES.map((page) => ({
+    url: new URL(page.path, env.NEXT_PUBLIC_APP_URL).toString(),
+    lastModified: new Date(page.lastModified),
+    changeFrequency: page.changeFrequency,
+    priority: page.priority,
+  }));
 }

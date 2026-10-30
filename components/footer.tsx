@@ -18,8 +18,11 @@ export async function Footer() {
           © {new Date().getFullYear()} {env.NEXT_PUBLIC_APP_NAME}. Tous droits réservés.
         </p>
         <nav className="flex flex-wrap justify-center gap-x-4 gap-y-2">
-          <Link href="/#tarifs" className="hover:text-foreground">
+          <Link href="/tarifs" className="hover:text-foreground">
             Tarifs
+          </Link>
+          <Link href="/alternative-goodreads" className="hover:text-foreground">
+            Alternative à Goodreads
           </Link>
           <a href={`mailto:${env.CONTACT_EMAIL}`} className="hover:text-foreground">
             Contact

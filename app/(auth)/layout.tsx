@@ -1,6 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Footer } from "@/components/footer";
 import { Logo } from "@/components/logo";
+
+// Connexion, mot de passe oublié, vérification : rien à indexer. La page d'inscription
+// rétablit l'indexation pour elle seule (voir register/layout.tsx).
+export const metadata: Metadata = {
+  robots: { index: false, follow: true },
+};
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
