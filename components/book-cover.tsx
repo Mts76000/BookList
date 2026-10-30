@@ -5,6 +5,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 interface BookCoverProps {
   coverUrl?: string | null;
   alt?: string;
+  /** Affiché sur la couverture de remplacement, sous le titre (pris dans `alt`). */
+  author?: string | null;
   className?: string;
   variant?: "small" | "large";
   /** Ombre « physique » et légère réaction au survol, façon livre posé sur l'étagère. */
@@ -69,6 +71,7 @@ function sizedCover(url: string, variant: "small" | "large"): string {
 export function BookCover({
   coverUrl,
   alt,
+  author,
   className,
   variant = "small",
   tactile = false,
@@ -128,11 +131,11 @@ export function BookCover({
 
   if (error || !coverUrl) {
     return (
-      <div
-        className={`relative flex items-center justify-center overflow-hidden bg-stone-100 text-stone-400 ${interactionClasses} ${className ?? ""}`}
-      >
-        <BookIcon className="h-10 w-10" />
-      </div>
+      <GeneratedCover
+        title={alt}
+        author={author}
+        className={`${interactionClasses} ${className ?? ""}`}
+      />
     );
   }
 
@@ -157,6 +160,74 @@ export function BookCover({
       onError={() => setError(true)}
       className={`object-cover ${interactionClasses} ${className ?? ""}`}
     />
+  );
+}
+
+/**
+ * Teintes des couvertures de remplacement, prises dans la palette (terracotta, mousse,
+ * brun). Sombres, pour que le titre en crème reste lisible.
+ */
+const GENERATED_TONES = ["#79331a", "#4f6a41", "#504536", "#93401e", "#33452c", "#5f2a18"];
+
+/** Même titre, même teinte : la couverture ne change pas d'une page à l'autre. */
+function toneFor(text: string): string {
+  let hash = 0;
+  for (const char of text) hash = (hash * 31 + char.charCodeAt(0)) | 0;
+  return GENERATED_TONES[Math.abs(hash) % GENERATED_TONES.length];
+}
+
+/**
+ * Couverture typographique quand aucune image n'existe : une tranche de livre colorée avec
+ * le titre et l'auteur, plutôt qu'une icône grise qui, répétée sur une étagère, donne
+ * l'impression d'une page cassée. Le texte suit la taille de la couverture (unités `cqw`),
+ * d'une miniature de 48 pixels à la grande couverture de la fiche.
+ */
+function GeneratedCover({
+  title,
+  author,
+  className,
+}: {
+  title?: string;
+  author?: string | null;
+  className?: string;
+}) {
+  if (!title) {
+    return (
+      <div
+        className={`relative flex items-center justify-center overflow-hidden bg-stone-100 text-stone-400 ${className ?? ""}`}
+      >
+        <BookIcon className="h-10 w-10" />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      role="img"
+      aria-label={title}
+      className={`@container relative flex flex-col overflow-hidden text-stone-50 ${className ?? ""}`}
+      style={{ backgroundColor: toneFor(title) }}
+    >
+      {/* Pli de la reliure, à gauche, comme sur une vraie couverture. */}
+      <span className="absolute inset-y-0 left-[5%] w-px bg-white/15" aria-hidden="true" />
+      <div className="flex flex-1 flex-col justify-between p-[11%] pl-[16%]">
+        <p
+          className="line-clamp-5 font-serif leading-[1.1] font-medium break-words hyphens-auto"
+          style={{ fontSize: "clamp(7px, 13cqw, 30px)" }}
+          lang="fr"
+        >
+          {title}
+        </p>
+        {author && (
+          <p
+            className="line-clamp-2 leading-tight text-stone-50/75"
+            style={{ fontSize: "clamp(5px, 8.5cqw, 15px)" }}
+          >
+            {author}
+          </p>
+        )}
+      </div>
+    </div>
   );
 }
 

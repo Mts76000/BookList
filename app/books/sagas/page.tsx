@@ -9,11 +9,12 @@ import { BooksTabs } from "@/components/books-tabs";
 import { BookCover } from "@/components/book-cover";
 import { PremiumTeaser } from "@/components/premium-teaser";
 
-const STATUS_RING = {
-  FINISHED: "ring-moss-500",
-  READING: "ring-accent-500",
-  TO_READ: "ring-transparent",
-  ABANDONED: "ring-stone-300",
+/** Statut d'un tome, sous sa couverture : une pastille et un mot, lisibles sans légende. */
+const STATUS = {
+  FINISHED: { label: "Lu", dot: "bg-moss-500" },
+  READING: { label: "En cours", dot: "bg-accent-500" },
+  TO_READ: { label: "À lire", dot: "bg-stone-300" },
+  ABANDONED: { label: "Abandonné", dot: "bg-stone-400" },
 } as const;
 
 export default async function SeriesPage() {
@@ -24,6 +25,7 @@ export default async function SeriesPage() {
     .select({
       id: book.id,
       title: book.title,
+      author: book.author,
       coverUrl: book.coverUrl,
       status: book.status,
       seriesName: book.seriesName,
@@ -71,25 +73,33 @@ export default async function SeriesPage() {
                 </p>
               </div>
 
-              <div className="mt-4 flex gap-3 overflow-x-auto pb-2">
+              {/* Défilement horizontal bord à bord sur mobile : la carte ne coupe pas le
+                  dernier tome au milieu, il dépasse jusqu'au bord de l'écran. */}
+              <ul className="-mx-5 mt-4 flex gap-3 overflow-x-auto px-5 pt-1 pb-3 sm:-mx-6 sm:px-6">
                 {entry.books.map((volume) => (
-                  <Link
-                    key={volume.id}
-                    href={`/books/${volume.id}`}
-                    className="w-20 shrink-0"
-                    title={volume.title}
-                  >
-                    <BookCover
-                      coverUrl={volume.coverUrl}
-                      alt={volume.title}
-                      className={`h-28 w-20 rounded-[var(--radius-sm)] ring-2 ring-offset-2 ${STATUS_RING[volume.status]} ${volume.status === "TO_READ" ? "opacity-60" : ""}`}
-                    />
-                    <p className="mt-2 text-center text-xs text-stone-500">
-                      {volume.seriesIndex !== null ? `Tome ${volume.seriesIndex}` : "Hors série"}
-                    </p>
-                  </Link>
+                  <li key={volume.id} className="w-[5.5rem] shrink-0 sm:w-24">
+                    <Link href={`/books/${volume.id}`} className="block" title={volume.title}>
+                      <BookCover
+                        coverUrl={volume.coverUrl}
+                        alt={volume.title}
+                        author={volume.author}
+                        tactile
+                        className={`aspect-[2/3] w-full rounded-[var(--radius-sm)] ${volume.status === "TO_READ" ? "opacity-70" : ""}`}
+                      />
+                      <p className="mt-2 text-xs font-medium text-stone-700">
+                        {volume.seriesIndex !== null ? `Tome ${volume.seriesIndex}` : "Hors série"}
+                      </p>
+                      <p className="flex items-center gap-1.5 text-xs text-stone-500">
+                        <span
+                          className={`size-1.5 rounded-full ${STATUS[volume.status].dot}`}
+                          aria-hidden="true"
+                        />
+                        {STATUS[volume.status].label}
+                      </p>
+                    </Link>
+                  </li>
                 ))}
-              </div>
+              </ul>
 
               <p className="mt-3 text-sm text-stone-700">
                 {entry.next === null ? (

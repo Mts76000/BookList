@@ -53,7 +53,7 @@ export default async function QuotesPage({
   return (
     <main
       id="main-content"
-      className="animate-fade-in-up mx-auto max-w-3xl px-4 py-6 sm:px-6 sm:py-8"
+      className="animate-fade-in-up mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8"
     >
       <BooksTabs active="/books/citations" />
 
@@ -63,7 +63,7 @@ export default async function QuotesPage({
       </header>
 
       {plan.isPremium ? (
-        <form role="search" className="mb-6">
+        <form role="search" className="mb-6 sm:max-w-md">
           <label htmlFor="quote-search" className="sr-only">
             Rechercher dans vos citations
           </label>
@@ -98,9 +98,9 @@ export default async function QuotesPage({
             : "Aucune citation pour l'instant. Ouvrez un livre pour noter un passage qui vous a marqué."}
         </p>
       ) : (
-        <ul className="space-y-4">
+        <ul className="gap-4 md:columns-2">
           {quotes.map((entry) => (
-            <li key={entry.id} className="card flex gap-3 p-5">
+            <li key={entry.id} className="card mb-4 flex break-inside-avoid gap-3 p-5">
               <div className="border-accent-300 min-w-0 flex-1 border-l-2 pl-4">
                 <p className="font-serif whitespace-pre-line text-stone-800">{entry.content}</p>
                 <p className="mt-2 text-xs text-stone-500">

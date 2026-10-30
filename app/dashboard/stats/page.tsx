@@ -7,6 +7,7 @@ import { isBillingEnabled } from "@/lib/stripe";
 import { PremiumOffer } from "@/components/premium-offer";
 import { StatsTabs } from "@/components/stats-tabs";
 import { PREMIUM_STREAK_JOKERS } from "@/lib/plans";
+import { getReadingStats, type ReadingStats } from "@/lib/reading-stats";
 
 export const metadata: Metadata = {
   title: "Statistiques",
@@ -35,7 +36,10 @@ function plural(count: number, word: string): string {
 
 export default async function StatsPage() {
   const session = await requireAuthPage("/dashboard/stats");
-  const plan = await getUserPlan(session.user.id);
+  const [plan, lifetime] = await Promise.all([
+    getUserPlan(session.user.id),
+    getReadingStats(session.user.id, session.user.initialBooksRead),
+  ]);
   const year = new Date().getFullYear();
 
   return (
@@ -60,6 +64,14 @@ export default async function StatsPage() {
           trialAvailable={plan.trialAvailable}
         />
       )}
+
+      <LifetimeStats
+        stats={lifetime}
+        memberSince={new Date(session.user.createdAt).toLocaleDateString("fr-FR", {
+          month: "long",
+          year: "numeric",
+        })}
+      />
     </main>
   );
 }
@@ -350,5 +362,88 @@ function StatsContent({ stats }: { stats: AdvancedStats }) {
         </section>
       )}
     </div>
+  );
+}
+
+/**
+ * Le bilan depuis l'inscription, accessible à tous : ces chiffres figuraient sur la page du
+ * compte, où ils n'avaient pas leur place à côté des réglages.
+ */
+function LifetimeStats({ stats, memberSince }: { stats: ReadingStats; memberSince: string }) {
+  const maxPages = Math.max(...stats.pagesPerYear.map((entry) => entry.pages), 1);
+  const tiles = [
+    { label: "Livres lus", value: stats.totalBooks.toLocaleString("fr-FR") },
+    { label: "Pages lues", value: stats.totalPagesRead.toLocaleString("fr-FR") },
+    {
+      label: "Note moyenne",
+      value: stats.averageRating > 0 ? stats.averageRating.toFixed(1).replace(".", ",") : "—",
+    },
+    { label: "Notes écrites", value: stats.commentsCount.toLocaleString("fr-FR") },
+  ];
+
+  return (
+    <section className="mt-10 border-t border-stone-200 pt-8">
+      <div className="mb-5 flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="font-serif text-2xl text-stone-900">Depuis vos débuts</h2>
+        <p className="text-sm text-stone-500">Membre depuis {memberSince}</p>
+      </div>
+
+      <div className="card p-4 sm:p-6">
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-4">
+          {tiles.map((tile) => (
+            <div key={tile.label}>
+              <dt className="text-xs text-stone-500">{tile.label}</dt>
+              <dd className="mt-0.5 font-serif text-2xl text-stone-900 tabular-nums">
+                {tile.value}
+              </dd>
+            </div>
+          ))}
+        </dl>
+
+        {(stats.topAuthors[0] || stats.topGenres[0]) && (
+          <dl className="mt-6 grid grid-cols-1 gap-4 border-t border-stone-100 pt-6 sm:grid-cols-2">
+            {stats.topAuthors[0] && (
+              <div>
+                <dt className="text-xs text-stone-500">Auteur le plus lu</dt>
+                <dd className="font-medium text-stone-900">
+                  {stats.topAuthors[0].author}{" "}
+                  <span className="text-sm font-normal text-stone-500">
+                    ({plural(stats.topAuthors[0].count, "livre")})
+                  </span>
+                </dd>
+              </div>
+            )}
+            {stats.topGenres[0] && (
+              <div>
+                <dt className="text-xs text-stone-500">Genre préféré</dt>
+                <dd className="font-medium text-stone-900">{stats.topGenres[0]}</dd>
+              </div>
+            )}
+          </dl>
+        )}
+
+        {stats.pagesPerYear.length > 0 && (
+          <div className="mt-6 border-t border-stone-100 pt-6">
+            <h3 className="mb-3 text-xs text-stone-500">Pages lues par année</h3>
+            <ul className="space-y-2">
+              {stats.pagesPerYear.map((entry) => (
+                <li key={entry.year} className="flex items-center gap-3">
+                  <span className="w-10 text-xs text-stone-500 tabular-nums">{entry.year}</span>
+                  <span className="h-2 flex-1 overflow-hidden rounded-full bg-stone-100">
+                    <span
+                      className="bg-accent-400 block h-full rounded-full"
+                      style={{ width: `${Math.max(2, (entry.pages / maxPages) * 100)}%` }}
+                    />
+                  </span>
+                  <span className="w-16 text-right text-xs text-stone-500 tabular-nums">
+                    {entry.pages.toLocaleString("fr-FR")}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    </section>
   );
 }

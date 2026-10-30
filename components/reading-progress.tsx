@@ -161,3 +161,144 @@ export function StartReadingButton({ bookId }: { bookId: string }) {
     </Button>
   );
 }
+
+const QUICK_STEPS = [10, 25, 50];
+
+/**
+ * Mise à jour en un geste pour la lecture mise en avant sur l'accueil : « +10 », « +25 »,
+ * « +50 » pages depuis la page actuelle, ou la page exacte au besoin. Même route que la
+ * saisie classique : la journée de lecture et la série suivent.
+ */
+export function QuickProgress({
+  bookId,
+  currentPage,
+  pageCount,
+}: {
+  bookId: string;
+  currentPage: number | null;
+  pageCount: number | null;
+}) {
+  const router = useRouter();
+  const { toast } = useToast();
+  const [pending, setPending] = useState<string | null>(null);
+  const [isTyping, setIsTyping] = useState(false);
+  const [page, setPage] = useState(currentPage?.toString() ?? "");
+  const [reachedEnd, setReachedEnd] = useState(false);
+
+  async function save(target: number, key: string) {
+    setPending(key);
+    const result = await apiFetch<{ reachedEnd: boolean; currentPage: number }>(
+      `/api/books/${bookId}/progress`,
+      { method: "POST", json: { currentPage: target } },
+    );
+    setPending(null);
+    if (!result.ok) {
+      toast(result.message, "error");
+      return;
+    }
+    toast(result.message ?? "Progression mise à jour.", "success");
+    setPage(result.data.currentPage.toString());
+    setReachedEnd(result.data.reachedEnd);
+    setIsTyping(false);
+    router.refresh();
+  }
+
+  async function markFinished() {
+    setPending("finish");
+    const result = await apiFetch(`/api/books/${bookId}`, {
+      method: "PATCH",
+      json: { status: "FINISHED", userEndDate: new Date().toISOString().slice(0, 10) },
+    });
+    setPending(null);
+    if (!result.ok) {
+      toast(result.message, "error");
+      return;
+    }
+    toast("Bravo, un livre de plus !", "success");
+    router.refresh();
+  }
+
+  if (reachedEnd) {
+    return (
+      <div className="bg-moss-50 border-moss-200 flex flex-col gap-3 rounded-[var(--radius-sm)] border p-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-moss-800 text-sm">Dernière page atteinte. Livre terminé ?</p>
+        <Button
+          onClick={markFinished}
+          isLoading={pending === "finish"}
+          className="w-full sm:w-auto"
+        >
+          Marquer comme terminé
+        </Button>
+      </div>
+    );
+  }
+
+  if (isTyping) {
+    return (
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          void save(Number(page), "exact");
+        }}
+        className="flex items-end gap-2"
+      >
+        <div className="w-32">
+          <Field
+            label="J'en suis à la page"
+            hideLabel
+            placeholder="Page"
+            type="number"
+            inputMode="numeric"
+            min={0}
+            max={pageCount ?? undefined}
+            required
+            autoFocus
+            value={page}
+            onChange={(e) => setPage(e.target.value)}
+          />
+        </div>
+        <Button type="submit" isLoading={pending === "exact"}>
+          Enregistrer
+        </Button>
+        <Button type="button" variant="ghost" onClick={() => setIsTyping(false)}>
+          Annuler
+        </Button>
+      </form>
+    );
+  }
+
+  const from = currentPage ?? 0;
+  return (
+    <div>
+      <p className="mb-2 text-xs font-medium text-stone-500">Pages lues depuis la dernière fois</p>
+      <div className="grid grid-cols-4 gap-2 sm:flex">
+        {QUICK_STEPS.map((step) => (
+          <Button
+            key={step}
+            type="button"
+            variant="secondary"
+            isLoading={pending === String(step)}
+            disabled={pending !== null}
+            onClick={() =>
+              save(pageCount ? Math.min(from + step, pageCount) : from + step, String(step))
+            }
+            className="px-2 tabular-nums sm:min-w-[4.5rem] sm:px-3"
+            aria-label={`${step} pages de plus`}
+          >
+            +{step}
+          </Button>
+        ))}
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={() => setIsTyping(true)}
+          disabled={pending !== null}
+          className="px-2 sm:px-3"
+          aria-label="Indiquer la page exacte"
+        >
+          Page…
+        </Button>
+      </div>
+    </div>
+  );
+}

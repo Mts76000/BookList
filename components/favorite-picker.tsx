@@ -70,6 +70,7 @@ export function FavoritePicker({ year, favorite, isChosen, candidates }: Favorit
             <BookCover
               coverUrl={favorite.coverUrl}
               alt={favorite.title}
+              author={favorite.author}
               tactile
               className="h-32 w-[5.5rem] rounded-[var(--radius-sm)]"
             />

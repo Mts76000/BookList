@@ -147,13 +147,19 @@ async function searchOpenLibrary(
  * édition française sur Google Books, toute édition, puis Open Library par titre et auteur
  * et en texte libre. Sans réseau, le livre est créé sans couverture.
  */
-async function lookupMetadata(title: string, author: string): Promise<BookMetadata> {
+async function lookupMetadata({ title, author, originalTitle }: DemoBook): Promise<BookMetadata> {
   const attempts = [
     () => searchGoogle(`intitle:${title} inauthor:${author}`, title, true),
     () => searchGoogle(`${title} ${author}`, title, false),
     () => searchOpenLibrary({ title, author }, title),
     () => searchOpenLibrary({ q: `${title} ${author}` }, title),
   ];
+  // Une édition étrangère prête sa couverture, pas son ISBN, qui désignerait un autre livre.
+  if (originalTitle)
+    attempts.push(async () => {
+      const found = await searchOpenLibrary({ title: originalTitle, author }, originalTitle);
+      return found && { ...found, isbn: null };
+    });
   for (const attempt of attempts) {
     try {
       const found = await attempt();
@@ -186,7 +192,7 @@ async function lookupAll(books: DemoBook[]): Promise<Map<string, BookMetadata>> 
   const missing = books.filter((book) => !cache[book.title]?.coverUrl);
   for (let i = 0; i < missing.length; i += 4) {
     const batch = missing.slice(i, i + 4);
-    const found = await Promise.all(batch.map((b) => lookupMetadata(b.title, b.author)));
+    const found = await Promise.all(batch.map(lookupMetadata));
     batch.forEach((b, index) => {
       if (found[index].coverUrl) cache[b.title] = found[index];
     });
@@ -324,7 +330,7 @@ async function main() {
   await db.transaction(async (tx) => {
     await tx.insert(schema.user).values({
       id: userId,
-      name: "Camille Martin",
+      name: "Camille",
       email: DEMO_EMAIL,
       emailVerified: true,
       role: "user",

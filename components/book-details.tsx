@@ -423,6 +423,7 @@ export function BookDetails({ book }: BookDetailsProps) {
             <BookCover
               coverUrl={book.coverUrl}
               alt={book.title}
+              author={book.author}
               className="mx-auto h-56 w-40 shrink-0 rounded-[var(--radius-sm)] sm:mx-0"
               variant="large"
               tactile

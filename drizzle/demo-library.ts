@@ -26,6 +26,9 @@ export interface DemoBook {
   format?: "paper" | "ebook" | "audio";
   tags?: string[];
   series?: { name: string; index: number; total: number };
+  /** Titre original, pour retrouver la couverture quand l'édition française est absente
+   *  d'Open Library, qui range les œuvres traduites sous leur titre d'origine. */
+  originalTitle?: string;
   /** Pour une lecture en cours ou abandonnée : page atteinte. */
   currentPage?: number;
   /** Note personnelle, écrite par la lectrice. */
@@ -78,6 +81,7 @@ export const READING_HISTORY: DemoBook[] = [
   },
   {
     title: "Fondation",
+    originalTitle: "Foundation",
     author: "Isaac Asimov",
     pageCount: 416,
     genre: "Science-Fiction",
@@ -108,6 +112,7 @@ export const READING_HISTORY: DemoBook[] = [
   },
   {
     title: "Le Messie de Dune",
+    originalTitle: "Dune Messiah",
     author: "Frank Herbert",
     pageCount: 336,
     genre: "Science-Fiction",
@@ -128,6 +133,7 @@ export const READING_HISTORY: DemoBook[] = [
   },
   {
     title: "Fondation et Empire",
+    originalTitle: "Foundation and Empire",
     author: "Isaac Asimov",
     pageCount: 320,
     genre: "Science-Fiction",
@@ -167,6 +173,7 @@ export const READING_HISTORY: DemoBook[] = [
   },
   {
     title: "Seconde Fondation",
+    originalTitle: "Second Foundation",
     author: "Isaac Asimov",
     pageCount: 320,
     genre: "Science-Fiction",
@@ -198,6 +205,7 @@ export const READING_HISTORY: DemoBook[] = [
   },
   {
     title: "Le Nom du vent",
+    originalTitle: "The Name of the Wind",
     author: "Patrick Rothfuss",
     pageCount: 832,
     genre: "Fantasy",
@@ -261,6 +269,7 @@ export const READING_HISTORY: DemoBook[] = [
   },
   {
     title: "La Fille qui rêvait d'un bidon d'essence et d'une allumette",
+    originalTitle: "The Girl Who Played with Fire",
     author: "Stieg Larsson",
     pageCount: 752,
     genre: "Policier, Thriller",
@@ -281,6 +290,7 @@ export const READING_HISTORY: DemoBook[] = [
   },
   {
     title: "Les Enfants de Dune",
+    originalTitle: "Children of Dune",
     author: "Frank Herbert",
     pageCount: 640,
     genre: "Science-Fiction",
@@ -320,6 +330,7 @@ export const READING_HISTORY: DemoBook[] = [
   },
   {
     title: "La Communauté de l'anneau",
+    originalTitle: "The Fellowship of the Ring",
     author: "J. R. R. Tolkien",
     pageCount: 544,
     genre: "Fantasy",
@@ -339,6 +350,7 @@ export const READING_HISTORY: DemoBook[] = [
   },
   {
     title: "Les Deux Tours",
+    originalTitle: "The Two Towers",
     author: "J. R. R. Tolkien",
     pageCount: 480,
     genre: "Fantasy",
@@ -358,6 +370,7 @@ export const READING_HISTORY: DemoBook[] = [
   },
   {
     title: "Le Retour du roi",
+    originalTitle: "The Return of the King",
     author: "J. R. R. Tolkien",
     pageCount: 512,
     genre: "Fantasy",
@@ -526,6 +539,7 @@ export const CURRENTLY_READING: (DemoBook & { startedDaysAgo: number })[] = [
   },
   {
     title: "La Peur du sage",
+    originalTitle: "The Wise Man's Fear",
     author: "Patrick Rothfuss",
     pageCount: 1008,
     genre: "Fantasy",
@@ -541,6 +555,7 @@ export const CURRENTLY_READING: (DemoBook & { startedDaysAgo: number })[] = [
 export const TO_READ: DemoBook[] = [
   {
     title: "L'Empereur-Dieu de Dune",
+    originalTitle: "God Emperor of Dune",
     author: "Frank Herbert",
     pageCount: 576,
     genre: "Science-Fiction",
@@ -559,6 +574,7 @@ export const TO_READ: DemoBook[] = [
   },
   {
     title: "La Chute d'Hypérion",
+    originalTitle: "The Fall of Hyperion",
     author: "Dan Simmons",
     pageCount: 640,
     genre: "Science-Fiction",

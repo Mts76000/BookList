@@ -29,6 +29,16 @@
     "isbn": "9782207178591",
     "description": "Montag est un pompier du futur d'un genre particulier : il brûle les livres. Jusqu'au jour où il se met à en lire, refuse le bonheur obligatoire et rêve d'un monde perdu où la littérature et l'imaginaire ne seraient pas bannis. Devenant du coup un dangereux criminel..."
   },
+  "Fondation": {
+    "coverUrl": "https://covers.openlibrary.org/b/id/14612610-L.jpg",
+    "isbn": null,
+    "description": null
+  },
+  "Fondation et Empire": {
+    "coverUrl": "https://covers.openlibrary.org/b/id/9300695-L.jpg",
+    "isbn": null,
+    "description": null
+  },
   "Germinal": {
     "coverUrl": "https://books.google.com/books/content?id=5Z4sEAAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api",
     "isbn": "9782322232628",
@@ -59,6 +69,11 @@
     "isbn": "9782382744604",
     "description": "\"L'Assommoir\" d'Émile Zola est un roman naturaliste qui explore la vie de Gervaise Macquart, une blanchisseuse vivant à Paris sous le Second Empire. Le récit s'ouvre sur l'abandon de Gervaise par son compagnon Lantier, qui la laisse seule avec leurs deux enfants. Déterminée à s'en sortir, Gervaise trouve du travail dans une blanchisserie et rêve d'ouvrir son propre établissement. Elle rencontre Coupeau, un ouvrier zingueur, avec qui elle se marie. Leur vie semble évoluer positivement, mais un accident de Coupeau et sa convalescence prolongée plongent la famille dans la précarité. La situation se dégrade lorsque Coupeau sombre dans l'alcoolisme, entraînant Gervaise dans une spirale de déchéance. Le roman dépeint avec une précision crue les effets destructeurs de l'alcool et de la pauvreté sur les individus et leurs relations. Zola utilise le cadre du lavoir pour illustrer la solidarité et les tensions entre les femmes de la classe ouvrière. À travers le parcours tragique de Gervaise, l'auteur critique les conditions sociales de l'époque et met en lumière les forces implacables qui écrasent les aspirations des plus démunis. \"L'Assommoir\" est une œuvre poignante qui interroge la responsabilité individuelle et collective face à la misère sociale."
   },
+  "L'Empereur-Dieu de Dune": {
+    "coverUrl": "https://covers.openlibrary.org/b/id/6711531-L.jpg",
+    "isbn": "9782266320511",
+    "description": null
+  },
   "L'Étranger": {
     "coverUrl": "https://books.google.com/books/content?id=dNQNAQAAMAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api",
     "isbn": null,
@@ -79,10 +94,20 @@
     "isbn": null,
     "description": "Dans un bar d'Amsterdam, un homme fait la confession de sa vie à la suite d'un drame muet et dont il fut le témoin ..."
   },
+  "La Chute d'Hypérion": {
+    "coverUrl": "https://covers.openlibrary.org/b/id/484900-L.jpg",
+    "isbn": null,
+    "description": null
+  },
+  "La Communauté de l'anneau": {
+    "coverUrl": "https://covers.openlibrary.org/b/id/14627060-L.jpg",
+    "isbn": null,
+    "description": null
+  },
   "La Fille qui rêvait d'un bidon d'essence et d'une allumette": {
-    "coverUrl": "https://books.google.com/books/content?id=X_PvtgAACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api",
-    "isbn": "9782742797875",
-    "description": "Une enquête sur un réseau de prostitution dévoile des secrets d'espionnage et un lourd passé familial. Le deuxième volet de la série culte."
+    "coverUrl": "https://covers.openlibrary.org/b/id/12470766-L.jpg",
+    "isbn": "9782846664585",
+    "description": null
   },
   "La Forêt sombre": {
     "coverUrl": "https://books.google.com/books/content?id=diw2DwAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api",
@@ -113,6 +138,11 @@
     "coverUrl": "https://books.google.com/books/content?id=2NdWAAAAYAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api",
     "isbn": null,
     "description": "[4e de couverture] \"C'est moi qui remplace la peste\", s'écriait Caligula, l'empereur dément. Bientôt, la \"peste brune\" déferlait sur l'Europe dans un grand bruit de bottes. France déchirée aux coutures de Somme et de Loire, troupeaux de prisonniers, esclaves voués par millions aux barbelés et aux crématoires, La Peste éternise ces jours de ténèbres, cette \"passion collective\" d'une Europe en folie, détournée comme Oran de la mer et de sa mesure. Sans doute la guerre accentue-t-elle la séparation, la maladie, l'insécurité. Mais ne sommes-nous pas toujours plus ou moins séparés, menacés, exilés, rongés comme le fruit par le ver ? Face aux souffrances comme à la mort, à l'ennui des recommencenments, La Peste recense les conduites ; elle nous impose la vision d'un univers sans avenir ni finalité, un monde de la répétition et de l'étouffante monotonie, où le drame même cesse de paraître dramatique et s'imprègne d'humour macabre, où les hommes se définissent moins par leur démarche, leur langage et leur poids de chair que par leurs silences, leurs secrètes blessures, leurs ombres portées et leurs réactions aux défis de l'existence. La Peste sera donc, au gré des interprétations, la \"chronique de la résistance\" ou un roman de la permanence, le prolongement de L'Etranger ou \"un progrès\" sur L'Etranger, le livre des \"damnés\" et des solitaires ou le manuel du relatif et de la solidarité - en tout cas, une oeuvre pudique et calculée qu'Albert Camus douta parfois de mener à bien, au cours de sept années de gestation, de maturation et de rédaction difficiles, entrecoupées des combats du résistant et du journaliste."
+  },
+  "La Peur du sage": {
+    "coverUrl": "https://covers.openlibrary.org/b/id/8294024-L.jpg",
+    "isbn": null,
+    "description": null
   },
   "La Reine dans le palais des courants d'air": {
     "coverUrl": "https://books.google.com/books/content?id=rOh8GQAACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api",
@@ -154,15 +184,30 @@
     "isbn": "9782259243513",
     "description": "Le chef d'œuvre d'Aldous Huxley Le Meilleur des Mondes, se lit et se relit, intemporel, visionnaire, absolument génial. Découvrez ou redécouvrez-le dans cette édition numérique inédite, suivi de Retour au meilleur des mondes, un texte plus pamphlétaire, écrit trente ans après l'œuvre originale dont il poursuit le propos. Le chef d'œuvre d'Aldous Huxley Le Meilleur des Mondes, se lit et se relit, intemporel, visionnaire, absolument génial. Découvrez ou redécouvrez-le dans cette édition numérique inédite, suivi de Retour au meilleur des mondes, un texte plus pamphlétaire, écrit trente ans après l'œuvre originale dont il poursuit le propos. Le Meilleur des Mondes 632 après Ford : désormais on compte les années à partir de l'invention de la voiture à moteur. La technologie et la science ont remplacé la liberté et Dieu. La vie humaine, anesthésiée, est une suite de satisfactions, les êtres naissent in vitro, les désirs s'assouvissent sans risque de reproduction, les émotions et les sentiments ont été remplacés par des sensations et des instincts programmés. La société de ce Meilleur des mondes est organisée, hiérarchisée et uniformisée, chaque être, rangé par catégorie, a sa vocation, ses capacités et ses envies, maîtrisées, disciplinées, accomplies. Chacun concourt à l'ordre général, c'est-à-dire travaille, consomme et meurt, sans jamais revendiquer, apprendre ou exulter. Mais un homme pourtant est né dans cette société, avec, chose affreuse, un père et une mère et, pire encore, des sentiments et des rêves. Ce \" Sauvage \", qui a lu tout Shakespeare et le cite comme une Bible, peut-il être un danger pour le \" monde civilisé \" ? Retour au meilleur des mondes Trente ans après Le Meilleur des mondes, Aldous Huxley revient sur ce roman phare de la science-fiction pour constater que l'évolution qu'il imaginait dans les années 1930 se révèle une véritable prédiction. Le monde qu'il a vu émerger – la dictature scientifique, l'homme transformé en esclave amoureux de sa servitude, la montée des fanatismes, le cauchemar de l'organisation intégrale – est déjà en train de prendre forme sous ses yeux à la fin des années 1950. Dans cet essai d'une étonnante lucidité, il nous offre un regard percutant sur les évolutions sociales et politiques de son temps."
   },
+  "Le Messie de Dune": {
+    "coverUrl": "https://covers.openlibrary.org/b/id/980253-L.jpg",
+    "isbn": null,
+    "description": null
+  },
   "Le Meurtre de Roger Ackroyd": {
     "coverUrl": "https://books.google.com/books/content?id=WQwzo_ibrNMC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api",
     "isbn": "9782702436769",
     "description": "Roger Ackroyd se confie un soir à son vieil ami le Dr Sheppard. Il était sur le point d’épouser une jeune et richissime veuve quand celle-ci a mis fin à ses jours pour échapper à un affreux chantage. Dans sa dernière lettre elle lui livre un secret terrible : un an plus tôt, elle a assassiné son mari ! Traduit de l’anglais par Françoise Jamoul"
   },
+  "Le Nom du vent": {
+    "coverUrl": "https://covers.openlibrary.org/b/id/11480483-L.jpg",
+    "isbn": null,
+    "description": null
+  },
   "Le Problème à trois corps": {
     "coverUrl": "https://books.google.com/books/content?id=lW4zDQAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api",
     "isbn": "9782330071035",
     "description": "En pleine Révolution culturelle, le pouvoir chinois construit la base militaire secrète de Côte Rouge, destinée à développer une arme de grand calibre. Ye Wenjie, une jeune astrophysicienne en cours de “rééducation”, intègre l’équipe de recherche. Dans ce lieu isolé où elle croit devoir passer le restant de sa vie, elle est amenée à travailler sur un système de télétransmissions dirigé vers l’espace et découvre peu à peu la véritable mission de Côte Rouge... Trente-huit ans plus tard, alors qu’une étrange vague de suicides frappe la communauté scientifique internationale, l’éminent chercheur en nanotechnologies Wang Miao est témoin de phénomènes paranormaux qui bouleversent ses convictions d’homme rationnel. Parmi eux, une inexplicable suite de nombres qui défile sur sa rétine, tel un angoissant compte à rebours... Hugo 2015 du meilleur roman, «Le Problème à trois corps» est le premier volume d’une trilogie culte d’une ambition folle."
+  },
+  "Le Retour du roi": {
+    "coverUrl": "https://covers.openlibrary.org/b/id/14627062-L.jpg",
+    "isbn": null,
+    "description": null
   },
   "Le Silmarillion": {
     "coverUrl": "https://books.google.com/books/content?id=ATiFEAAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api",
@@ -174,9 +219,19 @@
     "isbn": "9782072700408",
     "description": "Nouvelle traduction"
   },
+  "Les Deux Tours": {
+    "coverUrl": "https://covers.openlibrary.org/b/id/14627564-L.jpg",
+    "isbn": null,
+    "description": null
+  },
   "Les Disparus du Clairdelune": {
     "coverUrl": "https://covers.openlibrary.org/b/id/9404052-L.jpg",
     "isbn": "9782072957925",
+    "description": null
+  },
+  "Les Enfants de Dune": {
+    "coverUrl": "https://covers.openlibrary.org/b/id/6976407-L.jpg",
+    "isbn": null,
     "description": null
   },
   "Les Fiancés de l'hiver": {
@@ -228,6 +283,11 @@
     "coverUrl": "https://books.google.com/books/content?id=M89yCgAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api",
     "isbn": "9782226332196",
     "description": "Il y a 100 000 ans, la Terre était habitée par au moins six espèces différentes d'hominidés. Une seule a survécu. Nous, les Homo Sapiens. Comment notre espèce a-t-elle réussi à dominer la planète ? Pourquoi nos ancêtres ont-ils uni leurs forces pour créer villes et royaumes ? Comment en sommes-nous arrivés à créer les concepts de religion, de nation, de droits de l'homme ? À dépendre de l'argent, des livres et des lois ? À devenir esclaves de la bureaucratie, des horaires, de la consommation de masse ? Et à quoi ressemblera notre monde dans le millénaire à venir ? Véritable phénomène d'édition, traduit dans une trentaine de langues, Sapiens est un livre audacieux, érudit et provocateur. Professeur d'Histoire à l'Université hébraïque de Jérusalem, Yuval Noah Harari mêle l'Histoire à la Science pour remettre en cause tout ce que nous pensions savoir sur l'humanité : nos pensées, nos actes, notre héritage... et notre futur."
+  },
+  "Seconde Fondation": {
+    "coverUrl": "https://covers.openlibrary.org/b/id/9261324-L.jpg",
+    "isbn": null,
+    "description": null
   },
   "Station Eleven": {
     "coverUrl": "https://books.google.com/books/content?id=2RIcAwAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api",
