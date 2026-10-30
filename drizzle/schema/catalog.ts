@@ -1,4 +1,4 @@
-import { pgTable, text, integer, timestamp, index } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, timestamp, index, jsonb } from "drizzle-orm/pg-core";
 
 /**
  * Catalogue partagé des livres déjà renvoyés par Google Books, tous utilisateurs confondus.
@@ -52,4 +52,47 @@ export const catalogSearch = pgTable(
     expiresAt: timestamp("expires_at").notNull(),
   },
   (table) => [index("catalog_search_expiresAt_idx").on(table.expiresAt)],
+);
+
+/** Un tome d'une saga Wikidata. */
+export interface SeriesCatalogVolume {
+  /** Identifiant Wikidata du livre (Q…). */
+  id: string;
+  title: string;
+  /** Numéro dans la saga ; `null` pour un hors-série (prélude « 0.5 », spin-off). */
+  index: number | null;
+  year: number | null;
+}
+
+/**
+ * Sagas récupérées sur Wikidata (propriété « fait partie de la série »), avec leurs tomes
+ * dans l'ordre. Partagées entre utilisateurs, comme le catalogue de livres : une saga n'est
+ * demandée qu'une fois pour tous.
+ *
+ * Métadonnées publiques sans propriétaire : suppression physique uniquement, jamais
+ * déclenchée par un utilisateur. Rafraîchies quand la recherche qui y mène expire.
+ */
+export const seriesCatalog = pgTable("series_catalog", {
+  /** Identifiant Wikidata de la saga (Q…). */
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  volumes: jsonb("volumes").$type<SeriesCatalogVolume[]>().notNull(),
+  fetchedAt: timestamp("fetched_at").notNull().defaultNow(),
+});
+
+/**
+ * Sagas Wikidata contenant un titre de livre, par titre normalisé. Une liste vide est aussi
+ * gardée (livre hors saga ou inconnu de Wikidata), pour ne pas redemander à chaque visite.
+ *
+ * Table technique : suppression physique, purgée des entrées expirées par la tâche cron de
+ * nettoyage, avec les recherches Google.
+ */
+export const seriesLookup = pgTable(
+  "series_lookup",
+  {
+    titleKey: text("title_key").primaryKey(),
+    seriesIds: text("series_ids").array().notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+  },
+  (table) => [index("series_lookup_expiresAt_idx").on(table.expiresAt)],
 );

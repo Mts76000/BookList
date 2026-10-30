@@ -1,4 +1,4 @@
-import { and, count, eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { book, quote } from "@/drizzle/schema";
 import { requireAuth } from "@/lib/permissions";
@@ -7,8 +7,6 @@ import { validateBody } from "@/lib/validation";
 import { quoteSchema } from "@/lib/validation-schemas";
 import { createRateLimiter } from "@/lib/rate-limit";
 import { requestMetadata } from "@/lib/audit-log";
-import { getUserPlan } from "@/lib/subscription";
-import { FREE_QUOTE_LIMIT } from "@/lib/plans";
 
 const quoteLimiter = createRateLimiter("book-quotes", 60, 60);
 
@@ -17,8 +15,9 @@ interface RouteContext {
 }
 
 /**
- * Enregistre une citation sur un livre de sa bibliothèque. Un compte gratuit est limité à
- * `FREE_QUOTE_LIMIT` citations au total ; celles déjà enregistrées restent accessibles.
+ * Enregistre une citation sur un livre de sa bibliothèque. Sans limite, y compris pour un
+ * compte gratuit : ce sont ses propres notes. La recherche et les images à partager sont,
+ * elles, réservées à Premium.
  */
 export const POST = withApiErrorHandling(async (request: Request, context: RouteContext) => {
   const { id } = await context.params;
@@ -38,21 +37,6 @@ export const POST = withApiErrorHandling(async (request: Request, context: Route
     columns: { id: true },
   });
   if (!owned) return apiError("NOT_FOUND", "Livre introuvable.");
-
-  const plan = await getUserPlan(session.user.id);
-  if (!plan.isPremium) {
-    const [{ value: quoteCount }] = await db
-      .select({ value: count() })
-      .from(quote)
-      .where(eq(quote.userId, session.user.id));
-    if (quoteCount >= FREE_QUOTE_LIMIT) {
-      return apiError(
-        "FORBIDDEN",
-        `Le compte gratuit est limité à ${FREE_QUOTE_LIMIT} citations. Passez à Premium pour en enregistrer autant que vous voulez.`,
-        { reason: "QUOTE_LIMIT_REACHED", limit: FREE_QUOTE_LIMIT },
-      );
-    }
-  }
 
   const [created] = await db
     .insert(quote)

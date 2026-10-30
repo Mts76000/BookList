@@ -10,7 +10,6 @@ import { csvRowsToObjects, parseCsv } from "@/lib/csv";
 import { detectImportFormat, toBookListRow } from "@/lib/import-formats";
 import { catalogBook } from "@/drizzle/schema";
 import { and, eq, inArray, isNotNull } from "drizzle-orm";
-import { getUserPlan } from "@/lib/subscription";
 import { z } from "zod";
 
 const importLimiter = createRateLimiter("books-import", 5, 10 * 60);
@@ -72,8 +71,8 @@ export const POST = withApiErrorHandling(async (request: Request) => {
     }
   });
 
-  // Les doublons d'ISBN déjà en bibliothèque sont écartés avant d'appliquer la limite du
-  // compte gratuit : réimporter un export complet ne doit pas consommer de place.
+  // Les doublons d'ISBN déjà en bibliothèque sont écartés : réimporter un export complet ne
+  // doit pas dupliquer la bibliothèque.
   const owned = await db
     .select({ isbn: book.isbn })
     .from(book)
@@ -87,9 +86,10 @@ export const POST = withApiErrorHandling(async (request: Request) => {
     return true;
   });
 
-  const plan = await getUserPlan(session.user.id);
-  const accepted = fresh.slice(0, plan.remaining);
-  const overLimit = fresh.length - accepted.length;
+  // L'import n'est pas soumis à la limite du compte gratuit : on arrive avec toute sa
+  // bibliothèque, sans en laisser une partie de côté. La limite ne s'applique qu'aux ajouts
+  // suivants, un par un (voir POST /api/books).
+  const accepted = fresh;
 
   await fillFromCatalog(accepted);
 
@@ -110,7 +110,6 @@ export const POST = withApiErrorHandling(async (request: Request) => {
       format,
       imported,
       skipped: toCreate.length - fresh.length + (accepted.length - imported),
-      overLimit,
       failed: errors.length,
       errors,
     },

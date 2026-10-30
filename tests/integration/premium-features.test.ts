@@ -3,7 +3,6 @@ import { sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { db } from "@/lib/db";
 import { runMigrations } from "@/drizzle/migrate";
-import { FREE_QUOTE_LIMIT } from "@/lib/plans";
 
 const currentUser = { id: "", email: "lectrice@booklist.fr" };
 
@@ -59,33 +58,12 @@ afterEach(async () => {
 });
 
 describe("citations", () => {
-  it(`limite un compte gratuit à ${FREE_QUOTE_LIMIT} citations`, async () => {
+  it("n'impose pas de limite de citations, même à un compte gratuit", async () => {
     const userId = await createUser();
     const bookId = await createBook(userId);
-
-    for (let i = 0; i < FREE_QUOTE_LIMIT; i++) {
+    for (let i = 0; i < 8; i++) {
       const res = await addQuote(
         request("http://localhost/api", "POST", { content: `Passage ${i}`, page: i }),
-        context(bookId),
-      );
-      expect(res.status).toBe(201);
-    }
-
-    const res = await addQuote(
-      request("http://localhost/api", "POST", { content: "De trop" }),
-      context(bookId),
-    );
-    const body = await res.json();
-    expect(res.status).toBe(403);
-    expect(body.error.details.reason).toBe("QUOTE_LIMIT_REACHED");
-  });
-
-  it("n'impose pas de limite à Premium", async () => {
-    const userId = await createUser(true);
-    const bookId = await createBook(userId);
-    for (let i = 0; i <= FREE_QUOTE_LIMIT; i++) {
-      const res = await addQuote(
-        request("http://localhost/api", "POST", { content: `Passage ${i}` }),
         context(bookId),
       );
       expect(res.status).toBe(201);

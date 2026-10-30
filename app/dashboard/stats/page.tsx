@@ -77,9 +77,10 @@ export default async function StatsPage() {
 }
 
 /**
- * Aperçu pour un compte gratuit : quelques vrais chiffres (série, pile à lire, genre favori)
- * et la silhouette de l'année mois par mois, sans les valeurs. Seul ce qui est affiché part
- * au navigateur : le reste des statistiques n'y est jamais envoyé.
+ * Statistiques d'un compte gratuit : ses vrais chiffres de base (série, pile à lire, livres
+ * terminés mois par mois, genre favori). Les analyses avancées (durées, longueur, temps
+ * pour finir la pile, répartitions) restent Premium. Page rendue côté serveur : seul ce qui
+ * est affiché part au navigateur.
  */
 function StatsPreview({
   stats,
@@ -90,7 +91,6 @@ function StatsPreview({
   billingEnabled: boolean;
   trialAvailable: boolean;
 }) {
-  const maxBooks = Math.max(...stats.months.map((m) => m.books), 1);
   const [topGenre] = stats.genres;
   const locked = (
     <span className="flex items-center gap-1.5 text-sm text-stone-400">
@@ -134,33 +134,17 @@ function StatsPreview({
         </div>
       </div>
 
+      <MonthsChart stats={stats} />
+
       <section className="card p-4 sm:p-6">
-        <div className="mb-5 flex items-baseline justify-between gap-4">
-          <h2 className="text-sm font-medium text-stone-900">
-            Votre année {stats.year}, mois par mois
-          </h2>
+        <div className="mb-2 flex items-baseline justify-between gap-4">
+          <h2 className="text-sm font-medium text-stone-900">Vos genres, vos notes, vos auteurs</h2>
           {locked}
         </div>
-        <div className="flex h-36 items-end gap-[2px] sm:gap-2" aria-hidden="true">
-          {stats.months.map((month) => (
-            <div
-              key={month.month}
-              className={`flex-1 rounded-t-[4px] ${month.books > 0 ? "bg-accent-200" : "bg-stone-100"}`}
-              style={{ height: month.books > 0 ? `${(month.books / maxBooks) * 80}%` : "3px" }}
-            />
-          ))}
-        </div>
-        <div className="mt-2 flex gap-[2px] sm:gap-2" aria-hidden="true">
-          {MONTH_LABELS.map((label, index) => (
-            <span key={index} className="flex-1 text-center text-[10px] text-stone-400">
-              {label}
-            </span>
-          ))}
-        </div>
-        <p className="mt-4 text-sm text-stone-500">
+        <p className="text-sm text-stone-500">
           {topGenre
-            ? `Votre genre favori : ${topGenre.genre}. Le détail de vos genres, de vos notes et de vos auteurs est réservé à Premium.`
-            : "Le détail de vos genres, de vos notes et de vos auteurs est réservé à Premium."}
+            ? `Votre genre favori : ${topGenre.genre}. La répartition complète de vos genres, de vos notes et de vos auteurs est réservée à Premium.`
+            : "La répartition de vos genres, de vos notes et de vos auteurs est réservée à Premium."}
         </p>
       </section>
 
@@ -168,19 +152,15 @@ function StatsPreview({
         billingEnabled={billingEnabled}
         trialAvailable={trialAvailable}
         title="Débloquez vos statistiques détaillées"
-        description="Chaque mois chiffré, vos genres et vos notes, vos auteurs, votre rythme et le temps qu'il vous faudrait pour finir votre pile à lire."
+        description="Vos genres et vos notes, vos auteurs, la durée et la longueur moyennes de vos lectures, et le temps qu'il vous faudrait pour finir votre pile à lire."
       />
     </div>
   );
 }
 
 function StatsContent({ stats }: { stats: AdvancedStats }) {
-  const maxBooks = Math.max(...stats.months.map((m) => m.books), 1);
   const maxRatings = Math.max(...stats.ratings, 1);
   const maxGenre = Math.max(...stats.genres.map((g) => g.count), 1);
-  const totalYear = stats.months.reduce((sum, m) => sum + m.books, 0);
-  const currentMonth = new Date().getMonth();
-
   const tiles = [
     {
       icon: Fire,
@@ -224,64 +204,7 @@ function StatsContent({ stats }: { stats: AdvancedStats }) {
         ))}
       </div>
 
-      <section className="card p-4 sm:p-6">
-        <div className="mb-5 flex items-baseline justify-between gap-4">
-          <h2 className="text-sm font-medium text-stone-900">
-            Livres terminés par mois en {stats.year}
-          </h2>
-          <p className="text-xs text-stone-500">
-            {totalYear > 0
-              ? `${plural(totalYear, "livre")} au total`
-              : "Aucun livre terminé pour l'instant"}
-          </p>
-        </div>
-        <div className="flex h-44 items-end gap-[2px] sm:gap-2">
-          {stats.months.map((month) => (
-            <div
-              key={month.month}
-              className="group relative flex h-full flex-1 flex-col justify-end"
-            >
-              <span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 -translate-x-1/2 rounded-[var(--radius-sm)] bg-stone-900 px-2 py-1 text-[11px] whitespace-nowrap text-stone-50 opacity-0 transition-opacity group-hover:opacity-100">
-                {MONTH_NAMES[month.month]} : {plural(month.books, "livre")}, {month.pages} p.
-              </span>
-              {month.books > 0 && (
-                <span className="mb-1 text-center text-[11px] font-medium text-stone-600 tabular-nums">
-                  {month.books}
-                </span>
-              )}
-              <div
-                className={`w-full rounded-t-[4px] transition-colors ${
-                  month.books > 0
-                    ? "bg-accent-400 group-hover:bg-accent-600"
-                    : month.month <= currentMonth
-                      ? "bg-stone-100"
-                      : "bg-stone-50"
-                }`}
-                style={{ height: month.books > 0 ? `${(month.books / maxBooks) * 80}%` : "3px" }}
-              />
-            </div>
-          ))}
-        </div>
-        <div className="mt-2 flex gap-[2px] sm:gap-2" aria-hidden="true">
-          {MONTH_LABELS.map((label, index) => (
-            <span key={index} className="flex-1 text-center text-[10px] text-stone-400">
-              {label}
-            </span>
-          ))}
-        </div>
-        <table className="sr-only">
-          <caption>Livres terminés par mois en {stats.year}</caption>
-          <tbody>
-            {stats.months.map((month) => (
-              <tr key={month.month}>
-                <th scope="row">{MONTH_NAMES[month.month]}</th>
-                <td>{plural(month.books, "livre")}</td>
-                <td>{month.pages} pages</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
+      <MonthsChart stats={stats} />
 
       <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-2">
         <section className="card p-4 sm:p-6">
@@ -444,6 +367,81 @@ function LifetimeStats({ stats, memberSince }: { stats: ReadingStats; memberSinc
           </div>
         )}
       </div>
+    </section>
+  );
+}
+
+/** Livres terminés chaque mois de l'année, avec leur nombre : visible par tous les comptes. */
+function MonthsChart({ stats }: { stats: AdvancedStats }) {
+  const maxBooks = Math.max(...stats.months.map((m) => m.books), 1);
+  const totalYear = stats.months.reduce((sum, m) => sum + m.books, 0);
+  const currentMonth = new Date().getMonth();
+
+  return (
+    <section className="card p-4 sm:p-6">
+      <div className="mb-5 flex items-baseline justify-between gap-4">
+        <h2 className="text-sm font-medium text-stone-900">
+          Livres terminés par mois en {stats.year}
+        </h2>
+        <p className="text-xs text-stone-500">
+          {totalYear > 0
+            ? `${plural(totalYear, "livre")} au total`
+            : "Aucun livre terminé pour l'instant"}
+        </p>
+      </div>
+      <div className="flex h-44 items-end gap-[2px] sm:gap-2">
+        {stats.months.map((month) => (
+          <div key={month.month} className="group relative flex h-full flex-1 flex-col justify-end">
+            {/* Masquée hors survol (display: none) : invisible mais présente, elle élargissait
+                la page sur mobile. Alignée sur le bord pour les mois aux extrémités. */}
+            <span
+              className={`pointer-events-none absolute bottom-full z-10 mb-1 hidden rounded-[var(--radius-sm)] bg-stone-900 px-2 py-1 text-[11px] whitespace-nowrap text-stone-50 group-hover:block ${
+                month.month < 2
+                  ? "left-0"
+                  : month.month > 9
+                    ? "right-0"
+                    : "left-1/2 -translate-x-1/2"
+              }`}
+            >
+              {MONTH_NAMES[month.month]} : {plural(month.books, "livre")}, {month.pages} p.
+            </span>
+            {month.books > 0 && (
+              <span className="mb-1 text-center text-[11px] font-medium text-stone-600 tabular-nums">
+                {month.books}
+              </span>
+            )}
+            <div
+              className={`w-full rounded-t-[4px] transition-colors ${
+                month.books > 0
+                  ? "bg-accent-400 group-hover:bg-accent-600"
+                  : month.month <= currentMonth
+                    ? "bg-stone-100"
+                    : "bg-stone-50"
+              }`}
+              style={{ height: month.books > 0 ? `${(month.books / maxBooks) * 80}%` : "3px" }}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="mt-2 flex gap-[2px] sm:gap-2" aria-hidden="true">
+        {MONTH_LABELS.map((label, index) => (
+          <span key={index} className="flex-1 text-center text-[10px] text-stone-400">
+            {label}
+          </span>
+        ))}
+      </div>
+      <table className="sr-only">
+        <caption>Livres terminés par mois en {stats.year}</caption>
+        <tbody>
+          {stats.months.map((month) => (
+            <tr key={month.month}>
+              <th scope="row">{MONTH_NAMES[month.month]}</th>
+              <td>{plural(month.books, "livre")}</td>
+              <td>{month.pages} pages</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </section>
   );
 }

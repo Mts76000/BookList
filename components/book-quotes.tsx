@@ -10,7 +10,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
 import { apiFetch } from "@/lib/api-client";
 import { shareOrDownloadImage } from "@/lib/share-image";
-import { FREE_QUOTE_LIMIT } from "@/lib/plans";
 
 export interface QuoteItem {
   id: string;
@@ -23,8 +22,6 @@ interface BookQuotesProps {
   bookTitle: string;
   quotes: QuoteItem[];
   isPremium: boolean;
-  /** Citations de l'utilisateur, tous livres confondus, pour la limite du compte gratuit. */
-  totalQuotes: number;
 }
 
 /** Actions sur une citation : image à partager (Premium) et suppression. */
@@ -93,14 +90,12 @@ export function QuoteActions({
 }
 
 /** Section « Citations » de la fiche d'un livre. */
-export function BookQuotes({ bookId, bookTitle, quotes, isPremium, totalQuotes }: BookQuotesProps) {
+export function BookQuotes({ bookId, bookTitle, quotes, isPremium }: BookQuotesProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [content, setContent] = useState("");
   const [page, setPage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-
-  const limitReached = !isPremium && totalQuotes >= FREE_QUOTE_LIMIT;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -147,47 +142,32 @@ export function BookQuotes({ bookId, bookTitle, quotes, isPremium, totalQuotes }
         </ul>
       )}
 
-      {limitReached ? (
-        <p className="border-accent-200 bg-accent-50 text-accent-800 mt-4 rounded-[var(--radius-sm)] border px-4 py-3 text-sm">
-          Vous avez atteint les {FREE_QUOTE_LIMIT} citations du compte gratuit.{" "}
-          <Link href="/account#premium" className="font-medium underline underline-offset-2">
-            Passez à Premium
-          </Link>{" "}
-          pour en garder autant que vous voulez.
-        </p>
-      ) : (
-        <form onSubmit={handleSubmit} className="mt-4 space-y-3">
-          <Textarea
-            label="Nouvelle citation"
-            required
-            maxLength={2000}
-            rows={3}
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Le passage qui vous a marqué"
-          />
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-            <div className="sm:w-32">
-              <Field
-                label="Page"
-                type="number"
-                inputMode="numeric"
-                min={0}
-                value={page}
-                onChange={(e) => setPage(e.target.value)}
-              />
-            </div>
-            <Button type="submit" isLoading={isSaving} className="w-full sm:w-auto">
-              Enregistrer la citation
-            </Button>
+      <form onSubmit={handleSubmit} className="mt-4 space-y-3">
+        <Textarea
+          label="Nouvelle citation"
+          required
+          maxLength={2000}
+          rows={3}
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          placeholder="Le passage qui vous a marqué"
+        />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <div className="sm:w-32">
+            <Field
+              label="Page"
+              type="number"
+              inputMode="numeric"
+              min={0}
+              value={page}
+              onChange={(e) => setPage(e.target.value)}
+            />
           </div>
-          {!isPremium && (
-            <p className="text-xs text-stone-500">
-              {totalQuotes} / {FREE_QUOTE_LIMIT} citations du compte gratuit.
-            </p>
-          )}
-        </form>
-      )}
+          <Button type="submit" isLoading={isSaving} className="w-full sm:w-auto">
+            Enregistrer la citation
+          </Button>
+        </div>
+      </form>
     </section>
   );
 }

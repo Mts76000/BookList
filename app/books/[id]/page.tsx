@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { and, asc, count, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { book, comment, quote } from "@/drizzle/schema";
 import { requireAuthPage } from "@/lib/permissions";
@@ -26,13 +26,12 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
 
   if (!entry) notFound();
 
-  const [quotes, [{ value: totalQuotes }], plan, seriesVolumes, knownSeries] = await Promise.all([
+  const [quotes, plan, seriesVolumes, knownSeries] = await Promise.all([
     db
       .select({ id: quote.id, content: quote.content, page: quote.page })
       .from(quote)
       .where(eq(quote.bookId, entry.id))
       .orderBy(asc(quote.page), asc(quote.createdAt)),
-    db.select({ value: count() }).from(quote).where(eq(quote.userId, session.user.id)),
     getUserPlan(session.user.id),
     entry.seriesName
       ? db
@@ -63,7 +62,6 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
           bookTitle={entry.title}
           quotes={quotes}
           isPremium={plan.isPremium}
-          totalQuotes={totalQuotes}
         />
       </main>
     </>

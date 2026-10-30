@@ -78,6 +78,13 @@
       "when": 1793353420476,
       "tag": "0010_catalog_subtitle",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793355589334,
+      "tag": "0011_series_catalog",
+      "breakpoints": true
     }
   ]
 }

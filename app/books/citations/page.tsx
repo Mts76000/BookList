@@ -87,7 +87,7 @@ export default async function QuotesPage({
           className="mb-6"
           trialAvailable={plan.trialAvailable}
           title="Retrouvez n'importe quelle citation"
-          description="Avec Premium : recherche par mot, titre ou auteur, citations illimitées et images à partager."
+          description="Avec Premium : recherche par mot, titre ou auteur, et images à partager."
         />
       )}
 

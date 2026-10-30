@@ -9,9 +9,9 @@ import {
 /**
  * Bibliothèque du second compte de démonstration (voir drizzle/seed-demo.ts) : celle de
  * Lucas, inscrit depuis le début de l'année, amateur de polars et de science-fiction, qui
- * n'a pas pris Premium. Il montre l'application telle que la voit un compte gratuit :
- * limite de livres en vue, statistiques et sagas en aperçu, citations plafonnées, pas de
- * défis ni de jokers.
+ * n'a pas pris Premium. Il montre l'application telle que la voit un compte gratuit : ses
+ * sagas, citations et statistiques de base, mais ni sagas repérées ni tomes manquants à
+ * ajouter, ni statistiques avancées, ni défis, ni jokers.
  *
  * Les livres viennent presque tous de la bibliothèque de Camille, dont les couvertures sont
  * déjà en cache : seuls ses deux romans du domaine public, d'où viennent ses citations, en
@@ -98,7 +98,7 @@ export const FREE_TO_READ: DemoBook[] = [
   pick("Hypérion", "TO_READ"),
 ];
 
-/** Citations d'œuvres françaises du domaine public, dans le plafond du compte gratuit. */
+/** Citations d'œuvres françaises du domaine public. */
 export const FREE_QUOTES: { title: string; content: string; page?: number }[] = [
   {
     title: "Le Mystère de la chambre jaune",

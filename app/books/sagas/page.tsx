@@ -11,6 +11,7 @@ import { PremiumTeaser } from "@/components/premium-teaser";
 import { SeriesEditor, type EditorBook } from "@/components/series-editor";
 import { SeriesSuggestions, type SuggestionView } from "@/components/series-suggestions";
 import { suggestSeries } from "@/lib/series-detection";
+import { SeriesCompletion } from "@/components/series-completion";
 
 /** Statut d'un tome, sous sa couverture : une pastille et un mot, lisibles sans légende. */
 const STATUS = {
@@ -41,10 +42,9 @@ export default async function SeriesPage() {
     .from(book)
     .where(eq(book.userId, session.user.id));
   const allSeries = groupSeries(library.filter((entry) => entry.seriesName));
-  // Aperçu gratuit : la première saga en entier, les autres seulement annoncées. Leur
-  // contenu ne quitte pas le serveur.
-  const series = plan.isPremium ? allSeries : allSeries.slice(0, 1);
-  const lockedCount = allSeries.length - series.length;
+  // Toutes les sagas sont visibles, compte gratuit compris : ce sont ses propres données.
+  // Premium ajoute les sagas repérées automatiquement et les tomes manquants.
+  const series = allSeries;
 
   const editorLibrary: EditorBook[] = library.map(
     ({ id, title, author, coverUrl, seriesName, seriesIndex }) => ({
@@ -60,7 +60,9 @@ export default async function SeriesPage() {
   const byId = new Map(library.map((entry) => [entry.id, entry]));
 
   // Une suggestion pour une saga existante reprend ses tomes actuels, suivis des nouveaux.
-  const suggestions: SuggestionView[] = suggestSeries(library).map((suggestion) => {
+  const detected = suggestSeries(library);
+  // Un compte gratuit n'apprend que le nombre de sagas repérées, pas leur contenu.
+  const suggestions: SuggestionView[] = (plan.isPremium ? detected : []).map((suggestion) => {
     const current = suggestion.existing
       ? (allSeries.find((entry) => entry.name === suggestion.name)?.books ?? [])
       : [];
@@ -196,6 +198,7 @@ export default async function SeriesPage() {
                   `Prochain : tome ${entry.next.index}, pas encore dans votre bibliothèque.`
                 )}
               </p>
+              <SeriesCompletion name={entry.name} isPremium={plan.isPremium} />
             </li>
           ))}
         </ul>
@@ -206,15 +209,11 @@ export default async function SeriesPage() {
           className="mt-4"
           trialAvailable={plan.trialAvailable}
           title={
-            lockedCount > 0
-              ? `${lockedCount === 1 ? "Votre autre saga est masquée" : `Vos ${lockedCount} autres sagas sont masquées`}`
-              : "Suivez toutes vos sagas avec Premium"
+            detected.length > 0
+              ? `Premium a repéré ${detected.length === 1 ? "une saga" : `${detected.length} sagas`} dans votre bibliothèque`
+              : "Des sagas complètes, sans rien chercher"
           }
-          description={
-            lockedCount > 0
-              ? "Le compte gratuit affiche une saga. Avec Premium, retrouvez-les toutes, avec les tomes lus et le prochain à lire."
-              : "Le compte gratuit affiche une saga. Avec Premium, suivez-les toutes, avec les tomes lus et le prochain à lire."
-          }
+          description="Avec Premium, BookList repère vos sagas, trouve les tomes qui vous manquent et les ajoute à votre pile en un clic."
         />
       )}
     </main>

@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Button, buttonClasses } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { apiFetch } from "@/lib/api-client";
-import { BookLimitNotice, usePlan } from "@/components/book-limit-notice";
 
 const FORMAT_LABELS = {
   booklist: "modèle BookList",
@@ -18,7 +17,6 @@ interface ImportResult {
   imported: number;
   skipped: number;
   /** Lignes valides non importées faute de place dans la bibliothèque gratuite. */
-  overLimit: number;
   failed: number;
   errors: { line: number; message: string }[];
 }
@@ -33,7 +31,6 @@ export default function ImportBooksPage() {
   const [csvContent, setCsvContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
-  const [plan, refreshPlan] = usePlan();
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -56,7 +53,6 @@ export default function ImportBooksPage() {
       return;
     }
     setResult(response.data);
-    refreshPlan();
   }
 
   function downloadTemplate() {
@@ -81,8 +77,6 @@ export default function ImportBooksPage() {
             (2000 lignes maximum).
           </p>
         </header>
-
-        {!result && <BookLimitNotice plan={plan} />}
 
         <details className="card group mb-4 p-5 text-sm sm:p-6">
           <summary className="cursor-pointer font-medium text-stone-900 marker:text-stone-400">
@@ -139,20 +133,6 @@ export default function ImportBooksPage() {
                 {result.skipped > 0 && `, ${result.skipped} déjà en bibliothèque`}
                 {result.failed > 0 && `, ${result.failed} ligne(s) ignorée(s)`}
               </div>
-              {result.overLimit > 0 && (
-                <div className="border-accent-200 bg-accent-50 text-accent-800 rounded-[var(--radius-sm)] border px-4 py-3 text-sm">
-                  {result.overLimit} livre{result.overLimit > 1 ? "s" : ""} non importé
-                  {result.overLimit > 1 ? "s" : ""} : la bibliothèque gratuite est limitée à{" "}
-                  {plan?.bookLimit ?? 50} livres.{" "}
-                  <Link
-                    href="/account#premium"
-                    className="font-medium underline underline-offset-2"
-                  >
-                    Passez à Premium
-                  </Link>{" "}
-                  puis relancez l&apos;import : les livres déjà importés ne seront pas dupliqués.
-                </div>
-              )}
               {result.errors.length > 0 && (
                 <div className="border-accent-200 bg-accent-50 text-accent-800 max-h-48 overflow-y-auto rounded-[var(--radius-sm)] border px-4 py-3 text-xs">
                   {result.errors.map((entry) => (
