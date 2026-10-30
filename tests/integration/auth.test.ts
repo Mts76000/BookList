@@ -10,6 +10,8 @@ vi.mock("@/lib/turnstile", () => ({
 const { POST: registerHandler } = await import("@/app/api/register/route");
 const { POST: loginHandler } = await import("@/app/api/login/route");
 const { POST: forgotPasswordHandler } = await import("@/app/api/forgot-password/route");
+const { POST: cronCleanupHandler } = await import("@/app/api/cron/cleanup-expired-tokens/route");
+const { auth } = await import("@/lib/auth");
 
 let ipCounter = 0;
 
@@ -103,6 +105,10 @@ describe("POST /api/login", () => {
       }),
     );
     expect(res.status).toBe(401);
+    const body = await res.json();
+    expect(body.error.message).toBe(
+      "Veuillez vérifier votre adresse email avant de vous connecter.",
+    );
   });
 
   it("logs in and sets a session cookie once the email is verified", async () => {
@@ -150,5 +156,41 @@ describe("POST /api/forgot-password", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.success).toBe(true);
+  });
+});
+
+describe("better-auth native endpoints", () => {
+  // These are only reachable through our own routes (Turnstile + rate limiting).
+  it.each(["/sign-up/email", "/sign-in/email", "/request-password-reset"])(
+    "returns 404 for %s",
+    async (path) => {
+      const res = await auth.handler(
+        jsonRequest(`http://localhost:3000/api/auth${path}`, {
+          email: "someone@example.com",
+          password: "password123",
+          name: "Someone",
+        }),
+      );
+      expect(res.status).toBe(404);
+    },
+  );
+});
+
+describe("POST /api/cron/cleanup-expired-tokens", () => {
+  function cronRequest(authorization?: string) {
+    return new Request("http://localhost:3000/api/cron/cleanup-expired-tokens", {
+      method: "POST",
+      headers: authorization ? { authorization } : {},
+    });
+  }
+
+  it("rejects a missing or wrong secret", async () => {
+    expect((await cronCleanupHandler(cronRequest())).status).toBe(401);
+    expect((await cronCleanupHandler(cronRequest("Bearer wrong-secret"))).status).toBe(401);
+  });
+
+  it("runs with the right secret", async () => {
+    const res = await cronCleanupHandler(cronRequest(`Bearer ${process.env.CRON_SECRET}`));
+    expect(res.status).toBe(200);
   });
 });

@@ -1,8 +1,6 @@
 # syntax=docker/dockerfile:1
 
-# Node 22 (LTS), la version de la CI : les versions impaires de Node (25, 27…) ne sont
-# jamais LTS et cessent d'être maintenues au bout de six mois.
-FROM node:22-alpine AS base
+FROM node:24-alpine AS base
 
 # --- Dependencies ---
 FROM base AS deps
@@ -31,6 +29,7 @@ ARG NEXT_PUBLIC_UMAMI_WEBSITE_ID
 ARG NEXT_PUBLIC_TURNSTILE_SITE_KEY=build-placeholder
 ARG NEXT_PUBLIC_IS_PREVIEW
 ARG NEXT_PUBLIC_BUYMEACOFFEE_SLUG
+ARG NEXT_PUBLIC_PWA_INSTALL_PROMPT_ENABLED
 ARG DATABASE_URL=postgres://build-placeholder@build-placeholder.invalid/build-placeholder
 ARG BETTER_AUTH_SECRET=build-placeholder-secret-at-least-32-characters
 ARG GOOGLE_CLIENT_ID=build-placeholder

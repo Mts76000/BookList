@@ -6,7 +6,7 @@ import { apiSuccess, apiError, withApiErrorHandling } from "@/lib/api-response";
 import { validateBody } from "@/lib/validation";
 import { updateProfileSchema } from "@/lib/validation-schemas";
 import { createRateLimiter } from "@/lib/rate-limit";
-import { logAuditEvent, requestMetadata } from "@/lib/audit-log";
+import { requestMetadata } from "@/lib/audit-log";
 import { anonymizeUser } from "@/lib/anonymize-user";
 
 const profileLimiter = createRateLimiter("account-profile", 30, 60);
@@ -59,7 +59,7 @@ export const DELETE = withApiErrorHandling(async (request: Request) => {
   if (!current) return apiError("NOT_FOUND", "Utilisateur introuvable.");
   if (current.isAnonymized) return apiError("CONFLICT", "Ce compte est déjà supprimé.");
 
-  await logAuditEvent({
+  await anonymizeUser(userId, {
     userId,
     action: "user.delete_account",
     entityType: "user",
@@ -68,8 +68,6 @@ export const DELETE = withApiErrorHandling(async (request: Request) => {
     ip,
     userAgent,
   });
-
-  await anonymizeUser(userId);
 
   return apiSuccess(null, "Compte supprimé.");
 });

@@ -3,6 +3,7 @@
 import { useState, useSyncExternalStore } from "react";
 import { X } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
+import { useCookieConsent } from "@/components/cookie-consent";
 import {
   subscribeToPwaInstallPrompt,
   getPwaInstallPrompt,
@@ -42,6 +43,9 @@ export function PwaInstallPrompt() {
     getIsStandaloneServerSnapshot,
   );
   const [dismissed, setDismissed] = useState(readDismissed);
+  // On attend que le bandeau cookies ait reçu une réponse : pas deux popups empilées à
+  // l'arrivée sur le site.
+  const cookieConsent = useCookieConsent();
 
   function handleDismiss() {
     setDismissed(true);
@@ -57,7 +61,7 @@ export function PwaInstallPrompt() {
     handleDismiss();
   }
 
-  if (!enabled || isStandalone || dismissed || !deferredPrompt) return null;
+  if (!enabled || !cookieConsent || isStandalone || dismissed || !deferredPrompt) return null;
 
   return (
     <div

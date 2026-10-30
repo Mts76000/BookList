@@ -1,6 +1,6 @@
 <!-- BEGIN:nextjs-agent-rules -->
 
-# This is NOT the Next.js you know
+## This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
 
@@ -72,8 +72,9 @@ doit être enveloppée par `withApiErrorHandling()`.
 - Pagination : `parsePaginationParams()` / `toPaginated()` — `lib/pagination.ts` +
   `<Pagination />` dans `components/ui/`.
 - Opérations à écritures multiples et dépendantes : utiliser `db.transaction(async (tx) => {...})`
-  (Drizzle natif, voir l'inscription dans `lib/auth.ts`/`app/api/register/route.ts` comme
-  référence) — jamais de laisser une opération partiellement appliquée.
+  (Drizzle natif, voir la suppression de compte dans `lib/anonymize-user.ts` comme
+  référence : `logAuditEvent(entry, tx)` écrit l'audit dans la même transaction) — jamais
+  de laisser une opération partiellement appliquée.
 - **Soft delete vs hard delete : jamais un défaut automatique.** Chaque nouvelle entité doit
   trancher explicitement. Les tables techniques (sessions, tokens, rate limits, logs, audit
   logs, tables de liaison) sont toujours en suppression physique. Le compte utilisateur

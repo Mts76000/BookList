@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { getStripe } from "@/lib/stripe";
+import { type AuditLogEntry, logAuditEvent } from "@/lib/audit-log";
 import {
   account,
   book,
@@ -31,8 +32,11 @@ const ANONYMIZED_EMAIL_DOMAIN = "anonymized.booklist";
  *
  * Partagé par la suppression volontaire (`/api/account`) et par la suppression administrative
  * (`/api/admin/users/[id]`) : les deux chemins doivent laisser la base dans le même état.
+ *
+ * `audit` est écrit dans la même transaction : l'audit log n'annonce jamais une suppression
+ * qui n'a pas eu lieu, et aucune suppression n'a lieu sans son entrée d'audit.
  */
-export async function anonymizeUser(userId: string): Promise<void> {
+export async function anonymizeUser(userId: string, audit: AuditLogEntry): Promise<void> {
   // Avant toute écriture : un compte supprimé ne doit plus jamais être prélevé. Si Stripe est
   // injoignable, la suppression échoue et pourra être relancée, plutôt que de laisser un
   // abonnement actif rattaché à un compte qui n'existe plus.
@@ -41,6 +45,8 @@ export async function anonymizeUser(userId: string): Promise<void> {
   // Transaction : un compte à moitié anonymisé laisserait des données personnelles derrière
   // lui tout en ayant l'air supprimé.
   await db.transaction(async (tx) => {
+    // En premier : l'entrée d'audit porte l'adresse e-mail, qui n'existera plus après.
+    await logAuditEvent(audit, tx);
     await tx.delete(comment).where(eq(comment.userId, userId));
     await tx.delete(readingActivity).where(eq(readingActivity.userId, userId));
     await tx.delete(readingGoal).where(eq(readingGoal.userId, userId));
