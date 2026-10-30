@@ -54,9 +54,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder /app/drizzle ./drizzle
 COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
-# De quoi appliquer les migrations depuis le terminal du conteneur, sans tsx :
-# `node drizzle/migrate.ts` (Node 24 exécute le TypeScript). L'image standalone n'embarque que
-# ce que l'application importe ; pg y est déjà, ces deux paquets n'ont aucune dépendance.
+# De quoi appliquer les migrations au démarrage, sans tsx : `node drizzle/migrate.ts` (Node 24
+# exécute le TypeScript). L'image standalone n'embarque que ce que l'application importe ; pg
+# y est déjà, ces deux paquets n'ont aucune dépendance.
 COPY --from=builder /app/node_modules/drizzle-orm ./node_modules/drizzle-orm
 COPY --from=builder /app/node_modules/dotenv ./node_modules/dotenv
 
@@ -69,4 +69,9 @@ ENV HOSTNAME=0.0.0.0
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD wget -qO- http://127.0.0.1:3000/api/health || exit 1
 
-CMD ["node", "server.js"]
+# Les migrations passent à chaque démarrage, avant l'application : un déploiement qui en
+# apporte s'applique tout seul, sans commande à lancer dans Coolify. Celles déjà appliquées
+# sont ignorées (table de suivi de Drizzle). Si une migration échoue, le conteneur s'arrête
+# avant de servir quoi que ce soit, et Coolify garde l'ancienne version en ligne.
+# `exec` : Node reçoit lui-même les signaux d'arrêt envoyés par Docker.
+CMD ["sh", "-c", "node drizzle/migrate.ts && exec node server.js"]

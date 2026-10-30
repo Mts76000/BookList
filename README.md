@@ -127,10 +127,12 @@ et Tailwind manqueraient au build, et le script `prepare` tolère l'absence de h
 1. Variables d'environnement de `.env.example` renseignées dans Coolify, avec
    `NEXT_PUBLIC_APP_URL` sur le domaine définitif : il sert aux adresses canoniques, au
    sitemap et aux images de partage.
-2. Migrations appliquées sur la base de production, depuis le terminal du conteneur dans
-   Coolify : `node drizzle/migrate.ts` (`tsx` n'est pas installé dans l'image ; Node exécute
-   le TypeScript directement). Sans effet sur les migrations déjà appliquées, à relancer après
-   chaque déploiement qui en ajoute.
+2. Migrations : rien à faire. Le conteneur les applique à chaque démarrage, avant de lancer
+   l'application (voir le `CMD` du `Dockerfile`) ; celles déjà appliquées sont ignorées, et
+   une migration en échec bloque le démarrage au lieu de servir une base à moitié migrée. Une
+   migration doit donc rester compatible avec la version précédente du code, qui tourne
+   encore le temps du déploiement (ajouter une colonne plutôt que la renommer). Pour la
+   relancer à la main : `node drizzle/migrate.ts` dans le terminal du conteneur.
 3. Stripe en mode réel : produit, deux prix, portail client et webhook vers
    `<APP_URL>/api/webhooks/stripe` (événements `checkout.session.completed` et
    `customer.subscription.created/updated/deleted`).
