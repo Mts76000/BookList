@@ -3,7 +3,7 @@ import Link from "next/link";
 import { and, desc, eq, isNotNull, sql } from "drizzle-orm";
 import { ArrowRight, Fire, Quotes } from "@phosphor-icons/react/ssr";
 import { db } from "@/lib/db";
-import { book, pushSubscription, quote, readingActivity, readingGoal } from "@/drizzle/schema";
+import { book, quote, readingActivity, readingGoal } from "@/drizzle/schema";
 import { requireAuthPage } from "@/lib/permissions";
 import { getReadingStats } from "@/lib/reading-stats";
 import { ContributionGraph } from "@/components/contribution-graph";
@@ -12,11 +12,11 @@ import { AddReadingActivity } from "@/components/add-reading-activity";
 import { ReadingGoal } from "@/components/reading-goal";
 import { ProgressBar, QuickProgress } from "@/components/reading-progress";
 import { NextReads, type NextRead } from "@/components/next-reads";
-import { GettingStarted } from "@/components/getting-started";
 import { recommendNext } from "@/lib/recommendations";
 import { getUserPlan } from "@/lib/subscription";
 import { readingStreaks } from "@/lib/advanced-stats";
 import { PREMIUM_STREAK_JOKERS } from "@/lib/plans";
+import { Onboarding } from "@/components/onboarding";
 import { buttonClasses } from "@/components/ui/button";
 
 // Page privée et personnalisée : rien à y indexer.
@@ -77,7 +77,6 @@ export default async function DashboardPage() {
     goal,
     plan,
     libraryBooks,
-    push,
     [randomQuote],
   ] = await Promise.all([
     db.query.book.findMany({
@@ -120,10 +119,6 @@ export default async function DashboardPage() {
       })
       .from(book)
       .where(eq(book.userId, user.id)),
-    db.query.pushSubscription.findFirst({
-      where: eq(pushSubscription.userId, user.id),
-      columns: { id: true },
-    }),
     // Une citation au hasard parmi celles de l'utilisateur : une bibliothèque personnelle
     // en compte quelques centaines au plus, ORDER BY random() reste négligeable.
     db
@@ -178,24 +173,10 @@ export default async function DashboardPage() {
       nextReads.push({ ...entry, reason: null });
   }
 
-  const steps = [
-    { label: "Ajouter un premier livre", href: "/books/add", done: libraryBooks.length > 0 },
-    {
-      label: "Indiquer où vous en êtes d'une lecture",
-      href: currentlyReading[0] ? `/books/${currentlyReading[0].id}` : "/books",
-      done: libraryBooks.some((entry) => entry.currentPage !== null),
-    },
-    { label: `Fixer votre objectif ${year}`, href: "#objectif", done: !!goal },
-    {
-      label: "Importer votre bibliothèque Goodreads ou StoryGraph",
-      href: "/books/import",
-      done: libraryBooks.length >= 10,
-    },
-    { label: "Activer les rappels de lecture", href: "/account#rappels", done: !!push },
-  ];
-
   return (
     <>
+      <Onboarding hasSeenOnboarding={user.hasSeenOnboarding} />
+
       <main
         id="main-content"
         className="animate-fade-in-up mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8"
@@ -404,9 +385,6 @@ export default async function DashboardPage() {
             isPremium={plan.isPremium}
             title={featured ? "À lire ensuite" : "Dans votre pile"}
           />
-
-          {/* Guide réservé aux nouveaux venus : une bibliothèque déjà fournie n'en a pas besoin. */}
-          {libraryBooks.length < 20 && <GettingStarted steps={steps} />}
 
           <section className="card p-4 sm:p-6">
             <h2 className="mb-4 text-sm font-medium text-stone-900">Pages lues</h2>
