@@ -30,6 +30,8 @@ ARG NEXT_PUBLIC_TURNSTILE_SITE_KEY=build-placeholder
 ARG NEXT_PUBLIC_IS_PREVIEW
 ARG NEXT_PUBLIC_BUYMEACOFFEE_SLUG
 ARG NEXT_PUBLIC_PWA_INSTALL_PROMPT_ENABLED
+# Clé publique des notifications de rappel : lue côté client, donc fixée au build.
+ARG NEXT_PUBLIC_VAPID_PUBLIC_KEY
 ARG DATABASE_URL=postgres://build-placeholder@build-placeholder.invalid/build-placeholder
 ARG BETTER_AUTH_SECRET=build-placeholder-secret-at-least-32-characters
 ARG GOOGLE_CLIENT_ID=build-placeholder
