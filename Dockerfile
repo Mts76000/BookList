@@ -54,6 +54,11 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder /app/drizzle ./drizzle
 COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
+# De quoi appliquer les migrations depuis le terminal du conteneur, sans tsx :
+# `node drizzle/migrate.ts` (Node 24 exécute le TypeScript). L'image standalone n'embarque que
+# ce que l'application importe ; pg y est déjà, ces deux paquets n'ont aucune dépendance.
+COPY --from=builder /app/node_modules/drizzle-orm ./node_modules/drizzle-orm
+COPY --from=builder /app/node_modules/dotenv ./node_modules/dotenv
 
 USER nextjs
 
