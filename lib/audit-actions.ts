@@ -11,6 +11,18 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "admin.change_role": "Changement de rôle",
   "admin.delete_account": "Suppression de compte par un administrateur",
   "admin.revoke_sessions": "Révocation des sessions",
+  "admin.grant_premium": "Premium offert",
+  "admin.revoke_premium": "Premium offert retiré",
+  "admin.cancel_subscription": "Résiliation de l'abonnement par un administrateur",
+  "admin.resume_subscription": "Réactivation de l'abonnement par un administrateur",
+  "admin.change_plan": "Changement de formule par un administrateur",
+  "admin.extend_trial": "Prolongation de l'essai",
+  "admin.refund_payment": "Remboursement",
+  "admin.create_promotion_code": "Création d'un code promo",
+  "admin.toggle_promotion_code": "Activation ou désactivation d'un code promo",
+  "billing.trial_started": "Début de l'essai gratuit de Premium",
+  "billing.premium_started": "Début de l'abonnement Premium",
+  "billing.premium_ended": "Fin de l'abonnement Premium",
 };
 
 /** Actions d'administration, distinguées visuellement de celles d'un utilisateur. */

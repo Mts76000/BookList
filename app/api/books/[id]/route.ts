@@ -7,6 +7,7 @@ import { validateBody } from "@/lib/validation";
 import { updateBookSchema } from "@/lib/validation-schemas";
 import { createRateLimiter } from "@/lib/rate-limit";
 import { requestMetadata } from "@/lib/audit-log";
+import { canonicalSeriesName } from "@/lib/series-store";
 
 const updateLimiter = createRateLimiter("books-update", 60, 60);
 const deleteLimiter = createRateLimiter("books-delete", 30, 60);
@@ -30,9 +31,15 @@ export const PATCH = withApiErrorHandling(async (request: Request, context: Rout
 
   // La condition porte sur (id, userId) : le livre de quelqu'un d'autre est introuvable et
   // non interdit — on ne révèle pas son existence.
+  const fields = validation.data;
+  // Une saga déjà présente garde son orthographe : « dune » rejoint « Dune ».
+  if (fields.seriesName) {
+    fields.seriesName = await canonicalSeriesName(db, session.user.id, fields.seriesName);
+  }
+
   const [updated] = await db
     .update(book)
-    .set(validation.data)
+    .set(fields)
     .where(and(eq(book.id, id), eq(book.userId, session.user.id)))
     .returning();
 

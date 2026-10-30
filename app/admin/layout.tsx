@@ -30,14 +30,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               <span className="badge bg-accent-50 text-accent-700">BookList</span>
             </div>
             <Link href="/dashboard" className="link text-sm">
-              Retour à l&apos;application
+              <span className="sm:hidden">L&apos;app</span>
+              <span className="hidden sm:inline">Retour à l&apos;application</span>
             </Link>
           </div>
           <AdminNav />
         </div>
       </header>
 
-      <main id="main-content" className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">
+      <main id="main-content" className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
         {children}
       </main>
 

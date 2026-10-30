@@ -1,8 +1,10 @@
 # BookList
 
-Application personnelle de suivi de lecture : bibliothèque, statuts (à lire / en cours /
-terminé), notes et commentaires, statistiques de lecture, scan de code-barres, import CSV
-et installation en PWA.
+Application de suivi de lecture : bibliothèque, statuts (à lire, en cours, terminé,
+abandonné), notes et citations, sagas complétées via Wikidata, objectifs et défis,
+statistiques et bilan annuel à partager, scan de code-barres, import Goodreads et
+StoryGraph, rappels de lecture, installation en PWA. Offre gratuite et abonnement Premium
+(Stripe).
 
 Cette version est construite sur le socle [`starter-nextjs`](https://github.com/Mts76000/starter-nextjs) :
 Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS v4 · PostgreSQL + Drizzle ORM ·
@@ -32,9 +34,12 @@ L'application est servie sur [http://localhost:3000](http://localhost:3000).
 échouer le boot immédiatement. Toutes les clés sont documentées dans `.env.example`. Les
 variables propres à BookList, en plus de celles du socle :
 
-| Variable               | Description                                                                                |
-| ---------------------- | ------------------------------------------------------------------------------------------ |
-| `GOOGLE_BOOKS_API_KEY` | Optionnelle — augmente le quota de l'API Google Books utilisée par la recherche de livres. |
+| Variable                                            | Description                                                                                                                         |
+| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `GOOGLE_BOOKS_API_KEY`                              | Recherche de livres. Optionnelle en dev, **indispensable en production** : sans clé, le quota anonyme de Google est vite épuisé.    |
+| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`        | Abonnement Premium. Sans elles, les boutons d'abonnement affichent « Bientôt disponible ».                                          |
+| `STRIPE_PRICE_MONTHLY`, `STRIPE_PRICE_YEARLY`       | Identifiants des deux prix Stripe (2,99 €/mois et 24 €/an). L'essai de 14 jours est fixé par le code au paiement, pas sur les prix. |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | Rappels de lecture (notifications push). Paire générée par `npx web-push generate-vapid-keys`.                                      |
 
 ## Base de données
 
@@ -46,8 +51,12 @@ npm run db:migrate    # applique les migrations
 npm run db:push       # pousse le schéma sans migration (dev uniquement)
 npm run db:studio     # explorateur de données
 npm run db:seed       # données de démonstration
+npm run db:seed:demo  # comptes démo : demo@booklist.fr (Premium) et demo-gratuit@booklist.fr
 npm run db:reset      # remise à zéro complète
 ```
+
+Les comptes démo (`npm run db:seed:demo`, mot de passe `test1234`) servent en dev et pour
+les captures. Ne pas les créer en production, ou en changer le mot de passe aussitôt.
 
 La base de test (`postgres-test`, port 5435) est séparée de la base de dev : `tests/setup.ts`
 refuse de démarrer si `DATABASE_URL` ne contient pas « test ».
@@ -90,7 +99,7 @@ Déploiement Coolify avec les variables d'environnement injectées par la platef
 fichier `.env` en production).
 
 **Le build pack doit être réglé sur « Dockerfile »**, pas sur Nixpacks. Le `Dockerfile` du
-projet produit une image `standalone` sur Node 22 ; Nixpacks, lui, retombe sur Node 18, que
+projet produit une image `standalone` sur Node 24 ; Nixpacks, lui, retombe sur Node 18, que
 `package.json` n'autorise pas.
 
 **Ne pas définir `NODE_ENV` dans les variables de la plateforme.** Next.js le positionne
@@ -101,3 +110,26 @@ ne dit rien de sa cause réelle.
 Le Dockerfile résiste néanmoins à un `NODE_ENV=production` injecté par la plateforme : son
 `npm ci --include=dev` force l'installation des devDependencies, sans lesquelles TypeScript
 et Tailwind manqueraient au build, et le script `prepare` tolère l'absence de husky.
+
+### Tâches planifiées
+
+À créer dans les Scheduled Tasks de Coolify, chacune en `POST` avec l'en-tête
+`Authorization: Bearer <CRON_SECRET>` :
+
+| Route                              | Fréquence     | Rôle                                                                        |
+| ---------------------------------- | ------------- | --------------------------------------------------------------------------- |
+| `/api/cron/cleanup-expired-tokens` | une fois/jour | Supprime les jetons et sessions expirés.                                    |
+| `/api/cron/purge-search-cache`     | une fois/jour | Purge les recherches Google Books et les correspondances Wikidata expirées. |
+| `/api/cron/reading-reminders`      | chaque soir   | Envoie les rappels de lecture (nécessite les clés VAPID).                   |
+
+### Mise en production
+
+1. Variables d'environnement de `.env.example` renseignées dans Coolify, avec
+   `NEXT_PUBLIC_APP_URL` sur le domaine définitif : il sert aux adresses canoniques, au
+   sitemap et aux images de partage.
+2. `npm run db:migrate` lancé sur la base de production.
+3. Stripe en mode réel : produit, deux prix, portail client et webhook vers
+   `<APP_URL>/api/webhooks/stripe` (événements `checkout.session.completed` et
+   `customer.subscription.created/updated/deleted`).
+4. Tâches planifiées ci-dessus créées.
+5. Site déclaré dans Google Search Console, avec le sitemap `<APP_URL>/sitemap.xml`.

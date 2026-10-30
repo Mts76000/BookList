@@ -2,11 +2,20 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getOptionalSession } from "@/lib/permissions";
-import { APP_DESCRIPTION, canonicalUrl } from "@/lib/seo";
+import {
+  APP_DESCRIPTION,
+  SEO_DESCRIPTION,
+  applicationJsonLd,
+  canonicalUrl,
+  faqJsonLd,
+  jsonLdScript,
+} from "@/lib/seo";
+import { FAQ, FaqSection, PricingSection } from "@/components/marketing";
 import { buttonClasses } from "@/components/ui/button";
 import { Footer } from "@/components/footer";
-import { Logo } from "@/components/logo";
+import { PublicHeader } from "@/components/public-header";
 import { env } from "@/lib/env";
+import { PREMIUM_PRICES } from "@/lib/plans";
 
 const FEATURES = [
   {
@@ -23,12 +32,24 @@ const FEATURES = [
   },
   {
     index: "03",
-    title: "Statistiques de lecture",
+    title: "Objectif annuel",
     description:
-      "Visualisez votre activité jour par jour et suivez vos objectifs de lecture au fil du temps.",
+      "Fixez-vous un nombre de livres pour l'année et voyez à chaque instant si vous tenez le rythme.",
   },
   {
     index: "04",
+    title: "Bilan à partager",
+    description:
+      "Votre année de lecture résumée en une image prête pour vos stories : livres, pages, coup de cœur.",
+  },
+  {
+    index: "05",
+    title: "Import Goodreads et StoryGraph",
+    description:
+      "Déposez votre export tel quel : statuts, notes et dates de lecture sont repris en une fois.",
+  },
+  {
+    index: "06",
     title: "Application installable",
     description:
       "Installez BookList sur votre téléphone comme une vraie app, avec un accès hors ligne.",
@@ -45,21 +66,26 @@ const STEPS = [
 ];
 
 export const metadata: Metadata = {
-  title: `${env.NEXT_PUBLIC_APP_NAME} — Suivez vos lectures`,
-  description: APP_DESCRIPTION,
+  title: {
+    absolute: `${env.NEXT_PUBLIC_APP_NAME} : application de suivi de lecture et carnet de lecture`,
+  },
+  description: SEO_DESCRIPTION,
   alternates: { canonical: canonicalUrl("/") },
+  openGraph: {
+    title: `${env.NEXT_PUBLIC_APP_NAME} : votre carnet de lecture en ligne`,
+    description: SEO_DESCRIPTION,
+    url: canonicalUrl("/"),
+  },
 };
 
-const jsonLd = {
-  "@context": "https://schema.org",
-  "@type": "WebApplication",
-  name: env.NEXT_PUBLIC_APP_NAME,
-  applicationCategory: "LifestyleApplication",
-  operatingSystem: "Any",
-  description: APP_DESCRIPTION,
-  url: env.NEXT_PUBLIC_APP_URL,
-  offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" },
-};
+const structuredData = [
+  applicationJsonLd([
+    { name: "Gratuit", value: 0 },
+    { name: "Premium mensuel", value: PREMIUM_PRICES.monthly.value },
+    { name: "Premium annuel", value: PREMIUM_PRICES.yearly.value },
+  ]),
+  faqJsonLd(FAQ),
+];
 
 export default async function HomePage() {
   // Un visiteur déjà connecté n'a rien à faire sur la page de présentation.
@@ -67,24 +93,14 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-stone-50">
-      <header className="glass sticky top-0 z-50 border-b border-stone-200/60">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
-          <Logo priority />
-          <Link
-            href="/login"
-            className="text-sm font-medium text-stone-600 transition-colors duration-200 hover:text-stone-900"
-          >
-            Se connecter
-          </Link>
-        </div>
-      </header>
+      <PublicHeader />
 
       <main id="main-content">
         <section className="mx-auto max-w-6xl px-4 pt-16 pb-16 sm:px-6 sm:pt-24 sm:pb-24">
           <div className="grid items-center gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:gap-8">
             <div>
               <div className="animate-fade-in-up bg-card mb-6 inline-flex items-center gap-1.5 rounded-full border border-stone-200 px-4 py-1.5 text-xs font-medium text-stone-500">
-                Votre bibliothèque, réinventée
+                Application de suivi de lecture
               </div>
               <h1
                 className="animate-fade-in-up font-serif text-5xl leading-[1.05] text-balance text-stone-900 sm:text-6xl lg:text-7xl"
@@ -105,9 +121,9 @@ export default async function HomePage() {
                 <Link href="/register" className={buttonClasses("primary", "w-full sm:w-auto")}>
                   Créer un compte gratuit
                 </Link>
-                <Link href="/login" className={buttonClasses("secondary", "w-full sm:w-auto")}>
-                  J&apos;ai déjà un compte
-                </Link>
+                <a href="#tarifs" className={buttonClasses("secondary", "w-full sm:w-auto")}>
+                  Voir les tarifs
+                </a>
               </div>
             </div>
 
@@ -164,6 +180,10 @@ export default async function HomePage() {
           </div>
         </section>
 
+        <PricingSection />
+
+        <FaqSection />
+
         <section className="noise-overlay relative overflow-hidden bg-stone-900">
           <div className="relative mx-auto max-w-3xl px-4 py-20 text-center sm:px-6 sm:py-28">
             <h2 className="font-serif text-3xl text-stone-50 sm:text-4xl">Prêt à commencer ?</h2>
@@ -175,7 +195,7 @@ export default async function HomePage() {
                 href="/register"
                 className="hover:bg-accent-100 inline-flex items-center justify-center gap-2 rounded-[var(--radius-sm)] bg-stone-50 px-6 py-3 text-sm font-medium tracking-tight text-stone-900 shadow-[0_8px_24px_-8px_rgba(0,0,0,0.5)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-[0_16px_32px_-10px_rgba(0,0,0,0.6)]"
               >
-                Créer mon compte
+                Créer un compte gratuit
               </Link>
             </div>
           </div>
@@ -184,10 +204,13 @@ export default async function HomePage() {
 
       <Footer />
 
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      {structuredData.map((data, index) => (
+        <script
+          key={index}
+          type="application/ld+json"
+          dangerouslySetInnerHTML={jsonLdScript(data)}
+        />
+      ))}
     </div>
   );
 }

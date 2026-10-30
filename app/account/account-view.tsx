@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  Bell,
   BookOpen,
-  ChartBar,
   Desktop,
   DeviceMobile,
   Download,
@@ -23,8 +23,8 @@ import { useToast } from "@/components/ui/toast";
 import { formatUserAgent, formatIp } from "@/lib/format-session";
 import { BuyMeACoffeeButton } from "@/components/buy-me-a-coffee";
 import { PwaInstallSection } from "@/components/pwa-install";
+import { ReminderSettings } from "@/components/reminder-settings";
 import { apiFetch } from "@/lib/api-client";
-import type { ReadingStats } from "@/lib/reading-stats";
 
 interface SessionRow {
   id: string;
@@ -41,18 +41,20 @@ function initialsFrom(name: string) {
 }
 
 function SectionCard({
+  id,
   icon,
   title,
   description,
   children,
 }: {
+  id?: string;
   icon: React.ReactNode;
   title: string;
   description?: string;
   children: React.ReactNode;
 }) {
   return (
-    <section className="border-border bg-card rounded-xl border p-6">
+    <section id={id} className="border-border bg-card scroll-mt-20 rounded-xl border p-6">
       <div className="mb-5 flex items-start gap-3">
         <span className="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-lg">
           {icon}
@@ -70,7 +72,6 @@ function SectionCard({
 }
 
 interface AccountViewProps {
-  stats: ReadingStats;
   /** Identité fournie par le serveur, qui la connaît déjà. Sans elle, le rendu serveur
    *  affiche le squelette de chargement (useSession n'est résolu qu'au client) tandis que
    *  le client affiche le contenu : l'hydratation échoue et la page se re-rend entièrement. */
@@ -81,14 +82,16 @@ interface AccountViewProps {
   /** Déjà formatée côté serveur : formater une date ici produit un rendu différent de
    *  celui du serveur (locale et fuseau du processus Node), et casse l'hydratation. */
   memberSince: string;
+  /** Bloc d'abonnement, rendu côté serveur (il lit le plan en base). */
+  subscription?: React.ReactNode;
 }
 
 export function AccountView({
-  stats,
   userName,
   userEmail,
   initialBooksRead,
   memberSince,
+  subscription,
 }: AccountViewProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -194,6 +197,7 @@ export function AccountView({
               {userName || "Mon compte"}
             </h1>
             <p className="text-muted-foreground truncate text-sm">{userEmail}</p>
+            <p className="text-muted-foreground text-xs">Membre depuis le {memberSince}</p>
           </div>
         </div>
         <Button
@@ -207,87 +211,19 @@ export function AccountView({
         </Button>
       </div>
 
-      <SectionCard
-        icon={<ChartBar size={18} aria-hidden="true" />}
-        title="Vos statistiques"
-        description={`Membre depuis le ${memberSince}.`}
-      >
-        <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          {[
-            { label: "Livres lus", value: stats.totalBooks },
-            { label: "Pages lues", value: stats.totalPagesRead },
-            {
-              label: "Note moyenne",
-              value: stats.averageRating > 0 ? stats.averageRating.toFixed(1) : "—",
-            },
-            { label: "Notes écrites", value: stats.commentsCount },
-          ].map((tile) => (
-            <div key={tile.label}>
-              <dt className="text-muted-foreground text-xs">{tile.label}</dt>
-              <dd className="font-serif text-2xl text-stone-900 tabular-nums">{tile.value}</dd>
-            </div>
-          ))}
-        </dl>
-
-        {(stats.topAuthors[0] || stats.topGenres[0]) && (
-          <dl className="mt-6 grid grid-cols-1 gap-4 border-t border-stone-100 pt-6 sm:grid-cols-2">
-            {stats.topAuthors[0] && (
-              <div>
-                <dt className="text-muted-foreground text-xs">Auteur le plus lu</dt>
-                <dd className="font-medium text-stone-900">
-                  {stats.topAuthors[0].author}{" "}
-                  <span className="text-muted-foreground text-sm">
-                    ({stats.topAuthors[0].count})
-                  </span>
-                </dd>
-              </div>
-            )}
-            {stats.topGenres[0] && (
-              <div>
-                <dt className="text-muted-foreground text-xs">Genre préféré</dt>
-                <dd className="font-medium text-stone-900">{stats.topGenres[0]}</dd>
-              </div>
-            )}
-          </dl>
-        )}
-
-        {stats.pagesPerYear.length > 0 && (
-          <div className="mt-6 border-t border-stone-100 pt-6">
-            <p className="text-muted-foreground mb-3 text-xs">Pages lues par année</p>
-            <ul className="space-y-2">
-              {stats.pagesPerYear.map((entry) => {
-                const max = Math.max(...stats.pagesPerYear.map((y) => y.pages));
-                return (
-                  <li key={entry.year} className="flex items-center gap-3">
-                    <span className="w-10 text-xs text-stone-500 tabular-nums">{entry.year}</span>
-                    <span className="h-2 flex-1 overflow-hidden rounded-full bg-stone-100">
-                      <span
-                        className="bg-accent-400 block h-full rounded-full"
-                        style={{ width: `${Math.max(2, (entry.pages / max) * 100)}%` }}
-                      />
-                    </span>
-                    <span className="text-muted-foreground w-16 text-right text-xs tabular-nums">
-                      {entry.pages}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        )}
-      </SectionCard>
+      {subscription}
 
       <SectionCard
         icon={<BookOpen size={18} aria-hidden="true" />}
         title="Profil de lecture"
-        description="Votre nom d'affichage et les livres lus avant votre inscription."
+        description="Votre prénom, pour vous saluer, et les livres lus avant votre inscription."
       >
         <form onSubmit={handleSaveProfile} className="flex flex-col gap-4 sm:max-w-sm">
           <Field
-            label="Nom"
+            label="Prénom"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            autoComplete="name"
+            autoComplete="given-name"
           />
           <Field
             label="Livres lus avant BookList"
@@ -406,16 +342,26 @@ export function AccountView({
       <SectionCard
         icon={<ShieldCheck size={18} aria-hidden="true" />}
         title="Données et confidentialité"
-        description="Téléchargez une copie de vos données personnelles."
+        description="Téléchargez vos données, gratuitement et à tout moment. Le fichier CSV se réimporte tel quel dans BookList."
       >
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={() => window.open("/api/account/export", "_blank")}
-        >
-          <Download size={16} aria-hidden="true" />
-          Exporter mes données
-        </Button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => window.open("/api/books/export", "_blank")}
+          >
+            <Download size={16} aria-hidden="true" />
+            Mes livres (CSV)
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => window.open("/api/account/export", "_blank")}
+          >
+            <Download size={16} aria-hidden="true" />
+            Toutes mes données (JSON)
+          </Button>
+        </div>
       </SectionCard>
 
       <SectionCard
@@ -424,6 +370,15 @@ export function AccountView({
         description="Ajoutez-la à votre écran d'accueil pour un accès rapide, comme une app native."
       >
         <PwaInstallSection />
+      </SectionCard>
+
+      <SectionCard
+        id="rappels"
+        icon={<Bell size={18} aria-hidden="true" />}
+        title="Rappels de lecture"
+        description="Une notification quand votre journée de lecture n'est pas encore faite."
+      >
+        <ReminderSettings />
       </SectionCard>
 
       <section className="border-destructive/30 bg-destructive/5 rounded-xl border p-6">

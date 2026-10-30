@@ -1,0 +1,286 @@
+{
+  "head": {
+    "vars": ["series", "seriesLabel", "book", "bookLabel", "ordinal", "date"]
+  },
+  "results": {
+    "bindings": [
+      {
+        "series": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q8337"
+        },
+        "book": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q47209"
+        },
+        "ordinal": {
+          "type": "literal",
+          "value": "2"
+        },
+        "date": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "1998-01-01T00:00:00Z"
+        },
+        "bookLabel": {
+          "xml:lang": "fr",
+          "type": "literal",
+          "value": "Harry Potter et la Chambre des Secrets"
+        },
+        "seriesNameMul": {
+          "type": "literal",
+          "xml:lang": "mul",
+          "value": "Harry Potter"
+        }
+      },
+      {
+        "series": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q8337"
+        },
+        "book": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q80817"
+        },
+        "ordinal": {
+          "type": "literal",
+          "value": "5"
+        },
+        "date": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2003-06-21T00:00:00Z"
+        },
+        "bookLabel": {
+          "xml:lang": "fr",
+          "type": "literal",
+          "value": "Harry Potter et l'Ordre du phénix"
+        },
+        "seriesNameMul": {
+          "type": "literal",
+          "xml:lang": "mul",
+          "value": "Harry Potter"
+        }
+      },
+      {
+        "series": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q8337"
+        },
+        "book": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q46887"
+        },
+        "ordinal": {
+          "type": "literal",
+          "value": "6"
+        },
+        "date": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2005-07-16T00:00:00Z"
+        },
+        "bookLabel": {
+          "xml:lang": "fr",
+          "type": "literal",
+          "value": "Harry Potter et le Prince de sang-mêlé"
+        },
+        "seriesNameMul": {
+          "type": "literal",
+          "xml:lang": "mul",
+          "value": "Harry Potter"
+        }
+      },
+      {
+        "series": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q8337"
+        },
+        "book": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q43361"
+        },
+        "ordinal": {
+          "type": "literal",
+          "value": "1"
+        },
+        "date": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "1997-06-26T00:00:00Z"
+        },
+        "bookLabel": {
+          "xml:lang": "fr",
+          "type": "literal",
+          "value": "Harry Potter à l'école des sorciers"
+        },
+        "seriesNameMul": {
+          "type": "literal",
+          "xml:lang": "mul",
+          "value": "Harry Potter"
+        }
+      },
+      {
+        "series": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q8337"
+        },
+        "book": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q47598"
+        },
+        "ordinal": {
+          "type": "literal",
+          "value": "3"
+        },
+        "date": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "1999-07-01T00:00:00Z"
+        },
+        "bookLabel": {
+          "xml:lang": "fr",
+          "type": "literal",
+          "value": "Harry Potter et le Prisonnier d'Azkaban"
+        },
+        "seriesNameMul": {
+          "type": "literal",
+          "xml:lang": "mul",
+          "value": "Harry Potter"
+        }
+      },
+      {
+        "series": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q8337"
+        },
+        "book": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q77808986"
+        },
+        "date": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2016-07-31T00:00:00Z"
+        },
+        "bookLabel": {
+          "xml:lang": "fr",
+          "type": "literal",
+          "value": "Harry Potter et l'enfant maudit"
+        },
+        "seriesNameMul": {
+          "type": "literal",
+          "xml:lang": "mul",
+          "value": "Harry Potter"
+        }
+      },
+      {
+        "series": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q8337"
+        },
+        "book": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q46758"
+        },
+        "ordinal": {
+          "type": "literal",
+          "value": "7"
+        },
+        "bookLabel": {
+          "xml:lang": "fr",
+          "type": "literal",
+          "value": "Harry Potter et les Reliques de la Mort"
+        },
+        "seriesNameMul": {
+          "type": "literal",
+          "xml:lang": "mul",
+          "value": "Harry Potter"
+        }
+      },
+      {
+        "series": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q8337"
+        },
+        "book": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q1148668"
+        },
+        "ordinal": {
+          "type": "literal",
+          "value": "0.5"
+        },
+        "date": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2008-01-01T00:00:00Z"
+        },
+        "bookLabel": {
+          "xml:lang": "fr",
+          "type": "literal",
+          "value": "Prologue à Harry Potter"
+        },
+        "seriesNameMul": {
+          "type": "literal",
+          "xml:lang": "mul",
+          "value": "Harry Potter"
+        }
+      },
+      {
+        "series": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q8337"
+        },
+        "book": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q20711488"
+        },
+        "date": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2016-07-31T00:00:00Z"
+        },
+        "bookLabel": {
+          "xml:lang": "fr",
+          "type": "literal",
+          "value": "Harry Potter et l'enfant maudit"
+        },
+        "seriesNameMul": {
+          "type": "literal",
+          "xml:lang": "mul",
+          "value": "Harry Potter"
+        }
+      },
+      {
+        "series": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q8337"
+        },
+        "book": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q46751"
+        },
+        "ordinal": {
+          "type": "literal",
+          "value": "4"
+        },
+        "date": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "2000-07-08T00:00:00Z"
+        },
+        "bookLabel": {
+          "xml:lang": "fr",
+          "type": "literal",
+          "value": "Harry Potter et la Coupe de feu"
+        },
+        "seriesNameMul": {
+          "type": "literal",
+          "xml:lang": "mul",
+          "value": "Harry Potter"
+        }
+      }
+    ]
+  }
+}

@@ -1,7 +1,9 @@
 // Parseur CSV minimal (sans dépendance) supportant les champs entre guillemets
 // avec virgules et guillemets échappés ("").
 
-export function parseCsv(text: string): string[][] {
+export function parseCsv(input: string): string[][] {
+  // Les fichiers exportés (le nôtre, ceux d'Excel) peuvent commencer par un BOM UTF-8.
+  const text = input.replace(/^\uFEFF/, "");
   const rows: string[][] = [];
   let row: string[] = [];
   let field = "";
@@ -66,4 +68,23 @@ export function csvRowsToObjects(rows: string[][]): Record<string, string>[] {
     });
     return obj;
   });
+}
+
+/** Échappe un champ CSV : entre guillemets dès qu'il contient virgule, guillemet ou saut de ligne. */
+function escapeField(value: string): string {
+  return /[",\r\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
+}
+
+/**
+ * Sérialise des lignes en CSV, lisible par `parseCsv`. Le BOM UTF-8 initial fait ouvrir le
+ * fichier avec les bons accents dans Excel.
+ */
+export function toCsv(rows: (string | number | null | undefined)[][]): string {
+  return (
+    "\uFEFF" +
+    rows
+      .map((row) => row.map((cell) => escapeField(cell == null ? "" : String(cell))).join(","))
+      .join("\n") +
+    "\n"
+  );
 }

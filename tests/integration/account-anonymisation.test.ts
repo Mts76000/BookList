@@ -33,6 +33,10 @@ async function seedUserWithData(): Promise<string> {
         VALUES (${userId}, 'À Supprimer', ${currentUser.email}, true, 'user', 12)`,
   );
   await db.execute(
+    sql`INSERT INTO "reading_goal" (id, year, target, user_id)
+        VALUES (${randomUUID()}, 2026, 24, ${userId})`,
+  );
+  await db.execute(
     sql`INSERT INTO "account" (id, account_id, provider_id, user_id, password)
         VALUES (${randomUUID()}, ${userId}, 'credential', ${userId}, 'un-hash')`,
   );
@@ -65,7 +69,7 @@ beforeAll(async () => {
 
 afterEach(async () => {
   await db.execute(
-    sql`TRUNCATE TABLE "user", "session", "account", "verification", "audit_logs", "book", "comment", "reading_activity" CASCADE`,
+    sql`TRUNCATE TABLE "user", "session", "account", "verification", "audit_logs", "book", "comment", "reading_activity", "reading_goal", "quote", "reading_challenge", "push_subscription" CASCADE`,
   );
 });
 
@@ -97,6 +101,7 @@ describe("DELETE /api/account", () => {
     expect(await countIn("book", userId)).toBe(0);
     expect(await countIn("comment", userId)).toBe(0);
     expect(await countIn("reading_activity", userId)).toBe(0);
+    expect(await countIn("reading_goal", userId)).toBe(0);
     expect(await countIn("account", userId)).toBe(0);
   });
 

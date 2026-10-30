@@ -21,6 +21,28 @@ export const user = pgTable("user", {
   // personnelle, pour que les comptes déjà supprimés en v1 restent migrables tels quels.
   isAnonymized: boolean("is_anonymized").notNull().default(false),
   anonymizedAt: timestamp("anonymized_at"),
+  // Abonnement Premium (Stripe). `premiumUntil` est la seule source de vérité de l'accès :
+  // fin de la période payée, prolongée à chaque renouvellement par le webhook. Un abonnement
+  // résilié garde donc ses avantages jusqu'au terme déjà réglé, sans état à part à gérer.
+  premiumUntil: timestamp("premium_until"),
+  // Premium offert par un administrateur, indépendant de Stripe : un abonnement payant ne
+  // l'écrase pas, et il n'est jamais facturé. L'accès Premium vaut la plus tardive des deux
+  // dates.
+  premiumGrantedUntil: timestamp("premium_granted_until"),
+  // Formule de l'abonnement Stripe ("monthly" ou "yearly"), pour le revenu estimé de l'admin.
+  subscriptionInterval: text("subscription_interval"),
+  // Essai gratuit de Premium, sans carte : une seule fois par compte. Pendant l'essai,
+  // `premiumUntil` vaut sa date de fin.
+  trialStartedAt: timestamp("trial_started_at"),
+  stripeCustomerId: text("stripe_customer_id").unique(),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  // Statut Stripe brut (active, past_due, canceled...), affiché sur la page du compte.
+  subscriptionStatus: text("subscription_status"),
+  // L'abonné a demandé la résiliation : l'accès court jusqu'à `premiumUntil`, sans
+  // renouvellement.
+  subscriptionCancelAtPeriodEnd: boolean("subscription_cancel_at_period_end")
+    .notNull()
+    .default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at")
     .notNull()
