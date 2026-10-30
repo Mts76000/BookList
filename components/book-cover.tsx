@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getImageProps } from "next/image";
+import { isOptimizedCoverUrl } from "@/lib/cover-hosts";
 import { coverToneFor } from "@/lib/generated-cover";
 
 interface BookCoverProps {
@@ -140,15 +141,18 @@ export function BookCover({
   }
 
   const secureUrl = coverUrl.replace(/^http:/, "https:");
-  // Les couvertures passent par l'optimiseur d'images de Next.js : servies depuis notre
-  // domaine, en WebP à la taille affichée, et gardées en cache par le serveur, le navigateur
-  // et le service worker. Le premier visiteur paie le téléchargement chez Google ou Open
-  // Library, les suivants non.
+  // Les couvertures de Google Books et d'Open Library passent par l'optimiseur d'images de
+  // Next.js : servies depuis notre domaine, en WebP à la taille affichée, et gardées en cache
+  // par le serveur, le navigateur et le service worker. Le premier visiteur paie le
+  // téléchargement chez Google ou Open Library, les suivants non. Une couverture saisie à la
+  // main, venant d'un autre site, est chargée telle quelle (voir lib/cover-hosts.ts).
+  const optimized = isOptimizedCoverUrl(secureUrl);
   const { props: imageProps } = getImageProps({
     src: useStoredUrl ? secureUrl : sizedCover(secureUrl, variant),
     alt: alt ?? "",
     width: DISPLAY_WIDTH[variant],
     height: Math.round(DISPLAY_WIDTH[variant] * 1.5),
+    unoptimized: !optimized,
   });
 
   return (
@@ -162,6 +166,8 @@ export function BookCover({
       alt={alt ?? ""}
       loading={variant === "large" ? "eager" : "lazy"}
       decoding="async"
+      // Sans Referer, un site tiers qui refuse le hotlinking sert quand même l'image.
+      referrerPolicy={optimized ? undefined : "no-referrer"}
       onLoad={(e) => validateImage(e.currentTarget)}
       onError={() => setError(true)}
       className={`object-cover ${interactionClasses} ${className ?? ""}`}

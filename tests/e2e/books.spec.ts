@@ -82,6 +82,37 @@ test.describe("Bibliothèque", () => {
     await expect(page.getByText("Aucun livre trouvé")).toBeVisible();
   });
 
+  test("une couverture saisie à la main, venant d'un autre site, s'affiche", async ({ page }) => {
+    await page.context().setExtraHTTPHeaders({ "x-forwarded-for": uniqueIp() });
+    const email = uniqueEmail("e2e-cover");
+    await signUpAndLogIn(page, email);
+
+    // Un hôte hors de lib/cover-hosts.ts : l'optimiseur d'images le refuserait, le navigateur
+    // doit donc le charger lui-même. L'image est servie localement pour ne pas dépendre d'un
+    // site tiers.
+    const coverUrl = "https://covers.example.com/le-nom-du-vent.png";
+    const png = Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAEAAAABgCAIAAAAip+O/AAAAZ0lEQVR42u3PQQkAAAgEsItjJjMZ2r8NhMEKLNXzWgQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQErgWW5VF4FbSdCwAAAABJRU5ErkJggg==",
+      "base64",
+    );
+    await page.route(coverUrl, (route) => route.fulfill({ contentType: "image/png", body: png }));
+
+    await page.goto("/books/add");
+    await page.getByRole("button", { name: "Saisir manuellement" }).click();
+    await page.getByLabel("Titre").fill("Le Nom du vent");
+    await page.getByLabel("Auteur").fill("Patrick Rothfuss");
+    await page.getByRole("button", { name: "Ajouter", exact: true }).click();
+    await expect(page).toHaveURL(/\/books\/[^/]+$/);
+
+    await page.getByRole("button", { name: "Modifier le livre" }).click();
+    await page.getByLabel("Couverture (URL)").fill(coverUrl);
+    await page.getByRole("button", { name: "Enregistrer", exact: true }).click();
+
+    const cover = page.locator(`img[src="${coverUrl}"]`).first();
+    await expect(cover).toBeVisible();
+    await expect.poll(() => cover.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBe(64);
+  });
+
   test("une activité de lecture saisie apparaît dans les statistiques", async ({ page }) => {
     await page.context().setExtraHTTPHeaders({ "x-forwarded-for": uniqueIp() });
     const email = uniqueEmail("e2e-activity");

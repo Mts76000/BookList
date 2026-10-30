@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import { withSerwist } from "@serwist/turbopack";
+import { OPTIMIZED_COVER_HOSTNAMES } from "./lib/cover-hosts";
 
 // CSP whitelist rationale:
 // - 'self' + inline styles/scripts: Next.js/Tailwind require these for hydration.
@@ -22,27 +23,21 @@ const scriptSrc = [
   .filter(Boolean)
   .join(" ");
 
-// Hôtes des couvertures de livres. La v1 autorisait `img-src https:` en bloc ; on liste
-// ici les seules sources réellement utilisées par la recherche Google Books et par les
-// couvertures Open Library, pour ne pas rouvrir toute la surface HTTPS.
-const bookCoverHosts = [
-  "https://books.google.com",
-  "https://books.googleusercontent.com",
-  "https://covers.openlibrary.org",
-  // Open Library redirige ses couvertures vers des serveurs Internet Archive dont le
-  // sous-domaine change d'une image à l'autre (ia801601, ia601601...) : sans le joker,
-  // la CSP bloque la quasi-totalité des couvertures.
-  "https://archive.org",
-  "https://*.archive.org",
-].join(" ");
+// Hôtes des couvertures de livres fournies par la recherche (lib/cover-hosts.ts) : seuls
+// eux passent par l'optimiseur d'images, et le service worker n'a besoin de les joindre que
+// pour les mettre en cache hors-ligne.
+const bookCoverHosts = OPTIMIZED_COVER_HOSTNAMES.map((host) => `https://${host}`).join(" ");
 
 const contentSecurityPolicy = [
   "default-src 'self'",
   `script-src ${scriptSrc}`,
   "style-src 'self' 'unsafe-inline'",
   // blob: est nécessaire au scanner de code-barres, qui rend les images de la caméra
-  // dans un canvas avant de les décoder.
-  `img-src 'self' data: blob: https://lh3.googleusercontent.com ${bookCoverHosts}`,
+  // dans un canvas avant de les décoder. https: : une couverture saisie à la main peut venir
+  // de n'importe quel site et se charge directement dans le navigateur (voir
+  // lib/cover-hosts.ts). Une image ne peut rien exécuter ; script-src et connect-src restent,
+  // eux, limités à une liste.
+  "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
   `connect-src 'self' https://stats.mathis-lamotte.fr https://www.googleapis.com ${bookCoverHosts}`,
   // media-src blob: : le flux vidéo de la caméra pour le scan d'ISBN.
@@ -87,12 +82,8 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       // Google account avatars (better-auth Google OAuth profile images)
       { protocol: "https", hostname: "lh3.googleusercontent.com" },
-      // Couvertures de livres
-      { protocol: "https", hostname: "books.google.com" },
-      { protocol: "https", hostname: "books.googleusercontent.com" },
-      { protocol: "https", hostname: "covers.openlibrary.org" },
-      { protocol: "https", hostname: "archive.org" },
-      { protocol: "https", hostname: "*.archive.org" },
+      // Couvertures de livres issues de la recherche
+      ...OPTIMIZED_COVER_HOSTNAMES.map((hostname) => ({ protocol: "https" as const, hostname })),
     ],
   },
 };

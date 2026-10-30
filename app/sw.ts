@@ -2,6 +2,7 @@
 /// <reference lib="webworker" />
 import { defaultCache } from "@serwist/turbopack/worker";
 import type { PrecacheEntry, RuntimeCaching, SerwistGlobalConfig } from "serwist";
+import { isOptimizedCoverUrl } from "../lib/cover-hosts";
 import {
   CacheFirst,
   CacheableResponsePlugin,
@@ -25,8 +26,12 @@ const turnstileNetworkOnly: RuntimeCaching = {
   handler: new NetworkOnly(),
 };
 
+// Limité aux hôtes autorisés par connect-src (next.config.ts) : le service worker récupère
+// l'image avec fetch(), soumis à cette directive. Une couverture saisie à la main, venant
+// d'un autre site, n'est pas interceptée et se charge normalement dans le navigateur.
 const crossOriginImageCache: RuntimeCaching = {
-  matcher: ({ request, sameOrigin }) => !sameOrigin && request.destination === "image",
+  matcher: ({ request, sameOrigin, url }) =>
+    !sameOrigin && request.destination === "image" && isOptimizedCoverUrl(url.href),
   handler: new CacheFirst({
     cacheName: "cross-origin-images",
     plugins: [
