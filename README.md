@@ -99,7 +99,7 @@ Déploiement Coolify avec les variables d'environnement injectées par la platef
 fichier `.env` en production).
 
 **Le build pack doit être réglé sur « Dockerfile »**, pas sur Nixpacks. Le `Dockerfile` du
-projet produit une image `standalone` sur Node 22 ; Nixpacks, lui, retombe sur Node 18, que
+projet produit une image `standalone` sur Node 24 ; Nixpacks, lui, retombe sur Node 18, que
 `package.json` n'autorise pas.
 
 **Ne pas définir `NODE_ENV` dans les variables de la plateforme.** Next.js le positionne

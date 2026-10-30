@@ -4,6 +4,7 @@ config({ path: process.env.NODE_ENV === "test" ? ".env.test" : ".env.local", qui
 import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Pool } from "pg";
+import { pathToFileURL } from "node:url";
 
 export async function runMigrations() {
   const databaseUrl = process.env.DATABASE_URL;
@@ -19,7 +20,9 @@ export async function runMigrations() {
   await pool.end();
 }
 
-const isMain = process.argv[1] && import.meta.url === `file://${process.argv[1]}`;
+// pathToFileURL, not `file://${argv[1]}`: on Windows the latter is a malformed URL that
+// never matches import.meta.url (`file:///C:/...`), so the script silently did nothing.
+const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 if (isMain) {
   runMigrations().catch((err) => {
     console.error(err);

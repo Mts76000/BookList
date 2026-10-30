@@ -1,9 +1,16 @@
+import { createHash, timingSafeEqual } from "node:crypto";
 import { lt } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { verification } from "@/drizzle/schema";
 import { env } from "@/lib/env";
 import { apiError, apiSuccess, withApiErrorHandling } from "@/lib/api-response";
 import { logger } from "@/lib/logger";
+
+/** Constant-time comparison (hashing first makes both buffers the same length). */
+function isValidCronAuth(header: string | null): boolean {
+  const digest = (value: string) => createHash("sha256").update(value).digest();
+  return timingSafeEqual(digest(header ?? ""), digest(`Bearer ${env.CRON_SECRET}`));
+}
 
 /**
  * Example scheduled task: deletes expired better-auth verification tokens.
@@ -14,8 +21,7 @@ import { logger } from "@/lib/logger";
  * Copy this pattern (secret check + handler) for any other scheduled task.
  */
 export const POST = withApiErrorHandling(async (request: Request) => {
-  const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${env.CRON_SECRET}`) {
+  if (!isValidCronAuth(request.headers.get("authorization"))) {
     return apiError("UNAUTHORIZED", "Invalid or missing cron secret.");
   }
 

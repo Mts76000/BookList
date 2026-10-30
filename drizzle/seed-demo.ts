@@ -9,7 +9,6 @@ import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import { eq } from "drizzle-orm";
 import { hashPassword } from "better-auth/crypto";
-import { createLocalAccountIssuer } from "better-auth/db";
 import * as schema from "./schema";
 import {
   CHALLENGES,
@@ -413,7 +412,6 @@ async function seedAccount(
       id: randomUUID(),
       accountId: userId,
       providerId: "credential",
-      issuer: createLocalAccountIssuer("credential"),
       userId,
       password: await hashPassword(DEMO_PASSWORD),
     });

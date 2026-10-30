@@ -35,10 +35,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et ce p
 
 ### Changed
 
-- Image Docker de production sur Node 22 (LTS), comme la CI, au lieu de Node 25.
 - Compte gratuit : toutes ses données restent visibles (sagas, statistiques de base,
   citations sans limite) ; Premium apporte les fonctions avancées.
-
 - Authentification : NextAuth remplacé par better-auth, avec vérification des mots de passe
   bcrypt hérités de la v1 et bascule automatique vers scrypt à la première connexion.
 - Base de données : Prisma remplacé par Drizzle. `ReadingActivity.date` devient une date
