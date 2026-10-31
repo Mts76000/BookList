@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 import { GoogleButton } from "@/components/ui/google-button";
-import { TurnstileWidget } from "@/components/ui/turnstile-widget";
+import { TurnstileWidget, type TurnstileHandle } from "@/components/ui/turnstile-widget";
 import { useToast } from "@/components/ui/toast";
 import { authClient } from "@/lib/auth-client";
 
@@ -18,6 +18,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [tosAccepted, setTosAccepted] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState("");
+  const turnstileRef = useRef<TurnstileHandle>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
 
@@ -47,6 +48,8 @@ export default function RegisterPage() {
       router.push(`/verify-email?email=${encodeURIComponent(email)}`);
     } finally {
       setIsLoading(false);
+      // Le jeton vient d'être consommé par le serveur, même si la tentative a échoué.
+      turnstileRef.current?.reset();
     }
   }
 
@@ -126,6 +129,7 @@ export default function RegisterPage() {
 
         {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ? (
           <TurnstileWidget
+            ref={turnstileRef}
             siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
             onVerify={setTurnstileToken}
           />

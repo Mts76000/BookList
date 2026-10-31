@@ -1,16 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
-import { TurnstileWidget } from "@/components/ui/turnstile-widget";
+import { TurnstileWidget, type TurnstileHandle } from "@/components/ui/turnstile-widget";
 import { useToast } from "@/components/ui/toast";
 
 export default function ForgotPasswordPage() {
   const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [turnstileToken, setTurnstileToken] = useState("");
+  const turnstileRef = useRef<TurnstileHandle>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [sent, setSent] = useState(false);
 
@@ -32,6 +33,8 @@ export default function ForgotPasswordPage() {
       setSent(true);
     } finally {
       setIsLoading(false);
+      // Le jeton vient d'être consommé par le serveur, même si la tentative a échoué.
+      turnstileRef.current?.reset();
     }
   }
 
@@ -73,6 +76,7 @@ export default function ForgotPasswordPage() {
 
         {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ? (
           <TurnstileWidget
+            ref={turnstileRef}
             siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
             onVerify={setTurnstileToken}
           />
