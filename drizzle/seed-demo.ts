@@ -34,14 +34,20 @@ import {
  *
  *   npm run db:seed:demo
  *
+ * En production, depuis le terminal du conteneur (l'image n'a ni tsx ni les dépendances de
+ * dev : le Dockerfile y place ce script déjà compilé en un seul fichier) :
+ *
+ *   DEMO_PASSWORD='...' node drizzle/seed-demo.mjs
+ *
  * - demo@booklist.fr : Camille, trois ans d'historique (drizzle/demo-library.ts), Premium
  *   offert pour un an pour que toutes les fonctions soient visibles ;
  * - demo-gratuit@booklist.fr : Lucas, inscrit depuis le début de l'année
  *   (drizzle/demo-library-free.ts), sans Premium, pour voir l'application d'un compte gratuit.
  *
- * Même mot de passe que les comptes de drizzle/seed.ts.
+ * Même mot de passe que les comptes de drizzle/seed.ts, sauf si `DEMO_PASSWORD` est fourni.
  */
-const DEMO_PASSWORD = "test1234";
+const DEFAULT_PASSWORD = "test1234";
+const DEMO_PASSWORD = process.env.DEMO_PASSWORD || DEFAULT_PASSWORD;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** Générateur pseudo-aléatoire déterministe : le même historique à chaque exécution. */
@@ -210,7 +216,12 @@ async function lookupAll(books: DemoBook[]): Promise<Map<string, BookMetadata>> 
   if (missing.length > 0) process.stdout.write("\n");
 
   const sorted = Object.fromEntries(Object.entries(cache).sort(([a], [b]) => a.localeCompare(b)));
-  writeFileSync(CACHE_PATH, `${JSON.stringify(sorted, null, 2)}\n`);
+  try {
+    writeFileSync(CACHE_PATH, `${JSON.stringify(sorted, null, 2)}\n`);
+  } catch {
+    // Dossier en lecture seule (conteneur de production) : le cache n'est qu'une économie
+    // d'appels, les comptes sont créés quand même.
+  }
   if (googleExhausted) {
     console.log("Quota Google Books atteint : relancez demain pour les couvertures restantes.");
   }
@@ -527,6 +538,13 @@ async function seedAccount(
 async function main() {
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) throw new Error("DATABASE_URL is not set.");
+  // Le mot de passe par défaut est écrit dans ce dépôt public : en production, n'importe qui
+  // pourrait entrer dans les comptes démo.
+  if (process.env.NODE_ENV === "production" && DEMO_PASSWORD === DEFAULT_PASSWORD) {
+    throw new Error(
+      "En production, choisissez le mot de passe des comptes démo : DEMO_PASSWORD='...' node drizzle/seed-demo.mjs",
+    );
+  }
   const pool = new Pool({ connectionString: databaseUrl });
   const db = drizzle(pool, { schema });
 
@@ -551,8 +569,9 @@ async function main() {
 
   for (const account of accounts) await seedAccount(db, account, metadata, today);
 
+  const password = DEMO_PASSWORD === DEFAULT_PASSWORD ? DEFAULT_PASSWORD : "celui de DEMO_PASSWORD";
   console.log(
-    `Connexion : ${accounts.map((account) => account.email).join(" ou ")}, mot de passe ${DEMO_PASSWORD}`,
+    `Connexion : ${accounts.map((account) => account.email).join(" ou ")}, mot de passe ${password}`,
   );
   await pool.end();
 }

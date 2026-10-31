@@ -42,6 +42,9 @@ ARG TURNSTILE_SECRET_KEY=build-placeholder
 ARG CRON_SECRET=build-placeholder-cron-secret
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
+# Le script des comptes démo, compilé en un seul fichier (dépendances comprises, sauf pg déjà
+# présent) pour pouvoir le lancer depuis le terminal Coolify : voir drizzle/seed-demo.ts.
+RUN npm run db:seed:demo:bundle
 
 # --- Runtime ---
 FROM base AS runner
@@ -61,6 +64,8 @@ COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
 # y est déjà, ces deux paquets n'ont aucune dépendance.
 COPY --from=builder /app/node_modules/drizzle-orm ./node_modules/drizzle-orm
 COPY --from=builder /app/node_modules/dotenv ./node_modules/dotenv
+# À côté de drizzle/demo-covers.json, que le script lit pour ne pas réinterroger les API.
+COPY --from=builder /app/build/seed-demo.mjs ./drizzle/seed-demo.mjs
 
 USER nextjs
 

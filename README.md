@@ -56,7 +56,15 @@ npm run db:reset      # remise à zéro complète
 ```
 
 Les comptes démo (`npm run db:seed:demo`, mot de passe `test1234`) servent en dev et pour
-les captures. Ne pas les créer en production, ou en changer le mot de passe aussitôt.
+les captures. En production, ils se créent depuis le terminal du conteneur dans Coolify, avec
+un mot de passe choisi (le script refuse `test1234` en production) :
+
+```bash
+DEMO_PASSWORD='un-mot-de-passe-solide' node drizzle/seed-demo.mjs
+```
+
+L'image n'a ni `tsx` ni les dépendances de dev : le Dockerfile y place le script déjà compilé
+(`npm run db:seed:demo:bundle`).
 
 La base de test (`postgres-test`, port 5435) est séparée de la base de dev : `tests/setup.ts`
 refuse de démarrer si `DATABASE_URL` ne contient pas « test ».
