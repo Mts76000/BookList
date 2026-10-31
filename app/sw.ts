@@ -26,12 +26,8 @@ const turnstileNetworkOnly: RuntimeCaching = {
   handler: new NetworkOnly(),
 };
 
-// Limité aux hôtes autorisés par connect-src (next.config.ts) : le service worker récupère
-// l'image avec fetch(), soumis à cette directive. Une couverture saisie à la main, venant
-// d'un autre site, n'est pas interceptée et se charge normalement dans le navigateur.
 const crossOriginImageCache: RuntimeCaching = {
-  matcher: ({ request, sameOrigin, url }) =>
-    !sameOrigin && request.destination === "image" && isOptimizedCoverUrl(url.href),
+  matcher: ({ request, sameOrigin }) => !sameOrigin && request.destination === "image",
   handler: new CacheFirst({
     cacheName: "cross-origin-images",
     plugins: [
@@ -60,6 +56,23 @@ const optimizedCoverCache: RuntimeCaching = {
     ],
   }),
 };
+
+// Une couverture saisie à la main peut venir de n'importe quel site (voir lib/cover-hosts.ts).
+// Interceptée, elle serait récupérée par fetch() depuis le service worker, soumis à
+// connect-src (next.config.ts) qui ne liste que les hôtes connus : l'image échouerait. Ce
+// listener, déclaré avant ceux de Serwist, les arrête sans répondre : le navigateur charge
+// alors l'image lui-même, sous img-src. La règle `cross-origin` de `defaultCache`
+// intercepterait sinon toute requête vers un autre site.
+self.addEventListener("fetch", (event) => {
+  const { request } = event;
+  if (
+    request.destination === "image" &&
+    new URL(request.url).origin !== self.location.origin &&
+    !isOptimizedCoverUrl(request.url)
+  ) {
+    event.stopImmediatePropagation();
+  }
+});
 
 const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
