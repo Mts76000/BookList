@@ -38,7 +38,7 @@ export const POST = withApiErrorHandling(async (request: Request) => {
 
   const portal = await stripe.billingPortal.sessions.create({
     customer: account.customerId,
-    return_url: `${env.NEXT_PUBLIC_APP_URL}/account`,
+    return_url: `${env.NEXT_PUBLIC_APP_URL}/account/premium`,
     locale: "fr",
   });
 

@@ -1,15 +1,17 @@
-import { CaretDown, CheckCircle } from "@phosphor-icons/react/ssr";
+import { Books, ChartBar, Compass, Fire, Quotes, Stack, Target } from "@phosphor-icons/react/ssr";
+import type { Icon } from "@phosphor-icons/react";
 import { PlanPicker } from "@/components/plan-picker";
-import { PREMIUM_FEATURES, TRIAL_DAYS } from "@/lib/plans";
+import { PREMIUM_FEATURES, PREMIUM_PRICES, TRIAL_DAYS } from "@/lib/plans";
 
-interface PremiumOfferProps {
-  billingEnabled: boolean;
-  /** L'essai gratuit est encore disponible pour cet utilisateur. */
-  trialAvailable?: boolean;
-  /** Titre de l'encart, adapté à l'endroit où il s'affiche. */
-  title?: string;
-  description?: string;
-}
+const FEATURE_ICONS: Record<(typeof PREMIUM_FEATURES)[number]["title"], Icon> = {
+  "Bibliothèque illimitée": Books,
+  "Sagas complétées": Stack,
+  "Quoi lire ensuite": Compass,
+  "Statistiques avancées": ChartBar,
+  "Défis personnels": Target,
+  "Citations illimitées, en images": Quotes,
+  "Jokers de série": Fire,
+};
 
 /**
  * Fin de l'essai s'il commençait aujourd'hui, formatée côté serveur : la même date au
@@ -22,64 +24,80 @@ function trialEndDate(): string {
   });
 }
 
-/** Avantages mis en avant ; les autres restent à un clic. */
-const HIGHLIGHTED = 3;
+/** Tous les avantages Premium, chacun avec son icône. */
+export function PremiumFeatureGrid() {
+  return (
+    <ul className="grid gap-x-6 gap-y-5 sm:grid-cols-2">
+      {PREMIUM_FEATURES.map((feature) => {
+        const FeatureIcon = FEATURE_ICONS[feature.title];
+        return (
+          <li key={feature.title} className="flex gap-3">
+            <span className="bg-accent-50 text-accent-700 flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-sm)]">
+              <FeatureIcon size={18} weight="duotone" aria-hidden="true" />
+            </span>
+            <div>
+              <p className="text-sm font-medium text-stone-900">{feature.title}</p>
+              <p className="mt-0.5 text-sm leading-relaxed text-stone-500">{feature.description}</p>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
 
 /**
- * Encart d'abonnement pour un utilisateur connecté : les avantages principaux, le reste
- * dépliable, puis le choix de la formule et un seul bouton. Réutilisé sur la page du compte
- * et les statistiques, pour que l'offre se présente toujours de la même façon.
+ * Offre Premium d'un compte gratuit : l'accroche, ce que comprend Premium, puis le choix de
+ * la formule et un seul bouton. Toutes les invitations à Premium de l'application mènent
+ * ici (/account/premium), pour que l'offre se présente toujours de la même façon.
  */
 export function PremiumOffer({
   billingEnabled,
   trialAvailable = false,
-  title = "Passez à Premium",
-  description,
-}: PremiumOfferProps) {
-  const trialEndsOn = trialEndDate();
-  const [highlighted, others] = [
-    PREMIUM_FEATURES.slice(0, HIGHLIGHTED),
-    PREMIUM_FEATURES.slice(HIGHLIGHTED),
-  ];
-
-  const featureItem = (feature: (typeof PREMIUM_FEATURES)[number]) => (
-    <li key={feature.title} className="flex gap-3">
-      <CheckCircle
-        className="text-moss-500 mt-0.5 h-5 w-5 shrink-0"
-        weight="fill"
-        aria-hidden="true"
-      />
-      <div>
-        <p className="text-sm font-medium text-stone-900">{feature.title}</p>
-        <p className="text-sm text-stone-500">{feature.description}</p>
-      </div>
-    </li>
-  );
-
+}: {
+  billingEnabled: boolean;
+  /** L'essai gratuit est encore disponible pour cet utilisateur. */
+  trialAvailable?: boolean;
+}) {
   return (
-    <div className="card overflow-hidden">
-      <div className="p-5 sm:p-6">
-        <h2 className="font-serif text-2xl text-stone-900">{title}</h2>
-        {description && <p className="mt-1 text-sm text-stone-500">{description}</p>}
-        <ul className="mt-5 space-y-4">{highlighted.map(featureItem)}</ul>
-        <details className="group mt-4">
-          <summary className="flex min-h-11 cursor-pointer list-none items-center gap-1 text-sm font-medium text-stone-600 hover:text-stone-900">
-            Tout ce qu&apos;inclut Premium ({PREMIUM_FEATURES.length})
-            <CaretDown
-              className="h-4 w-4 transition-transform group-open:rotate-180"
-              aria-hidden="true"
-            />
-          </summary>
-          <ul className="mt-2 space-y-4">{others.map(featureItem)}</ul>
-        </details>
-      </div>
-      <div className="border-t border-stone-200 bg-stone-50/60 p-5 sm:p-6">
+    <div className="flex flex-col gap-6">
+      <section className="noise-overlay relative overflow-hidden rounded-[var(--radius-lg)] bg-stone-900 p-6 text-stone-50 sm:p-8">
+        <div className="relative">
+          <p className="text-accent-200 text-xs font-medium tracking-wide uppercase">
+            BookList Premium
+          </p>
+          <h2 className="mt-2 font-serif text-3xl leading-tight text-balance sm:text-4xl">
+            Lisez sans compter.
+          </h2>
+          <p className="mt-3 max-w-md text-sm leading-relaxed text-stone-300">
+            Livres et citations sans limite, et BookList qui travaille pour vous : sagas complétées,
+            pile triée selon vos goûts, statistiques détaillées.
+          </p>
+          <p className="mt-5 text-sm text-stone-400">
+            Dès <span className="font-medium text-stone-50">{PREMIUM_PRICES.yearly.perMonth}</span>{" "}
+            par mois
+            {trialAvailable && <>, {TRIAL_DAYS} jours offerts pour essayer</>}.
+          </p>
+        </div>
+      </section>
+
+      <section className="card p-5 sm:p-6">
+        <h2 className="font-serif text-xl text-stone-900">Ce que Premium ajoute</h2>
+        <p className="mt-1 text-sm text-stone-500">
+          En plus de tout ce que vous faites déjà avec le compte gratuit.
+        </p>
+        <div className="mt-6">
+          <PremiumFeatureGrid />
+        </div>
+      </section>
+
+      <section id="formule" className="card scroll-mt-20 p-5 sm:p-6">
         <PlanPicker
           billingEnabled={billingEnabled}
           trialAvailable={trialAvailable}
-          trialEndsOn={trialEndsOn}
+          trialEndsOn={trialEndDate()}
         />
-      </div>
+      </section>
     </div>
   );
 }

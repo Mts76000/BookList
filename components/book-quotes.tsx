@@ -4,7 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ShareNetwork, Trash } from "@phosphor-icons/react";
-import { Button } from "@/components/ui/button";
+import { Button, buttonClasses } from "@/components/ui/button";
+import { FREE_QUOTE_LIMIT } from "@/lib/plans";
 import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
@@ -22,6 +23,39 @@ interface BookQuotesProps {
   bookTitle: string;
   quotes: QuoteItem[];
   isPremium: boolean;
+  /** Citations de toute la bibliothèque, pour le plafond du compte gratuit. */
+  quoteCount: number;
+}
+
+/** Seuil à partir duquel le compteur du compte gratuit s'affiche. */
+const QUOTA_WARNING = 5;
+
+/**
+ * Compteur du plafond de citations d'un compte gratuit : rien tant qu'il reste de la marge,
+ * un rappel discret à l'approche, puis l'offre à la place du formulaire une fois atteint.
+ */
+export function QuoteQuota({ quoteCount, isPremium }: { quoteCount: number; isPremium: boolean }) {
+  if (isPremium || quoteCount < FREE_QUOTE_LIMIT - QUOTA_WARNING) return null;
+  const full = quoteCount >= FREE_QUOTE_LIMIT;
+  return (
+    <div
+      className={`flex flex-col gap-3 rounded-[var(--radius-sm)] border p-4 sm:flex-row sm:items-center sm:justify-between ${
+        full ? "border-accent-200 bg-accent-50" : "border-stone-200 bg-stone-50"
+      }`}
+    >
+      <p className="text-sm text-stone-700">
+        {full
+          ? `Vous avez enregistré ${FREE_QUOTE_LIMIT} citations, le maximum du compte gratuit. Elles restent toutes consultables.`
+          : `${quoteCount} citations sur ${FREE_QUOTE_LIMIT} avec le compte gratuit.`}
+      </p>
+      <Link
+        href="/account/premium"
+        className={buttonClasses(full ? "primary" : "secondary", "shrink-0 px-4 py-2")}
+      >
+        {full ? "Citations illimitées" : "Voir Premium"}
+      </Link>
+    </div>
+  );
 }
 
 /** Actions sur une citation : image à partager (Premium) et suppression. */
@@ -90,7 +124,7 @@ export function QuoteActions({
 }
 
 /** Section « Citations » de la fiche d'un livre. */
-export function BookQuotes({ bookId, bookTitle, quotes, isPremium }: BookQuotesProps) {
+export function BookQuotes({ bookId, bookTitle, quotes, isPremium, quoteCount }: BookQuotesProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [content, setContent] = useState("");
@@ -142,32 +176,38 @@ export function BookQuotes({ bookId, bookTitle, quotes, isPremium }: BookQuotesP
         </ul>
       )}
 
-      <form onSubmit={handleSubmit} className="mt-4 space-y-3">
-        <Textarea
-          label="Nouvelle citation"
-          required
-          maxLength={2000}
-          rows={3}
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder="Le passage qui vous a marqué"
-        />
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <div className="sm:w-32">
-            <Field
-              label="Page"
-              type="number"
-              inputMode="numeric"
-              min={0}
-              value={page}
-              onChange={(e) => setPage(e.target.value)}
-            />
+      <div className="mt-4 empty:hidden">
+        <QuoteQuota quoteCount={quoteCount} isPremium={isPremium} />
+      </div>
+
+      {(isPremium || quoteCount < FREE_QUOTE_LIMIT) && (
+        <form onSubmit={handleSubmit} className="mt-4 space-y-3">
+          <Textarea
+            label="Nouvelle citation"
+            required
+            maxLength={2000}
+            rows={3}
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="Le passage qui vous a marqué"
+          />
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="sm:w-32">
+              <Field
+                label="Page"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                value={page}
+                onChange={(e) => setPage(e.target.value)}
+              />
+            </div>
+            <Button type="submit" isLoading={isSaving} className="w-full sm:w-auto">
+              Enregistrer la citation
+            </Button>
           </div>
-          <Button type="submit" isLoading={isSaving} className="w-full sm:w-auto">
-            Enregistrer la citation
-          </Button>
-        </div>
-      </form>
+        </form>
+      )}
     </section>
   );
 }

@@ -1,7 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { canonicalUrl } from "@/lib/seo";
-import { FREE_BOOK_LIMIT, PREMIUM_FEATURES, PREMIUM_PRICES, TRIAL_DAYS } from "@/lib/plans";
+import {
+  FREE_BOOK_LIMIT,
+  FREE_QUOTE_LIMIT,
+  PREMIUM_FEATURES,
+  PREMIUM_PRICES,
+  TRIAL_DAYS,
+} from "@/lib/plans";
 
 export const metadata: Metadata = {
   title: "Conditions générales",
@@ -16,8 +22,13 @@ export default function TermsPage() {
         Conditions générales d&apos;utilisation et de vente
       </h1>
 
+      <p className="mt-2 text-sm text-stone-500">Dernière mise à jour : 31 octobre 2026</p>
       <p className="mt-4 text-stone-600">
-        En créant un compte et en utilisant BookList, vous acceptez les conditions suivantes.
+        Le service est édité par Mathis Lamotte (voir les{" "}
+        <Link href="/legal/notice" className="link">
+          mentions légales
+        </Link>
+        ). En créant un compte et en utilisant BookList, vous acceptez les conditions suivantes.
       </p>
 
       <section className="mt-8">
@@ -32,10 +43,11 @@ export default function TermsPage() {
       <section className="mt-8">
         <h2 className="text-xl text-stone-900">Compte gratuit</h2>
         <p className="mt-2 text-stone-600">
-          Le compte gratuit permet d&apos;ajouter jusqu&apos;à {FREE_BOOK_LIMIT} livres un par un ;
-          l&apos;import d&apos;une bibliothèque existante n&apos;est pas limité. Une fois cette
-          limite atteinte, les livres déjà enregistrés restent consultables, modifiables et
-          exportables ; seul l&apos;ajout de nouveaux livres est réservé à Premium.
+          Le compte gratuit permet d&apos;ajouter jusqu&apos;à {FREE_BOOK_LIMIT} livres un par un et
+          d&apos;enregistrer jusqu&apos;à {FREE_QUOTE_LIMIT} citations ; l&apos;import d&apos;une
+          bibliothèque existante n&apos;est pas limité. Une fois une limite atteinte, ce qui est
+          déjà enregistré reste consultable, modifiable et exportable ; seul l&apos;ajout est
+          réservé à Premium.
         </p>
       </section>
 
@@ -68,13 +80,13 @@ export default function TermsPage() {
       <section className="mt-8">
         <h2 className="text-xl text-stone-900">Résiliation</h2>
         <p className="mt-2 text-stone-600">
-          Vous pouvez résilier à tout moment depuis la page{" "}
-          <Link href="/account" className="link">
-            Compte
-          </Link>
-          . La résiliation prend effet à la fin de la période en cours : Premium reste actif
-          jusque-là, et aucun nouveau prélèvement n&apos;a lieu. Votre bibliothèque est conservée et
-          repasse aux conditions du compte gratuit.
+          Vous pouvez résilier à tout moment, sans frais ni justification, depuis la page{" "}
+          <Link href="/account/premium" className="link">
+            Premium
+          </Link>{" "}
+          de votre compte (bouton « Gérer mon abonnement »). La résiliation prend effet à la fin de
+          la période en cours : Premium reste actif jusque-là, et aucun nouveau prélèvement n&apos;a
+          lieu. Votre bibliothèque est conservée et repasse aux conditions du compte gratuit.
         </p>
       </section>
 
@@ -110,8 +122,8 @@ export default function TermsPage() {
         <h2 className="text-xl text-stone-900">Suppression de compte</h2>
         <p className="mt-2 text-stone-600">
           Vous pouvez supprimer votre compte à tout moment depuis la page{" "}
-          <Link href="/account" className="link">
-            Compte
+          <Link href="/account/donnees" className="link">
+            Données et suppression
           </Link>
           . Cette action supprime vos contenus personnels et anonymise votre compte, conformément au
           RGPD.
@@ -121,17 +133,46 @@ export default function TermsPage() {
       <section className="mt-8">
         <h2 className="text-xl text-stone-900">Responsabilités</h2>
         <p className="mt-2 text-stone-600">
-          BookList est fourni « en l&apos;état ». L&apos;éditeur ne saurait être tenu responsable de
-          pertes de données, de dysfonctionnements indépendants de sa volonté ou d&apos;une
-          utilisation non conforme du service.
+          L&apos;éditeur met tout en œuvre pour assurer la disponibilité du service et la sauvegarde
+          de vos données, sans pouvoir garantir une disponibilité continue. Il ne saurait être tenu
+          responsable des interruptions dues à la maintenance, à un cas de force majeure ou à une
+          utilisation non conforme du service. Ces stipulations ne limitent pas les droits que vous
+          tenez du Code de la consommation, notamment la garantie légale de conformité des contenus
+          et services numériques.
         </p>
       </section>
 
       <section className="mt-8">
         <h2 className="text-xl text-stone-900">Modification des conditions</h2>
         <p className="mt-2 text-stone-600">
-          Les conditions peuvent être modifiées à tout moment. L&apos;utilisation continue du
-          service vaut acceptation des nouvelles conditions.
+          Les conditions peuvent évoluer. Toute modification importante est annoncée par e-mail au
+          moins 30 jours avant de s&apos;appliquer ; un abonné qui la refuse peut résilier avant
+          cette date, sans frais.
+        </p>
+      </section>
+
+      <section className="mt-8">
+        <h2 className="text-xl text-stone-900">Réclamations et médiation</h2>
+        <p className="mt-2 text-stone-600">
+          Pour toute réclamation, écrivez à{" "}
+          <a href="mailto:contact@mathis-lamotte.fr" className="link">
+            contact@mathis-lamotte.fr
+          </a>
+          . Si aucune solution n&apos;est trouvée, vous pouvez recourir gratuitement au médiateur de
+          la consommation, ou à la plateforme européenne de règlement des litiges en ligne (
+          <a href="https://ec.europa.eu/consumers/odr" className="link" rel="noopener noreferrer">
+            ec.europa.eu/consumers/odr
+          </a>
+          ).
+        </p>
+      </section>
+
+      <section className="mt-8">
+        <h2 className="text-xl text-stone-900">Droit applicable</h2>
+        <p className="mt-2 text-stone-600">
+          Les présentes conditions sont soumises au droit français. En cas de litige, et après une
+          tentative de résolution amiable, les tribunaux français sont compétents ; un consommateur
+          peut saisir la juridiction de son lieu de résidence.
         </p>
       </section>
     </>

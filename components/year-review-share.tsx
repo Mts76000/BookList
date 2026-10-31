@@ -1,16 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { DownloadSimple, LockSimple, ShareNetwork } from "@phosphor-icons/react";
-import { Button, buttonClasses } from "@/components/ui/button";
+import { DownloadSimple, ShareNetwork } from "@phosphor-icons/react";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { REVIEW_THEMES, type ReviewThemeId } from "@/lib/review-themes";
 import { shareOrDownloadImage } from "@/lib/share-image";
 
 interface YearReviewShareProps {
   year: number;
-  isPremium: boolean;
   /**
    * Coup de cœur affiché : il entre dans l'adresse de l'image pour que l'aperçu se régénère
    * quand il change, au lieu de resservir l'image déjà chargée.
@@ -25,7 +23,7 @@ const THEME_IDS = Object.keys(REVIEW_THEMES) as ReviewThemeId[];
  * envoie l'image directement dans une story ou une conversation ; ailleurs, elle se
  * télécharge.
  */
-export function YearReviewShare({ year, isPremium, favoriteId }: YearReviewShareProps) {
+export function YearReviewShare({ year, favoriteId }: YearReviewShareProps) {
   const { toast } = useToast();
   const [theme, setTheme] = useState<ReviewThemeId>("classique");
   // Adresse de la dernière image chargée : l'aperçu repasse en chargement dès que l'adresse
@@ -34,9 +32,7 @@ export function YearReviewShare({ year, isPremium, favoriteId }: YearReviewShare
   const [loadedUrl, setLoadedUrl] = useState<string | null>(null);
   const [isSharing, setIsSharing] = useState(false);
 
-  // Un style Premium sans abonnement s'affiche en aperçu filigrané, sans partage possible.
-  const isLockedTheme = REVIEW_THEMES[theme].premium && !isPremium;
-  const imageUrl = `/api/year-review/image?year=${year}&theme=${theme}&favorite=${favoriteId ?? ""}${isLockedTheme ? "&preview=1" : ""}`;
+  const imageUrl = `/api/year-review/image?year=${year}&theme=${theme}&favorite=${favoriteId ?? ""}`;
   const isLoaded = loadedUrl === imageUrl;
   const fileName = `bilan-lecture-${year}.png`;
 
@@ -75,7 +71,6 @@ export function YearReviewShare({ year, isPremium, favoriteId }: YearReviewShare
         <div className="flex flex-wrap justify-center gap-2">
           {THEME_IDS.map((id) => {
             const option = REVIEW_THEMES[id];
-            const locked = option.premium && !isPremium;
             const selected = id === theme;
             return (
               <button
@@ -83,7 +78,6 @@ export function YearReviewShare({ year, isPremium, favoriteId }: YearReviewShare
                 type="button"
                 onClick={() => selectTheme(id)}
                 aria-pressed={selected}
-                title={locked ? `${option.label}, aperçu (Premium)` : option.label}
                 className={`flex min-h-11 items-center gap-2 rounded-full border py-1.5 pr-3.5 pl-1.5 text-xs font-medium transition ${
                   selected
                     ? "border-stone-900 bg-stone-900 text-stone-50"
@@ -98,43 +92,22 @@ export function YearReviewShare({ year, isPremium, favoriteId }: YearReviewShare
                   aria-hidden="true"
                 />
                 {option.label}
-                {locked && <LockSimple className="h-3.5 w-3.5" aria-hidden="true" />}
               </button>
             );
           })}
         </div>
-        {!isPremium && (
-          <p className="mt-3 text-center text-xs text-stone-500">
-            Essayez les quatre styles Premium en aperçu, ou débloquez-les avec{" "}
-            <Link href="/account#premium" className="text-accent-700 font-medium hover:underline">
-              Premium
-            </Link>
-            .
-          </p>
-        )}
       </fieldset>
 
-      {isLockedTheme ? (
-        <div className="w-full max-w-sm text-center">
-          <p className="text-sm text-stone-600">
-            Le style {REVIEW_THEMES[theme].label} est réservé à Premium.
-          </p>
-          <Link href="/account#premium" className={buttonClasses("primary", "mt-3 w-full")}>
-            Débloquer ce style
-          </Link>
-        </div>
-      ) : (
-        <div className="flex w-full max-w-sm flex-col gap-2 sm:flex-row">
-          <Button onClick={() => handleShare("share")} isLoading={isSharing} className="w-full">
-            {!isSharing && <ShareNetwork className="h-4 w-4" aria-hidden="true" />}
-            Partager
-          </Button>
-          <Button variant="secondary" onClick={() => handleShare("download")} className="w-full">
-            <DownloadSimple className="h-4 w-4" aria-hidden="true" />
-            Télécharger
-          </Button>
-        </div>
-      )}
+      <div className="flex w-full max-w-sm flex-col gap-2 sm:flex-row">
+        <Button onClick={() => handleShare("share")} isLoading={isSharing} className="w-full">
+          {!isSharing && <ShareNetwork className="h-4 w-4" aria-hidden="true" />}
+          Partager
+        </Button>
+        <Button variant="secondary" onClick={() => handleShare("download")} className="w-full">
+          <DownloadSimple className="h-4 w-4" aria-hidden="true" />
+          Télécharger
+        </Button>
+      </div>
     </div>
   );
 }

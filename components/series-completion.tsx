@@ -124,7 +124,7 @@ export function SeriesCompletion({ name, isPremium }: { name: string; isPremium:
         </p>
         {!isPremium && (
           <Link
-            href="/account#premium"
+            href="/account/premium"
             className="text-accent-700 flex min-h-8 items-center gap-1.5 text-xs font-medium hover:underline"
           >
             <LockSimple size={12} aria-hidden="true" />

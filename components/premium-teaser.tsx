@@ -43,7 +43,7 @@ export function PremiumTeaser({
         </div>
       ) : (
         <Link
-          href="/account#premium"
+          href="/account/premium"
           className={buttonClasses("secondary", "w-full shrink-0 sm:w-auto")}
         >
           Découvrir Premium

@@ -6,7 +6,6 @@ import { requestMetadata } from "@/lib/audit-log";
 import { env } from "@/lib/env";
 import { getLogoMark } from "@/lib/pwa-icon";
 import { getYearReview } from "@/lib/year-review";
-import { getUserPlan } from "@/lib/subscription";
 import { REVIEW_THEMES, isReviewTheme } from "@/lib/review-themes";
 import { coverToneFor } from "@/lib/generated-cover";
 import { formatRating } from "@/lib/book-status";
@@ -63,12 +62,6 @@ export const GET = withApiErrorHandling(async (request: Request) => {
   const themeParam = searchParams.get("theme");
   const themeId = isReviewTheme(themeParam) ? themeParam : "classique";
   const theme = REVIEW_THEMES[themeId];
-  // Un compte gratuit peut voir un style Premium en aperçu (`preview=1`), marqué comme tel ;
-  // seule l'image propre, à partager, est réservée.
-  const isPreview = searchParams.get("preview") === "1";
-  if (theme.premium && !isPreview && !(await getUserPlan(session.user.id)).isPremium) {
-    return apiError("FORBIDDEN", "Ce style de bilan est réservé à Premium.");
-  }
 
   const review = await getYearReview(session.user.id, year);
   const cover = await inlineCover(review.favoriteBook?.coverUrl ?? null);
@@ -265,24 +258,6 @@ export const GET = withApiErrorHandling(async (request: Request) => {
           ))}
         </div>
       </div>
-
-      {isPreview && theme.premium && (
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            padding: "18px 0",
-            marginBottom: 32,
-            borderRadius: 18,
-            background: theme.accent,
-            color: theme.background,
-            fontSize: 34,
-            fontWeight: 600,
-          }}
-        >
-          Aperçu du style {theme.label}, avec Premium
-        </div>
-      )}
 
       <div
         style={{

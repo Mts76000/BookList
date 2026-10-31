@@ -90,13 +90,15 @@ export default async function AdminOverviewPage() {
         <div>
           <p className="text-xs font-medium tracking-wide text-stone-500 uppercase">Premium</p>
           <p className="mt-1 text-sm text-stone-700">
-            <span className="font-serif text-2xl text-stone-900 tabular-nums">{payingCount}</span>{" "}
+            <span className="text-2xl font-semibold tracking-tight text-stone-900 tabular-nums">
+              {payingCount}
+            </span>{" "}
             payant{payingCount !== 1 ? "s" : ""}, {subscriptions.counts.trial} en essai,{" "}
             {subscriptions.counts.granted} offert{subscriptions.counts.granted !== 1 ? "s" : ""}
             {subscriptions.counts.past_due > 0 && `, ${subscriptions.counts.past_due} impayé(s)`}
           </p>
         </div>
-        <p className="text-accent-600 font-serif text-2xl tabular-nums">
+        <p className="text-accent-600 text-2xl font-semibold tracking-tight tabular-nums">
           {(subscriptions.mrrCents / 100).toLocaleString("fr-FR", {
             style: "currency",
             currency: "EUR",
@@ -108,7 +110,7 @@ export default async function AdminOverviewPage() {
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         <section className="card p-5 sm:p-6">
           <div className="mb-4 flex items-baseline justify-between gap-3">
-            <h2 className="font-serif text-lg text-stone-900">Derniers inscrits</h2>
+            <h2 className="text-base font-semibold text-stone-900">Derniers inscrits</h2>
             <Link href="/admin/users" className="link shrink-0 text-sm">
               Tout voir
             </Link>
@@ -149,7 +151,7 @@ export default async function AdminOverviewPage() {
 
         <section className="card p-5 sm:p-6">
           <div className="mb-4 flex items-baseline justify-between gap-3">
-            <h2 className="font-serif text-lg text-stone-900">Activité récente</h2>
+            <h2 className="text-base font-semibold text-stone-900">Activité récente</h2>
             <Link href="/admin/audit" className="link shrink-0 text-sm">
               Tout voir
             </Link>

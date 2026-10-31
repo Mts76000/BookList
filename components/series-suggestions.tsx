@@ -330,7 +330,7 @@ function SuggestionCard({
       ) : (
         <div className="mt-auto flex flex-wrap items-center gap-2">
           <Link
-            href="/account#premium"
+            href="/account/premium"
             className="text-accent-700 flex min-h-11 items-center gap-1.5 text-sm font-medium hover:underline"
           >
             <LockSimple size={14} aria-hidden="true" />

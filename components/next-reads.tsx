@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Sparkle } from "@phosphor-icons/react/ssr";
 import { BookCover } from "@/components/book-cover";
 import { StartReadingButton } from "@/components/reading-progress";
 
@@ -61,14 +62,20 @@ export function NextReads({ books, title, isPremium }: NextReadsProps) {
         ))}
       </ul>
       {!isPremium && (
-        <p className="mt-2 text-xs text-stone-500">
-          Ici, les derniers livres ajoutés à votre pile. Avec{" "}
-          <Link href="/account#premium" className="text-accent-700 font-medium hover:underline">
-            Premium
-          </Link>
-          , votre pile est triée selon vos goûts : suites de sagas, auteurs et genres que vous notez
-          le mieux.
-        </p>
+        <Link
+          href="/account/premium"
+          className="mt-2 inline-flex items-start gap-1.5 text-xs text-stone-500 transition hover:text-stone-900"
+        >
+          <Sparkle
+            className="text-accent-500 mt-px h-3.5 w-3.5 shrink-0"
+            weight="fill"
+            aria-hidden="true"
+          />
+          <span>
+            Classés du plus récent au plus ancien. Avec Premium, la suite de vos sagas et vos
+            auteurs préférés passent en premier.
+          </span>
+        </Link>
       )}
     </section>
   );

@@ -32,14 +32,14 @@ export default async function AdminPromotionsPage() {
     <>
       {header}
       <section className="card">
-        <h2 className="border-b border-stone-100 px-5 pt-5 pb-3 font-serif text-lg text-stone-900 sm:px-6">
+        <h2 className="border-b border-stone-100 px-5 pt-5 pb-3 text-base font-semibold text-stone-900 sm:px-6">
           Nouveau code
         </h2>
         <PromotionForm />
       </section>
 
       <section className="card mt-6 overflow-hidden">
-        <h2 className="border-b border-stone-100 px-5 pt-5 pb-3 font-serif text-lg text-stone-900 sm:px-6">
+        <h2 className="border-b border-stone-100 px-5 pt-5 pb-3 text-base font-semibold text-stone-900 sm:px-6">
           Codes existants
         </h2>
         {codes.length === 0 ? (

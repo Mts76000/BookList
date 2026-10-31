@@ -58,7 +58,7 @@ export function BookLimitNotice({ plan }: { plan: PlanSummary | null }) {
             <p className="text-xs text-stone-400">Aucun prélèvement pendant l&apos;essai</p>
           </div>
         ) : (
-          <Link href="/account#premium" className={buttonClasses("primary", "mt-5")}>
+          <Link href="/account/premium" className={buttonClasses("primary", "mt-5")}>
             Découvrir Premium
           </Link>
         )}
@@ -72,7 +72,7 @@ export function BookLimitNotice({ plan }: { plan: PlanSummary | null }) {
     <p className="border-accent-200 bg-accent-50 text-accent-800 mb-6 rounded-[var(--radius-sm)] border px-4 py-3 text-sm">
       Plus que {plan.remaining} livre{plan.remaining > 1 ? "s" : ""} avant la limite du compte
       gratuit ({plan.bookLimit}).{" "}
-      <Link href="/account#premium" className="font-medium underline underline-offset-2">
+      <Link href="/account/premium" className="font-medium underline underline-offset-2">
         Passer à Premium
       </Link>
     </p>

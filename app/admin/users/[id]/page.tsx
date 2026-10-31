@@ -99,7 +99,7 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
       {/* Les actions sont placées après les chiffres, et non dans l'en-tête : on décide de
           promouvoir ou de supprimer un compte après avoir vu ce qu'il contient. */}
       <section className="card mt-6 p-5 sm:p-6">
-        <h2 className="font-serif text-lg text-stone-900">Actions</h2>
+        <h2 className="text-base font-semibold text-stone-900">Actions</h2>
         <p className="mt-1 mb-4 text-sm text-stone-500">
           Chaque action est enregistrée dans le journal d&apos;audit.
         </p>
@@ -115,7 +115,7 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
       {!target.isAnonymized && (
         <section className="card mt-6 p-5 sm:p-6">
           <div className="flex flex-wrap items-baseline justify-between gap-3">
-            <h2 className="font-serif text-lg text-stone-900">Abonnement</h2>
+            <h2 className="text-base font-semibold text-stone-900">Abonnement</h2>
             {target.stripeCustomerId && (
               <a
                 href={stripeCustomerUrl(target.stripeCustomerId)}
@@ -181,7 +181,7 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
 
       {target.stripeCustomerId && getStripe() && (
         <section className="card mt-6 overflow-hidden">
-          <h2 className="border-b border-stone-100 px-5 pt-5 pb-3 font-serif text-lg text-stone-900 sm:px-6">
+          <h2 className="border-b border-stone-100 px-5 pt-5 pb-3 text-base font-semibold text-stone-900 sm:px-6">
             Paiements
           </h2>
           <PaymentList
@@ -193,7 +193,7 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         <section className="card p-5 sm:p-6">
-          <h2 className="font-serif text-lg text-stone-900">Détails du compte</h2>
+          <h2 className="text-base font-semibold text-stone-900">Détails du compte</h2>
           <dl className="mt-4 space-y-2 text-sm">
             {[
               { label: "Identifiant", value: target.id },
@@ -215,7 +215,7 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
         </section>
 
         <section className="card p-5 sm:p-6">
-          <h2 className="font-serif text-lg text-stone-900">
+          <h2 className="text-base font-semibold text-stone-900">
             Sessions actives
             {sessions.length > 0 && (
               <span className="ml-2 text-sm font-normal text-stone-400">({sessions.length})</span>
@@ -240,7 +240,7 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
         </section>
 
         <section className="card p-5 sm:p-6 lg:col-span-2">
-          <h2 className="font-serif text-lg text-stone-900">Événements récents</h2>
+          <h2 className="text-base font-semibold text-stone-900">Événements récents</h2>
           {events.length > 0 ? (
             <ul className="mt-4 divide-y divide-stone-100 text-sm">
               {events.map((event) => (

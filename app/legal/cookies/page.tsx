@@ -12,6 +12,7 @@ export default function CookiesPage() {
   return (
     <>
       <h1 className="text-3xl text-stone-900 sm:text-4xl">Politique cookies</h1>
+      <p className="mt-2 text-sm text-stone-500">Dernière mise à jour : 31 octobre 2026</p>
 
       <p className="mt-4 text-stone-600">
         BookList utilise des cookies et des technologies similaires pour assurer le bon
@@ -40,8 +41,10 @@ export default function CookiesPage() {
           </li>
           <li>
             <strong>Mesure d&apos;audience</strong> : nous utilisons Umami, un outil
-            d&apos;analytics respectueux de la vie privée et auto-hébergé (stats.mathis-lamotte.fr),
-            pour comprendre l&apos;utilisation du site.
+            d&apos;analytics auto-hébergé (stats.mathis-lamotte.fr), pour comprendre
+            l&apos;utilisation du site. Il ne dépose aucun cookie, ne vous suit pas d&apos;un site à
+            l&apos;autre et ne collecte que des statistiques anonymes ; il est donc dispensé de
+            consentement selon les recommandations de la CNIL.
           </li>
           <li>
             <strong>Protection anti-robots</strong> : Cloudflare Turnstile dépose un cookie

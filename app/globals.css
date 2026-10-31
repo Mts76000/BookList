@@ -137,6 +137,16 @@ h3,
   letter-spacing: -0.01em;
 }
 
+/* Le back-office troque le serif éditorial pour la sans-serif de l'interface. Hors calque,
+   comme la règle ci-dessus qu'elle doit surcharger. */
+.admin-scope h1,
+.admin-scope h2,
+.admin-scope h3 {
+  font-family: var(--font-geist), system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -198,6 +208,12 @@ input[type="date"] {
 @layer components {
   .card {
     @apply border-border bg-card rounded-[var(--radius-md)] border shadow-[0_1px_1px_rgba(36,29,21,0.03),0_10px_24px_-18px_rgba(36,29,21,0.35)];
+  }
+
+  /* Back-office : mêmes composants, allure d'outil. Coins resserrés, ombres retirées,
+     bordures plus nettes (titres : voir la règle .admin-scope hors calque, plus haut). */
+  .admin-scope .card {
+    @apply rounded-[0.625rem] border-stone-200 bg-white shadow-none;
   }
 
   .card-interactive {

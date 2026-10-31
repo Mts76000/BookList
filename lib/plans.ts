@@ -2,16 +2,21 @@
  * Offres BookList, partagées par le serveur et les composants clients : rien ici ne dépend
  * de la base ni de l'environnement serveur.
  *
- * Principe : le compte gratuit voit et garde tout ce qu'il saisit (livres, sagas, citations,
- * statistiques de base), et Premium apporte l'intelligence et le confort (tri de la pile,
- * sagas repérées et complétées, statistiques avancées, défis, jokers, recherche et images).
- * La seule limite de quantité porte sur les livres ajoutés un par un ; l'import d'une
- * bibliothèque existante passe toujours en entier.
+ * Principe : le compte gratuit doit être agréable au quotidien (ajout, suivi, recherche,
+ * bilan annuel complet) pour que l'habitude se prenne ; Premium lève les plafonds de
+ * quantité (livres, citations) et apporte l'intelligence et le confort (tri de la pile,
+ * sagas complétées, statistiques avancées, défis, jokers, images de citations). Rien de ce
+ * qui a été saisi n'est jamais retiré : un plafond atteint bloque seulement l'ajout.
+ * L'import d'une bibliothèque existante passe toujours en entier.
  */
 
 /** Nombre de livres d'une bibliothèque gratuite. Au-delà, l'ajout demande Premium (l'import,
  *  lui, n'est pas limité). */
 export const FREE_BOOK_LIMIT = 50;
+
+/** Citations d'un compte gratuit. Au-delà, l'ajout demande Premium ; les citations déjà
+ *  saisies restent consultables, cherchables et exportables. */
+export const FREE_QUOTE_LIMIT = 30;
 
 /** Durée de l'essai gratuit de Premium (géré par Stripe), une fois par compte. */
 export const TRIAL_DAYS = 14;
@@ -65,16 +70,12 @@ export const PREMIUM_FEATURES = [
     description: "Créez vos propres défis : un genre, un auteur, des pavés, un nombre de pages.",
   },
   {
-    title: "Recherche et images de citations",
-    description: "Retrouvez n'importe quelle citation et partagez-la en image.",
+    title: "Citations illimitées, en images",
+    description: `Au-delà des ${FREE_QUOTE_LIMIT} citations du compte gratuit, et chacune partageable en image.`,
   },
   {
     title: "Jokers de série",
     description: `${PREMIUM_STREAK_JOKERS} jours de grâce par mois pour ne jamais casser votre série de lecture.`,
-  },
-  {
-    title: "Bilans personnalisés",
-    description: "Quatre styles exclusifs pour l'image de votre bilan annuel à partager.",
   },
 ] as const;
 

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
-import { and, arrayContains, asc, count, desc, eq, ilike, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { book } from "@/drizzle/schema";
 import { requireAuthPage } from "@/lib/permissions";
@@ -9,6 +9,7 @@ import { BooksFilter } from "@/components/books-filter";
 import { BookCover } from "@/components/book-cover";
 import { buttonClasses } from "@/components/ui/button";
 import { BooksTabs } from "@/components/books-tabs";
+import { LibraryScrollMemory } from "@/components/library-scroll";
 import {
   BOOKS_SORT_COOKIE,
   STATUS_DOT,
@@ -62,7 +63,6 @@ interface BooksSearchParams {
   page?: string;
   search?: string;
   status?: string;
-  tag?: string;
 }
 
 export default async function BooksPage({
@@ -80,7 +80,7 @@ export default async function BooksPage({
     : isBookSort(savedSort)
       ? savedSort
       : "date";
-  const { genre, search, status, tag } = params;
+  const { genre, search, status } = params;
   const currentPage = Math.max(1, Number.parseInt(params.page || "1", 10) || 1);
   const trimmedSearch = search?.trim();
 
@@ -92,10 +92,9 @@ export default async function BooksPage({
       ? or(ilike(book.title, `%${trimmedSearch}%`), ilike(book.author, `%${trimmedSearch}%`))
       : undefined,
     isBookStatus(status) ? eq(book.status, status) : undefined,
-    tag ? arrayContains(book.tags, [tag]) : undefined,
   );
 
-  const [books, [{ value: total }], genreRows, tagRows] = await Promise.all([
+  const [books, [{ value: total }], genreRows] = await Promise.all([
     db
       .select()
       .from(book)
@@ -105,14 +104,9 @@ export default async function BooksPage({
       .offset((currentPage - 1) * BOOKS_PER_PAGE),
     db.select({ value: count() }).from(book).where(filters),
     db.select({ genre: book.genre }).from(book).where(eq(book.userId, session.user.id)),
-    db
-      .selectDistinct({ tag: sql<string>`unnest(${book.tags})` })
-      .from(book)
-      .where(eq(book.userId, session.user.id)),
   ]);
 
   const genres = uniqueGenres(genreRows);
-  const tags = tagRows.map((row) => row.tag).sort((a, b) => a.localeCompare(b));
   const totalPages = Math.max(1, Math.ceil(total / BOOKS_PER_PAGE));
 
   return (
@@ -121,6 +115,7 @@ export default async function BooksPage({
         id="main-content"
         className="animate-fade-in-up mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8"
       >
+        <LibraryScrollMemory />
         <BooksTabs active="/books" />
 
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -135,14 +130,7 @@ export default async function BooksPage({
           </Link>
         </div>
 
-        <BooksFilter
-          sortBy={sortBy}
-          genre={genre}
-          status={status}
-          tag={tag}
-          genres={genres}
-          tags={tags}
-        />
+        <BooksFilter sortBy={sortBy} genre={genre} status={status} genres={genres} />
 
         {books.length > 0 ? (
           <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
@@ -190,7 +178,7 @@ export default async function BooksPage({
           <div className="bg-card rounded-[var(--radius-lg)] border border-dashed border-stone-300 px-6 py-12 text-center">
             <p className="font-medium text-stone-900">Aucun livre trouvé</p>
             <p className="mt-1 text-sm text-stone-500">
-              {genre || trimmedSearch || status || tag
+              {genre || trimmedSearch || status
                 ? "Essayez un autre filtre ou ajoutez un livre."
                 : "Commencez par ajouter votre première lecture."}
             </p>
@@ -256,7 +244,6 @@ function PaginationLink({
   if (params.genre) query.set("genre", params.genre);
   if (params.search) query.set("search", params.search);
   if (params.status) query.set("status", params.status);
-  if (params.tag) query.set("tag", params.tag);
 
   return (
     <Link

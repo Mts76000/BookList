@@ -16,10 +16,10 @@ export function StatTile({
   tone?: "neutral" | "accent";
 }) {
   return (
-    <div className="card p-4 sm:p-5">
-      <p className="text-xs font-medium tracking-wide text-stone-500 uppercase">{label}</p>
+    <div className="card p-4">
+      <p className="text-xs font-medium text-stone-500">{label}</p>
       <p
-        className={`mt-1 font-serif text-3xl tabular-nums ${tone === "accent" ? "text-accent-600" : "text-stone-900"}`}
+        className={`mt-1.5 text-2xl font-semibold tracking-tight tabular-nums ${tone === "accent" ? "text-accent-600" : "text-stone-900"}`}
       >
         {value}
       </p>
@@ -62,7 +62,7 @@ export function AdminPageHeader({
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h1 className="font-serif text-2xl break-words text-stone-900">{title}</h1>
+          <h1 className="text-xl break-words text-stone-900 sm:text-2xl">{title}</h1>
           {subtitle ? <p className="mt-1 text-sm text-stone-500">{subtitle}</p> : null}
         </div>
         {actions}

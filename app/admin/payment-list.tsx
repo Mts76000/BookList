@@ -42,7 +42,7 @@ export function PaymentList({
           >
             <div className="flex min-w-0 flex-1 items-start justify-between gap-3 sm:items-center">
               <div className="min-w-0">
-                <p className="font-serif text-lg text-stone-900 tabular-nums">
+                <p className="text-base font-semibold text-stone-900 tabular-nums">
                   {formatMoney(payment.amount, payment.currency)}
                   {payment.amountRefunded > 0 && !payment.refunded && (
                     <span className="ml-2 font-sans text-xs text-stone-500">

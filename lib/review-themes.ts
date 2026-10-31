@@ -1,11 +1,10 @@
 /**
- * Styles de l'image du bilan annuel. Le premier est offert à tous ; les autres font partie
- * de Premium. Les couleurs reprennent la palette de l'application (voir app/globals.css).
+ * Styles de l'image du bilan annuel, tous offerts : chaque bilan partagé fait connaître
+ * BookList, il n'a pas à être réservé à Premium. Les couleurs reprennent la palette de l'application (voir app/globals.css).
  */
 export const REVIEW_THEMES = {
   classique: {
     label: "Classique",
-    premium: false,
     background: "#f8f3ea",
     surface: "#ffffff",
     ink: "#241d15",
@@ -14,7 +13,6 @@ export const REVIEW_THEMES = {
   },
   nuit: {
     label: "Nuit",
-    premium: true,
     background: "#1d1812",
     surface: "#2a231b",
     ink: "#f8f3ea",
@@ -23,7 +21,6 @@ export const REVIEW_THEMES = {
   },
   foret: {
     label: "Forêt",
-    premium: true,
     background: "#2f4027",
     surface: "#3b5032",
     ink: "#f3efe4",
@@ -32,7 +29,6 @@ export const REVIEW_THEMES = {
   },
   terracotta: {
     label: "Terracotta",
-    premium: true,
     background: "#ab4f27",
     surface: "#b9613a",
     ink: "#fdf6ec",
@@ -41,7 +37,6 @@ export const REVIEW_THEMES = {
   },
   ardoise: {
     label: "Ardoise",
-    premium: true,
     background: "#e4e7ea",
     surface: "#f4f6f8",
     ink: "#1c2329",

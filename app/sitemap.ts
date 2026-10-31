@@ -13,7 +13,6 @@ const PAGES: {
   priority: number;
 }[] = [
   { path: "/", lastModified: "2026-10-30", changeFrequency: "monthly", priority: 1 },
-  { path: "/tarifs", lastModified: "2026-10-30", changeFrequency: "monthly", priority: 0.8 },
   {
     path: "/alternative-goodreads",
     lastModified: "2026-10-30",

@@ -1,23 +1,70 @@
-import Link from "next/link";
-import { CheckCircle } from "@phosphor-icons/react/ssr";
-import { buttonClasses } from "@/components/ui/button";
-import { FREE_BOOK_LIMIT, PREMIUM_FEATURES, PREMIUM_PRICES, TRIAL_DAYS } from "@/lib/plans";
+import { Check, Minus } from "@phosphor-icons/react/ssr";
+import { PricingCards } from "@/components/pricing-cards";
+import { FREE_BOOK_LIMIT, FREE_QUOTE_LIMIT, PREMIUM_STREAK_JOKERS, TRIAL_DAYS } from "@/lib/plans";
 
 /**
- * Sections publiques partagées par la page d'accueil et la page Tarifs : la grille des deux
- * formules et la foire aux questions. Les questions servent aussi aux données structurées
- * (FAQPage) des deux pages.
+ * Sections publiques de la page d'accueil : les deux formules avec leur tableau de
+ * comparaison, et la foire aux questions. Les questions servent aussi aux données
+ * structurées (FAQPage) de la page.
  */
 
-export const FREE_FEATURES = [
-  `Jusqu'à ${FREE_BOOK_LIMIT} livres ajoutés, import complet`,
-  "Scan, recherche et saisie manuelle",
-  "Objectif annuel, série de lecture et rappels",
-  "Statistiques de base, badges et bilan annuel",
-  "Sagas et citations, sans limite",
-  "Import Goodreads et StoryGraph",
-  "Export de vos données, toujours",
+/** `true` : compris ; `false` : non compris ; une chaîne : compris, avec cette limite. */
+type Included = boolean | string;
+
+const COMPARISON: {
+  group: string;
+  rows: { label: string; free: Included; premium: Included }[];
+}[] = [
+  {
+    group: "Votre bibliothèque",
+    rows: [
+      { label: "Livres", free: `${FREE_BOOK_LIMIT}`, premium: "Illimités" },
+      { label: "Scan du code-barres et recherche", free: true, premium: true },
+      { label: "Import de votre bibliothèque existante", free: "Complet", premium: "Complet" },
+      { label: "Citations", free: `${FREE_QUOTE_LIMIT}`, premium: "Illimitées" },
+      { label: "Recherche dans vos citations", free: true, premium: true },
+      { label: "Citations en images à partager", free: false, premium: true },
+      { label: "Export de vos données", free: true, premium: true },
+    ],
+  },
+  {
+    group: "Votre lecture",
+    rows: [
+      { label: "Objectif annuel, série et rappels", free: true, premium: true },
+      { label: "Bilan annuel à partager", free: true, premium: true },
+      { label: "Jokers de série", free: false, premium: `${PREMIUM_STREAK_JOKERS} par mois` },
+      { label: "Défis personnels", free: false, premium: true },
+    ],
+  },
+  {
+    group: "Ce que BookList fait pour vous",
+    rows: [
+      { label: "Statistiques", free: "Essentielles", premium: "Détaillées" },
+      { label: "Sagas", free: "Suivi", premium: "Complétées" },
+      { label: "Pile à lire triée selon vos goûts", free: false, premium: true },
+    ],
+  },
 ];
+
+function Cell({ value, premium = false }: { value: Included; premium?: boolean }) {
+  if (value === true)
+    return (
+      <Check
+        className={`mx-auto h-4 w-4 ${premium ? "text-accent-600" : "text-moss-500"}`}
+        weight="bold"
+        aria-label="Compris"
+      />
+    );
+  if (value === false)
+    return <Minus className="mx-auto h-4 w-4 text-stone-300" aria-label="Non compris" />;
+  return (
+    <span
+      className={`text-xs sm:text-sm ${premium ? "font-medium text-stone-900" : "text-stone-600"}`}
+    >
+      {value}
+    </span>
+  );
+}
 
 export const FAQ = [
   {
@@ -27,7 +74,7 @@ export const FAQ = [
   {
     question: `Que se passe-t-il quand j'atteins ${FREE_BOOK_LIMIT} livres ?`,
     answer:
-      "Rien ne disparaît : vos livres restent consultables, modifiables et exportables. Seul l'ajout de nouveaux livres un par un demande Premium ; l'import de votre bibliothèque Goodreads ou StoryGraph passe toujours en entier.",
+      "Rien ne disparaît : vos livres restent consultables, modifiables et exportables. Seul l'ajout de nouveaux livres un par un demande Premium ; l'import de votre bibliothèque existante passe toujours en entier.",
   },
   {
     question: "Puis-je résilier quand je veux ?",
@@ -45,91 +92,65 @@ export const FAQ = [
   },
 ];
 
-/** Grille Gratuit / Premium, avec les prix de lib/plans.ts. */
-export function PricingSection({ headingLevel = "h2" }: { headingLevel?: "h1" | "h2" }) {
-  const Heading = headingLevel;
+/** Les deux formules, puis le détail de ce que chacune comprend. */
+export function PricingSection() {
   return (
     <section id="tarifs" className="bg-card scroll-mt-20 border-y border-stone-200/70">
-      <div className="mx-auto max-w-5xl px-4 py-20 sm:px-6 sm:py-28">
-        <Heading className="font-serif text-3xl text-stone-900 sm:text-4xl">
-          {headingLevel === "h1" ? "Tarifs : gratuit pour commencer." : "Gratuit pour commencer."}
-        </Heading>
+      <div className="mx-auto max-w-4xl px-4 py-20 sm:px-6 sm:py-28">
+        <p className="text-accent-700 text-sm font-medium">Tarifs</p>
+        <h2 className="mt-2 max-w-2xl font-serif text-3xl text-balance text-stone-900 sm:text-4xl">
+          Gratuit pour commencer, Premium pour aller plus loin.
+        </h2>
         <p className="mt-3 max-w-xl text-stone-500">
-          Le compte gratuit suffit à la plupart des lecteurs. Premium s&apos;adresse à ceux qui
-          lisent beaucoup et veulent tout savoir de leurs lectures.
+          Le compte gratuit suffit pour suivre vos lectures. Premium s&apos;adresse à ceux qui
+          lisent beaucoup.
         </p>
 
-        <div className="mt-12 grid grid-cols-1 gap-4 md:grid-cols-[1fr_1.15fr] md:gap-6">
-          <div className="flex flex-col rounded-[var(--radius-lg)] border border-stone-200 bg-stone-50 p-6 sm:p-8">
-            <h3 className="font-serif text-2xl text-stone-900">Gratuit</h3>
-            <p className="mt-4 text-stone-900">
-              <span className="font-serif text-4xl">0 €</span>
-              <span className="ml-2 text-sm text-stone-500">pour toujours</span>
-            </p>
-            <ul className="mt-8 flex-1 space-y-3">
-              {FREE_FEATURES.map((feature) => (
-                <li key={feature} className="flex gap-3 text-sm text-stone-700">
-                  <CheckCircle
-                    className="text-moss-500 mt-0.5 h-4 w-4 shrink-0"
-                    weight="fill"
-                    aria-hidden="true"
-                  />
-                  {feature}
-                </li>
-              ))}
-            </ul>
-            <Link href="/register" className={buttonClasses("secondary", "mt-8 w-full")}>
-              Créer un compte gratuit
-            </Link>
-          </div>
+        <PricingCards />
 
-          <div className="noise-overlay relative flex flex-col overflow-hidden rounded-[var(--radius-lg)] bg-stone-900 p-6 text-stone-50 sm:p-8">
-            <div className="relative flex flex-1 flex-col">
-              <div className="flex items-center justify-between gap-4">
-                <h3 className="font-serif text-2xl">Premium</h3>
-                <span className="bg-accent-500 rounded-full px-3 py-1 text-xs font-medium text-stone-50">
-                  4 mois offerts à l&apos;année
-                </span>
-              </div>
-              <div className="mt-4 flex flex-wrap items-baseline gap-x-6 gap-y-2">
-                <p>
-                  <span className="font-serif text-4xl">{PREMIUM_PRICES.yearly.amount}</span>
-                  <span className="ml-2 text-sm text-stone-400">
-                    {PREMIUM_PRICES.yearly.period}
-                  </span>
-                </p>
-                <p className="text-sm text-stone-400">
-                  ou {PREMIUM_PRICES.monthly.amount} {PREMIUM_PRICES.monthly.period}, sans
-                  engagement
-                </p>
-              </div>
-              <p className="mt-6 text-sm text-stone-300">Tout le compte gratuit, plus :</p>
-              <ul className="mt-4 flex-1 space-y-4">
-                {PREMIUM_FEATURES.map((feature) => (
-                  <li key={feature.title} className="flex gap-3">
-                    <CheckCircle
-                      className="text-accent-400 mt-0.5 h-4 w-4 shrink-0"
-                      weight="fill"
-                      aria-hidden="true"
-                    />
-                    <div>
-                      <p className="text-sm font-medium text-stone-50">{feature.title}</p>
-                      <p className="text-sm text-stone-400">{feature.description}</p>
-                    </div>
-                  </li>
+        <div className="mt-12">
+          <h3 className="font-serif text-xl text-stone-900">Ce que comprend chaque formule</h3>
+          <table className="mt-4 w-full table-fixed border-collapse text-left">
+            <thead>
+              <tr className="border-b border-stone-200 text-xs font-medium tracking-wide text-stone-500 uppercase">
+                <th scope="col" className="w-[52%] py-3 font-medium sm:w-[60%]">
+                  <span className="sr-only">Fonctionnalité</span>
+                </th>
+                <th scope="col" className="py-3 text-center font-medium">
+                  Gratuit
+                </th>
+                <th scope="col" className="text-accent-700 py-3 text-center font-medium">
+                  Premium
+                </th>
+              </tr>
+            </thead>
+            {COMPARISON.map((section) => (
+              <tbody key={section.group}>
+                <tr>
+                  <th
+                    scope="colgroup"
+                    colSpan={3}
+                    className="pt-6 pb-2 text-sm font-medium text-stone-900"
+                  >
+                    {section.group}
+                  </th>
+                </tr>
+                {section.rows.map((row) => (
+                  <tr key={row.label} className="border-t border-stone-100">
+                    <th scope="row" className="py-3 pr-3 text-sm font-normal text-stone-600">
+                      {row.label}
+                    </th>
+                    <td className="py-3 text-center">
+                      <Cell value={row.free} />
+                    </td>
+                    <td className="bg-accent-50/40 py-3 text-center">
+                      <Cell value={row.premium} premium />
+                    </td>
+                  </tr>
                 ))}
-              </ul>
-              <Link
-                href="/register"
-                className="hover:bg-accent-100 mt-8 inline-flex w-full items-center justify-center rounded-[var(--radius-sm)] bg-stone-50 px-6 py-3 text-sm font-medium tracking-tight text-stone-900 transition-all duration-300 ease-out hover:-translate-y-0.5 active:translate-y-0"
-              >
-                Essayer gratuitement {TRIAL_DAYS} jours
-              </Link>
-              <p className="mt-3 text-center text-xs text-stone-400">
-                Aucun prélèvement pendant l&apos;essai, résiliable en un clic.
-              </p>
-            </div>
-          </div>
+              </tbody>
+            ))}
+          </table>
         </div>
       </div>
     </section>

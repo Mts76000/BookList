@@ -20,6 +20,7 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "admin.refund_payment": "Remboursement",
   "admin.create_promotion_code": "Création d'un code promo",
   "admin.toggle_promotion_code": "Activation ou désactivation d'un code promo",
+  "admin.send_notification": "Envoi d'une notification",
   "billing.trial_started": "Début de l'essai gratuit de Premium",
   "billing.premium_started": "Début de l'abonnement Premium",
   "billing.premium_ended": "Fin de l'abonnement Premium",

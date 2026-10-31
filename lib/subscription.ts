@@ -1,7 +1,7 @@
 import { count, eq } from "drizzle-orm";
 import type Stripe from "stripe";
 import { db } from "@/lib/db";
-import { book, user } from "@/drizzle/schema";
+import { book, quote, user } from "@/drizzle/schema";
 import { FREE_BOOK_LIMIT, isPremiumActive } from "@/lib/plans";
 import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
@@ -67,6 +67,15 @@ export async function getUserPlan(userId: string): Promise<UserPlan> {
     bookLimit: isPremium ? null : FREE_BOOK_LIMIT,
     remaining: isPremium ? Infinity : Math.max(FREE_BOOK_LIMIT - bookCount, 0),
   };
+}
+
+/** Nombre de citations de l'utilisateur, pour le plafond du compte gratuit. */
+export async function countUserQuotes(userId: string): Promise<number> {
+  const [{ value }] = await db
+    .select({ value: count() })
+    .from(quote)
+    .where(eq(quote.userId, userId));
+  return value;
 }
 
 /** Statuts Stripe pour lesquels l'abonné garde l'accès jusqu'à la fin de la période. */

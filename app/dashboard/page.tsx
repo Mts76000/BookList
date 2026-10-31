@@ -139,6 +139,7 @@ export default async function DashboardPage() {
     plan.isPremium ? PREMIUM_STREAK_JOKERS : 0,
   );
 
+  const pagesThisYear = stats.pagesPerYear.find((entry) => entry.year === year)?.pages ?? 0;
   const week = lastSevenDays(activities);
   const pagesToday = week[6].pages;
   const pagesThisWeek = week.reduce((sum, day) => sum + day.pages, 0);
@@ -191,7 +192,7 @@ export default async function DashboardPage() {
 
         {plan.isTrial && !plan.cancelAtPeriodEnd && trialDaysLeft <= 3 && (
           <Link
-            href="/account#premium"
+            href="/account/premium"
             className="border-accent-200 bg-accent-50 text-accent-800 mb-6 block rounded-[var(--radius-sm)] border px-4 py-3 text-sm"
           >
             Votre essai Premium se termine dans {trialDaysLeft} jour
@@ -239,10 +240,10 @@ export default async function DashboardPage() {
                       pageCount={featured.pageCount}
                     />
                     {pagesLeft !== null && pagesLeft > 0 && (
-                      <p className="mt-1 text-xs text-stone-500">
+                      <p className="mt-2 text-xs text-stone-500">
                         Encore {pagesLeft} pages
                         {daysToFinish !== null &&
-                          `, environ ${daysToFinish} jour${daysToFinish > 1 ? "s" : ""} à votre rythme`}
+                          ` · environ ${daysToFinish} jour${daysToFinish > 1 ? "s" : ""} à votre rythme`}
                       </p>
                     )}
                   </div>
@@ -273,10 +274,13 @@ export default async function DashboardPage() {
                           <p className="truncate text-sm font-medium text-stone-900">
                             {entry.title}
                           </p>
-                          <ProgressBar
-                            currentPage={entry.currentPage}
-                            pageCount={entry.pageCount}
-                          />
+                          <div className="mt-1">
+                            <ProgressBar
+                              currentPage={entry.currentPage}
+                              pageCount={entry.pageCount}
+                              size="small"
+                            />
+                          </div>
                           {!entry.currentPage && (
                             <p className="text-xs text-stone-500">Pas encore commencé</p>
                           )}
@@ -313,14 +317,7 @@ export default async function DashboardPage() {
                     {pagesThisWeek} pages, dont {pagesToday} aujourd&apos;hui
                   </p>
                 </div>
-                <p
-                  className="flex items-center gap-1 font-serif text-2xl text-stone-900 tabular-nums"
-                  title={
-                    plan.isPremium
-                      ? `Jokers ce mois-ci : ${PREMIUM_STREAK_JOKERS - streaks.jokersUsedThisMonth} sur ${PREMIUM_STREAK_JOKERS}`
-                      : undefined
-                  }
-                >
+                <p className="flex items-center gap-1 font-serif text-2xl text-stone-900 tabular-nums">
                   <Fire
                     className={`h-5 w-5 ${streaks.current > 0 ? "text-accent-500" : "text-stone-300"}`}
                     weight="fill"
@@ -361,6 +358,23 @@ export default async function DashboardPage() {
                     ? `Lisez aujourd'hui pour passer à ${streaks.current + 1} jours de suite.`
                     : "Lisez aujourd'hui pour lancer une série."}
               </p>
+              {plan.isPremium ? (
+                <p className="mt-1 text-xs text-stone-400">
+                  Jokers : {PREMIUM_STREAK_JOKERS - streaks.jokersUsedThisMonth} sur{" "}
+                  {PREMIUM_STREAK_JOKERS} ce mois-ci. Un jour manqué en utilise un automatiquement,
+                  sans casser la série.
+                </p>
+              ) : (
+                streaks.current >= 3 && (
+                  <Link
+                    href="/account/premium"
+                    className="mt-1 block text-xs text-stone-400 transition hover:text-stone-700"
+                  >
+                    Un jour manqué remet la série à zéro. Premium la protège avec{" "}
+                    {PREMIUM_STREAK_JOKERS} jokers par mois.
+                  </Link>
+                )
+              )}
             </section>
 
             <section id="objectif" aria-label={`Objectif ${year}`} className="scroll-mt-20">
@@ -369,14 +383,34 @@ export default async function DashboardPage() {
                 target={goal?.target ?? null}
                 booksRead={stats.booksThisYear}
               />
-              <Link
-                href="/dashboard/stats/bilan"
-                className="mt-2 flex items-center justify-end gap-1 text-sm font-medium text-stone-600 transition hover:text-stone-900"
-              >
-                Voir le bilan {year}
-                <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-              </Link>
             </section>
+
+            {/* Le bilan est ce qui se partage le plus : il doit se voir dès l'accueil. */}
+            <Link
+              href="/dashboard/stats/bilan"
+              className="noise-overlay group relative block overflow-hidden rounded-[var(--radius-lg)] bg-stone-900 p-5 text-stone-50 transition-transform duration-300 ease-out hover:-translate-y-0.5"
+            >
+              <div className="relative">
+                <p className="text-accent-200 text-xs font-medium tracking-wide uppercase">
+                  Bilan {year}
+                </p>
+                <p className="mt-1 font-serif text-xl tabular-nums">
+                  {stats.booksThisYear > 0
+                    ? `${stats.booksThisYear} livre${stats.booksThisYear > 1 ? "s" : ""}, ${pagesThisYear.toLocaleString("fr-FR")} pages`
+                    : "Votre année en une image"}
+                </p>
+                <p className="mt-1 text-sm text-stone-400">
+                  Votre année de lecture, prête à partager en story.
+                </p>
+                <span className="mt-3 inline-flex items-center gap-1 text-sm font-medium">
+                  Voir mon bilan
+                  <ArrowRight
+                    className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5"
+                    aria-hidden="true"
+                  />
+                </span>
+              </div>
+            </Link>
           </div>
         </div>
 

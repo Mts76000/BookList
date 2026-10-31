@@ -110,7 +110,7 @@ test.describe("Révocation de session à distance", () => {
     await pageA.getByLabel("Mot de passe", { exact: true }).fill("password123");
     await pageA.getByRole("button", { name: "Se connecter" }).click();
     await expect(pageA).toHaveURL(/\/dashboard/);
-    await pageA.goto("/account");
+    await pageA.goto("/account/securite");
 
     const contextB = await browser.newContext({ extraHTTPHeaders: { "x-forwarded-for": ip } });
     const pageB = await contextB.newPage();

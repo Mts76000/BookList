@@ -131,7 +131,7 @@ export default function GoodreadsAlternativePage() {
             <Link href="/register" className={buttonClasses("primary", "w-full sm:w-auto")}>
               Créer un compte gratuit
             </Link>
-            <Link href="/tarifs" className={buttonClasses("secondary", "w-full sm:w-auto")}>
+            <Link href="/#tarifs" className={buttonClasses("secondary", "w-full sm:w-auto")}>
               Voir les tarifs
             </Link>
           </div>

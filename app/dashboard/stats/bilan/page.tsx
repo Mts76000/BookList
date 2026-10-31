@@ -3,7 +3,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireAuthPage } from "@/lib/permissions";
 import { getReviewYears, getYearReview } from "@/lib/year-review";
-import { getUserPlan } from "@/lib/subscription";
 import { YearReviewShare } from "@/components/year-review-share";
 import { FavoritePicker } from "@/components/favorite-picker";
 import { buttonClasses } from "@/components/ui/button";
@@ -30,10 +29,9 @@ export default async function YearReviewPage({
   const year = yearParam ? Number(yearParam) : currentYear;
   if (!Number.isInteger(year) || year < 1900 || year > currentYear) notFound();
 
-  const [review, years, plan] = await Promise.all([
+  const [review, years] = await Promise.all([
     getYearReview(session.user.id, year),
     getReviewYears(session.user.id),
-    getUserPlan(session.user.id),
   ]);
 
   const facts = [
@@ -72,6 +70,10 @@ export default async function YearReviewPage({
             {year === currentYear ? "Votre année jusqu'ici" : "Votre année"}
           </p>
           <h1 className="mt-1 font-serif text-3xl text-stone-900 sm:text-4xl">Bilan {year}</h1>
+          <p className="mt-2 max-w-md text-sm text-stone-500">
+            Vos lectures de l&apos;année en une image, prête à partager en story ou à envoyer à vos
+            proches. Choisissez votre coup de cœur et un style, c&apos;est prêt.
+          </p>
         </div>
         {years.length > 1 && (
           <nav
@@ -160,11 +162,7 @@ export default async function YearReviewPage({
           </div>
 
           <aside aria-label="Image à partager" className="order-first lg:order-none">
-            <YearReviewShare
-              year={year}
-              isPremium={plan.isPremium}
-              favoriteId={review.favoriteBook?.id ?? null}
-            />
+            <YearReviewShare year={year} favoriteId={review.favoriteBook?.id ?? null} />
           </aside>
         </div>
       )}

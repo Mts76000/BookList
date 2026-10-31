@@ -15,31 +15,49 @@ interface ReadingProgressProps {
   compact?: boolean;
 }
 
-/** Barre de progression seule, réutilisée sur les cartes « En ce moment ». */
+/**
+ * Progression d'une lecture : le pourcentage en grand, la page en petit, puis la barre.
+ * `small` pour les lignes secondaires (autres lectures en cours de l'accueil).
+ */
 export function ProgressBar({
   currentPage,
   pageCount,
+  size = "default",
 }: {
   currentPage: number | null;
   pageCount: number | null;
+  size?: "default" | "small";
 }) {
   if (!currentPage || !pageCount) return null;
   const ratio = Math.min(currentPage / pageCount, 1);
+  const percent = Math.round(ratio * 100);
+  const small = size === "small";
   return (
     <div>
+      <div className="flex items-baseline justify-between gap-3">
+        <p
+          className={`text-stone-900 tabular-nums ${small ? "text-xs font-medium" : "font-serif text-2xl leading-none"}`}
+        >
+          {percent}
+          <span className={small ? "" : "ml-0.5 text-base text-stone-500"}> %</span>
+        </p>
+        <p className="text-xs text-stone-500 tabular-nums">
+          p. {currentPage} <span className="text-stone-400">/ {pageCount}</span>
+        </p>
+      </div>
       <div
-        className="h-1.5 overflow-hidden rounded-full bg-stone-100"
+        className={`overflow-hidden rounded-full bg-stone-200/70 ${small ? "mt-1 h-1" : "mt-2 h-2"}`}
         role="progressbar"
-        aria-label="Progression"
+        aria-label={`Progression : page ${currentPage} sur ${pageCount}`}
         aria-valuemin={0}
         aria-valuemax={pageCount}
         aria-valuenow={currentPage}
       >
-        <div className="bg-accent-500 h-full rounded-full" style={{ width: `${ratio * 100}%` }} />
+        <div
+          className="bg-accent-500 h-full rounded-full transition-[width] duration-500 ease-out"
+          style={{ width: `${ratio * 100}%` }}
+        />
       </div>
-      <p className="mt-1 text-xs text-stone-500 tabular-nums">
-        Page {currentPage} sur {pageCount}, {Math.round(ratio * 100)} %
-      </p>
     </div>
   );
 }
@@ -166,7 +184,8 @@ const QUICK_STEPS = [10, 25, 50];
 
 /**
  * Où en est la lecture mise en avant sur l'accueil : la page actuelle, préremplie, qu'on
- * corrige au clavier ou avec « +10 », « +25 », « +50 », puis qu'on enregistre. Les
+ * corrige au clavier, page par page (− / +) ou avec « +10 », « +25 », « +50 », puis qu'on
+ * enregistre. Les
  * raccourcis ne font qu'ajuster le champ : rien n'est enregistré sans « Enregistrer », et
  * l'écart avec la dernière fois est affiché avant. Même route que la saisie classique : la
  * journée de lecture et la série suivent.
@@ -193,8 +212,8 @@ export function QuickProgress({
   const delta = target === null ? 0 : target - from;
 
   function addPages(step: number) {
-    const base = target ?? from;
-    setPage(String(pageCount ? Math.min(base + step, pageCount) : base + step));
+    const next = Math.max((target ?? from) + step, 0);
+    setPage(String(pageCount ? Math.min(next, pageCount) : next));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -242,32 +261,59 @@ export function QuickProgress({
     );
   }
 
+  const stepButton =
+    "flex size-11 shrink-0 items-center justify-center text-lg text-stone-500 transition hover:bg-stone-100 hover:text-stone-900 disabled:opacity-40";
+
   return (
     <form onSubmit={handleSubmit}>
-      <label htmlFor={inputId} className="text-sm font-medium text-stone-700">
-        J&apos;en suis à la page
-      </label>
-      <div className="mt-1.5 flex items-center gap-2">
-        <input
-          id={inputId}
-          type="number"
-          inputMode="numeric"
-          min={0}
-          max={pageCount ?? undefined}
-          required
-          value={page}
-          onChange={(e) => setPage(e.target.value)}
-          className="border-border focus:border-accent-400 focus:ring-accent-400/15 w-24 rounded-[var(--radius-sm)] border bg-white px-3 py-2.5 text-center text-lg font-medium text-stone-900 tabular-nums focus:ring-4 focus:outline-none"
-        />
-        {pageCount && <span className="text-sm text-stone-500 tabular-nums">sur {pageCount}</span>}
-        <Button
-          type="submit"
-          isLoading={isSaving}
-          disabled={target === null || target === currentPage}
-          className="ml-auto px-4"
+      <div className="flex items-center justify-between gap-3">
+        <label htmlFor={inputId} className="text-sm font-medium text-stone-700">
+          Où en êtes-vous ?
+        </label>
+        <span
+          className={`text-xs font-medium tabular-nums ${delta < 0 ? "text-stone-500" : "text-moss-700"}`}
+          aria-live="polite"
         >
-          Enregistrer
-        </Button>
+          {delta > 0
+            ? `+${delta} page${delta > 1 ? "s" : ""}`
+            : delta < 0
+              ? "Retour en arrière"
+              : ""}
+        </span>
+      </div>
+      <div className="mt-2 flex items-center gap-3">
+        <div className="focus-within:border-accent-400 focus-within:ring-accent-400/15 inline-flex items-center overflow-hidden rounded-[var(--radius-sm)] border border-stone-200 bg-white focus-within:ring-4">
+          <button
+            type="button"
+            onClick={() => addPages(-1)}
+            disabled={(target ?? from) <= 0}
+            className={stepButton}
+            aria-label="Une page de moins"
+          >
+            −
+          </button>
+          <input
+            id={inputId}
+            type="number"
+            inputMode="numeric"
+            min={0}
+            max={pageCount ?? undefined}
+            required
+            value={page}
+            onChange={(e) => setPage(e.target.value)}
+            className="w-16 [appearance:textfield] border-x border-stone-100 bg-transparent py-2 text-center text-xl font-medium text-stone-900 tabular-nums focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+          />
+          <button
+            type="button"
+            onClick={() => addPages(1)}
+            disabled={pageCount !== null && (target ?? from) >= pageCount}
+            className={stepButton}
+            aria-label="Une page de plus"
+          >
+            +
+          </button>
+        </div>
+        {pageCount && <span className="text-sm text-stone-500 tabular-nums">sur {pageCount}</span>}
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2">
         {QUICK_STEPS.map((step) => (
@@ -275,19 +321,20 @@ export function QuickProgress({
             key={step}
             type="button"
             onClick={() => addPages(step)}
-            className="min-h-9 rounded-full border border-stone-200 bg-white px-3 text-sm font-medium text-stone-700 tabular-nums transition hover:border-stone-300 hover:text-stone-900"
+            className="min-h-9 rounded-full bg-stone-100 px-3 text-sm font-medium text-stone-700 tabular-nums transition hover:bg-stone-200 hover:text-stone-900 active:scale-95"
             aria-label={`Ajouter ${step} pages`}
           >
-            +{step} p.
+            +{step}
           </button>
         ))}
-        <span className="text-xs text-stone-500" aria-live="polite">
-          {delta > 0
-            ? `${delta} page${delta > 1 ? "s" : ""} lue${delta > 1 ? "s" : ""} depuis la dernière fois`
-            : delta < 0
-              ? "Retour en arrière : la page sera corrigée"
-              : ""}
-        </span>
+        <Button
+          type="submit"
+          isLoading={isSaving}
+          disabled={target === null || target === currentPage}
+          className="ml-auto px-5"
+        >
+          Enregistrer
+        </Button>
       </div>
     </form>
   );

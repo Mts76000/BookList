@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { ChartBar, Fire, Hourglass, Star, Books, LockSimple } from "@phosphor-icons/react/ssr";
+import Link from "next/link";
+import { ArrowRight, ChartBar, Fire, Hourglass, Star, Books } from "@phosphor-icons/react/ssr";
 import { requireAuthPage } from "@/lib/permissions";
 import { getUserPlan } from "@/lib/subscription";
 import { getAdvancedStats, type AdvancedStats } from "@/lib/advanced-stats";
@@ -48,10 +49,34 @@ export default async function StatsPage() {
     >
       <StatsTabs active="/dashboard/stats" />
 
-      <header className="mb-8">
+      <header className="mb-6">
         <h1 className="font-serif text-3xl text-stone-900 sm:text-4xl">Vos lectures en détail</h1>
       </header>
 
+      <Link
+        href="/dashboard/stats/bilan"
+        className="card card-interactive group mb-8 flex items-center justify-between gap-4 p-4 sm:p-5"
+      >
+        <div>
+          <p className="text-sm font-medium text-stone-900">Votre bilan {year} est prêt</p>
+          <p className="text-sm text-stone-500">Votre année de lecture en une image à partager.</p>
+        </div>
+        <ArrowRight
+          className="text-accent-600 h-5 w-5 shrink-0 transition-transform group-hover:translate-x-0.5"
+          aria-hidden="true"
+        />
+      </Link>
+
+      <LifetimeStats
+        stats={lifetime}
+        showFavorites={!plan.isPremium}
+        memberSince={new Date(session.user.createdAt).toLocaleDateString("fr-FR", {
+          month: "long",
+          year: "numeric",
+        })}
+      />
+
+      <h2 className="mt-10 mb-5 font-serif text-2xl text-stone-900">En {year}</h2>
       {plan.isPremium ? (
         <StatsContent
           stats={await getAdvancedStats(session.user.id, year, PREMIUM_STREAK_JOKERS)}
@@ -59,96 +84,78 @@ export default async function StatsPage() {
       ) : (
         <StatsPreview
           stats={await getAdvancedStats(session.user.id, year)}
+          pagesThisYear={lifetime.pagesPerYear.find((entry) => entry.year === year)?.pages ?? 0}
           trialAvailable={plan.trialAvailable}
         />
       )}
-
-      <LifetimeStats
-        stats={lifetime}
-        memberSince={new Date(session.user.createdAt).toLocaleDateString("fr-FR", {
-          month: "long",
-          year: "numeric",
-        })}
-      />
     </main>
   );
 }
 
 /**
- * Statistiques d'un compte gratuit : ses vrais chiffres de base (série, pile à lire, livres
- * terminés mois par mois, genre favori). Les analyses avancées (durées, longueur, temps
- * pour finir la pile, répartitions) restent Premium. Page rendue côté serveur : seul ce qui
- * est affiché part au navigateur.
+ * Statistiques de l'année d'un compte gratuit : de vrais chiffres (série, pile à lire,
+ * livres et pages de l'année, mois par mois), sans tuile vide. Les analyses avancées
+ * (durées, longueur, temps pour finir la pile, répartitions) sont présentées une seule
+ * fois, en bas. Page rendue côté serveur : seul ce qui est affiché part au navigateur.
  */
 function StatsPreview({
   stats,
+  pagesThisYear,
   trialAvailable,
 }: {
   stats: AdvancedStats;
+  pagesThisYear: number;
   trialAvailable: boolean;
 }) {
-  const [topGenre] = stats.genres;
-  const locked = (
-    <span className="flex items-center gap-1.5 text-sm text-stone-400">
-      <LockSimple size={14} aria-hidden="true" />
-      Premium
-    </span>
-  );
+  const booksThisYear = stats.months.reduce((sum, month) => sum + month.books, 0);
+  const tiles = [
+    {
+      icon: Fire,
+      label: "Série en cours",
+      value: plural(stats.currentStreak, "jour"),
+      detail: `Record : ${plural(stats.longestStreak, "jour")}`,
+    },
+    {
+      icon: ChartBar,
+      label: "Pile à lire",
+      value: plural(stats.byStatus.toRead, "livre"),
+    },
+    { icon: Books, label: "Livres terminés", value: plural(booksThisYear, "livre") },
+    {
+      icon: Hourglass,
+      label: "Pages lues",
+      value: pagesThisYear.toLocaleString("fr-FR"),
+    },
+  ];
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        <div className="card p-4 sm:p-5">
-          <Fire className="text-accent-600 h-5 w-5" weight="duotone" aria-hidden="true" />
-          <p className="mt-3 font-serif text-2xl text-stone-900 tabular-nums">
-            {plural(stats.currentStreak, "jour")}
-          </p>
-          <p className="mt-1 text-xs font-medium text-stone-700 sm:text-sm">Série en cours</p>
-        </div>
-        <div className="card p-4 sm:p-5">
-          <ChartBar className="text-accent-600 h-5 w-5" weight="duotone" aria-hidden="true" />
-          <p className="mt-3 font-serif text-2xl text-stone-900 tabular-nums">
-            {plural(stats.byStatus.toRead, "livre")}
-          </p>
-          <p className="mt-1 text-xs font-medium text-stone-700 sm:text-sm">Pile à lire</p>
-          <p className="mt-0.5 flex items-center gap-1 text-xs text-stone-400">
-            <LockSimple size={12} aria-hidden="true" />
-            Temps pour la finir
-          </p>
-        </div>
-        <div className="card p-4 sm:p-5">
-          <Hourglass className="h-5 w-5 text-stone-300" weight="duotone" aria-hidden="true" />
-          <div className="mt-3">{locked}</div>
-          <p className="mt-1 text-xs font-medium text-stone-700 sm:text-sm">
-            Durée moyenne d&apos;un livre
-          </p>
-        </div>
-        <div className="card p-4 sm:p-5">
-          <Books className="h-5 w-5 text-stone-300" weight="duotone" aria-hidden="true" />
-          <div className="mt-3">{locked}</div>
-          <p className="mt-1 text-xs font-medium text-stone-700 sm:text-sm">Longueur moyenne</p>
-        </div>
-      </div>
-
+      <StatTiles tiles={tiles} />
       <MonthsChart stats={stats} />
-
-      <section className="card p-4 sm:p-6">
-        <div className="mb-2 flex items-baseline justify-between gap-4">
-          <h2 className="text-sm font-medium text-stone-900">Vos genres, vos notes, vos auteurs</h2>
-          {locked}
-        </div>
-        <p className="text-sm text-stone-500">
-          {topGenre
-            ? `Votre genre favori : ${topGenre.genre}. La répartition complète de vos genres, de vos notes et de vos auteurs est réservée à Premium.`
-            : "La répartition de vos genres, de vos notes et de vos auteurs est réservée à Premium."}
-        </p>
-      </section>
-
       <PremiumTeaser
         trialAvailable={trialAvailable}
-        title="Débloquez vos statistiques détaillées"
-        description="Vos genres, vos notes et vos auteurs, la durée et la longueur moyennes de vos lectures, et le temps pour finir votre pile à lire."
+        title="Allez plus loin dans vos statistiques"
+        description="Avec Premium : vos genres, vos notes et vos auteurs en détail, la durée et la longueur moyennes de vos lectures, le temps pour finir votre pile, et 2 jokers par mois pour protéger votre série."
       />
+    </div>
+  );
+}
+
+function StatTiles({
+  tiles,
+}: {
+  tiles: { icon: typeof Fire; label: string; value: string; detail?: string }[];
+}) {
+  return (
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+      {tiles.map((tile) => (
+        <div key={tile.label} className="card p-4 sm:p-5">
+          <tile.icon className="text-accent-600 h-5 w-5" weight="duotone" aria-hidden="true" />
+          <p className="mt-3 font-serif text-2xl text-stone-900 tabular-nums">{tile.value}</p>
+          <p className="mt-1 text-xs font-medium text-stone-700 sm:text-sm">{tile.label}</p>
+          {tile.detail && <p className="mt-0.5 text-xs text-stone-400">{tile.detail}</p>}
+        </div>
+      ))}
     </div>
   );
 }
@@ -161,7 +168,7 @@ function StatsContent({ stats }: { stats: AdvancedStats }) {
       icon: Fire,
       label: "Série en cours",
       value: plural(stats.currentStreak, "jour"),
-      detail: `Record : ${plural(stats.longestStreak, "jour")}, jokers utilisés ce mois : ${stats.jokersUsedThisMonth}/${PREMIUM_STREAK_JOKERS}`,
+      detail: `Record : ${plural(stats.longestStreak, "jour")}. Jokers restants ce mois-ci : ${PREMIUM_STREAK_JOKERS - stats.jokersUsedThisMonth} sur ${PREMIUM_STREAK_JOKERS}`,
     },
     {
       icon: Hourglass,
@@ -188,16 +195,7 @@ function StatsContent({ stats }: { stats: AdvancedStats }) {
 
   return (
     <div className="space-y-8">
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        {tiles.map((tile) => (
-          <div key={tile.label} className="card p-4 sm:p-5">
-            <tile.icon className="text-accent-600 h-5 w-5" weight="duotone" aria-hidden="true" />
-            <p className="mt-3 font-serif text-2xl text-stone-900 tabular-nums">{tile.value}</p>
-            <p className="mt-1 text-xs font-medium text-stone-700 sm:text-sm">{tile.label}</p>
-            <p className="mt-0.5 text-xs text-stone-400">{tile.detail}</p>
-          </div>
-        ))}
-      </div>
+      <StatTiles tiles={tiles} />
 
       <MonthsChart stats={stats} />
 
@@ -284,10 +282,19 @@ function StatsContent({ stats }: { stats: AdvancedStats }) {
 }
 
 /**
- * Le bilan depuis l'inscription, accessible à tous : ces chiffres figuraient sur la page du
- * compte, où ils n'avaient pas leur place à côté des réglages.
+ * Le total depuis l'inscription, accessible à tous. L'auteur et le genre favoris n'y
+ * figurent que pour un compte gratuit : Premium les retrouve, classés, dans le détail de
+ * l'année, et les afficher deux fois faisait doublon.
  */
-function LifetimeStats({ stats, memberSince }: { stats: ReadingStats; memberSince: string }) {
+function LifetimeStats({
+  stats,
+  memberSince,
+  showFavorites,
+}: {
+  stats: ReadingStats;
+  memberSince: string;
+  showFavorites: boolean;
+}) {
   const maxPages = Math.max(...stats.pagesPerYear.map((entry) => entry.pages), 1);
   const tiles = [
     { label: "Livres lus", value: stats.totalBooks.toLocaleString("fr-FR") },
@@ -300,7 +307,7 @@ function LifetimeStats({ stats, memberSince }: { stats: ReadingStats; memberSinc
   ];
 
   return (
-    <section className="mt-10 border-t border-stone-200 pt-8">
+    <section>
       <div className="mb-5 flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="font-serif text-2xl text-stone-900">Depuis vos débuts</h2>
         <p className="text-sm text-stone-500">Membre depuis {memberSince}</p>
@@ -318,7 +325,7 @@ function LifetimeStats({ stats, memberSince }: { stats: ReadingStats; memberSinc
           ))}
         </dl>
 
-        {(stats.topAuthors[0] || stats.topGenres[0]) && (
+        {showFavorites && (stats.topAuthors[0] || stats.topGenres[0]) && (
           <dl className="mt-6 grid grid-cols-1 gap-4 border-t border-stone-100 pt-6 sm:grid-cols-2">
             {stats.topAuthors[0] && (
               <div>

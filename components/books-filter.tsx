@@ -18,12 +18,10 @@ interface BooksFilterProps {
   sortBy: string;
   genre?: string;
   status?: string;
-  tag?: string;
   genres: string[];
-  tags: string[];
 }
 
-export function BooksFilter({ sortBy, genre, status, tag, genres, tags }: BooksFilterProps) {
+export function BooksFilter({ sortBy, genre, status, genres }: BooksFilterProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const urlSearch = searchParams.get("search") || "";
@@ -41,21 +39,20 @@ export function BooksFilter({ sortBy, genre, status, tag, genres, tags }: BooksF
       params.set("sort", sortBy);
       if (genre) params.set("genre", genre);
       if (status) params.set("status", status);
-      if (tag) params.set("tag", tag);
 
       // replace et non push : chaque frappe n'a pas à devenir une étape du bouton retour.
       router.replace(`/books?${params}`, { scroll: false });
     }, 300);
 
     return () => clearTimeout(timeout);
-  }, [search, urlSearch, sortBy, genre, status, tag, router]);
+  }, [search, urlSearch, sortBy, genre, status, router]);
 
   function changeSort(sort: string) {
     saveSortPreference(sort);
     router.push(buildUrl({ sort }));
   }
 
-  const buildUrl = (updates: { sort?: string; genre?: string; status?: string; tag?: string }) => {
+  const buildUrl = (updates: { sort?: string; genre?: string; status?: string }) => {
     const params = new URLSearchParams();
     if (search) params.set("search", search);
     params.set("sort", updates.sort ?? sortBy);
@@ -63,8 +60,6 @@ export function BooksFilter({ sortBy, genre, status, tag, genres, tags }: BooksF
     if (nextGenre) params.set("genre", nextGenre);
     const nextStatus = "status" in updates ? updates.status : status;
     if (nextStatus) params.set("status", nextStatus);
-    const nextTag = "tag" in updates ? updates.tag : tag;
-    if (nextTag) params.set("tag", nextTag);
     return `/books?${params.toString()}`;
   };
 
@@ -79,14 +74,15 @@ export function BooksFilter({ sortBy, genre, status, tag, genres, tags }: BooksF
         placeholder="Rechercher un titre ou auteur..."
       />
 
-      {/* Centrés sur mobile : une ligne incomplète ne reste pas collée à gauche. */}
-      <div className="flex flex-wrap justify-center gap-2 sm:justify-start">
+      {/* Deux par ligne sur mobile, chacun à 50 % ; un filtre seul sur sa ligne la prend
+          entière. Sur grand écran, à la suite. */}
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap [&>*:last-child:nth-child(odd)]:col-span-2">
         <Select
           label="Trier par"
           hideLabel
           value={sortBy}
           onChange={(e) => changeSort(e.target.value)}
-          className="w-auto min-w-[10rem]"
+          className="w-full sm:w-auto sm:min-w-[10rem]"
         >
           {Object.entries(BOOK_SORTS).map(([value, label]) => (
             <option key={value} value={value}>
@@ -100,7 +96,7 @@ export function BooksFilter({ sortBy, genre, status, tag, genres, tags }: BooksF
           hideLabel
           value={status || ""}
           onChange={(e) => router.push(buildUrl({ status: e.target.value }))}
-          className="w-auto min-w-[10rem]"
+          className="w-full sm:w-auto sm:min-w-[10rem]"
         >
           <option value="">Statut : Tous</option>
           {Object.entries(STATUS_LABELS).map(([value, label]) => (
@@ -116,29 +112,12 @@ export function BooksFilter({ sortBy, genre, status, tag, genres, tags }: BooksF
             hideLabel
             value={genre || ""}
             onChange={(e) => router.push(buildUrl({ genre: e.target.value }))}
-            className="w-auto min-w-[10rem]"
+            className="w-full sm:w-auto sm:min-w-[10rem]"
           >
             <option value="">Genre : Tous</option>
             {genres.map((g) => (
               <option key={g} value={g}>
                 {g}
-              </option>
-            ))}
-          </Select>
-        )}
-
-        {tags.length > 0 && (
-          <Select
-            label="Filtrer par étagère"
-            hideLabel
-            value={tag || ""}
-            onChange={(e) => router.push(buildUrl({ tag: e.target.value }))}
-            className="w-auto min-w-[10rem]"
-          >
-            <option value="">Étagère : Toutes</option>
-            {tags.map((t) => (
-              <option key={t} value={t}>
-                {t}
               </option>
             ))}
           </Select>

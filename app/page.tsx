@@ -44,9 +44,9 @@ const FEATURES = [
   },
   {
     index: "05",
-    title: "Import Goodreads et StoryGraph",
+    title: "Import de votre bibliothèque",
     description:
-      "Déposez votre export tel quel : statuts, notes et dates de lecture sont repris en une fois.",
+      "Vous tenez déjà vos lectures ailleurs ? Déposez votre export tel quel : statuts, notes et dates de lecture sont repris en une fois.",
   },
   {
     index: "06",

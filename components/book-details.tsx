@@ -3,28 +3,24 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { CaretLeft, PencilSimple, Trash } from "@phosphor-icons/react";
 import { BookCover } from "@/components/book-cover";
-import { Button } from "@/components/ui/button";
-import { Field } from "@/components/ui/field";
+import { Button, buttonClasses } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
 import { apiFetch } from "@/lib/api-client";
 import { parseGenres } from "@/lib/genres";
 import {
-  BOOK_FORMATS,
-  BOOK_STATUSES,
   FORMAT_LABELS,
-  STATUS_ACTIVE,
   STATUS_BADGE,
   STATUS_DOT,
   STATUS_LABELS,
   isBookFormat,
   type BookStatus,
 } from "@/lib/book-status";
-import { Select } from "@/components/ui/select";
 import { ReadingProgress } from "@/components/reading-progress";
-import type { KnownSeries } from "@/lib/series-store";
 import { StarRating } from "@/components/star-rating";
+import { libraryReturnUrl } from "@/components/library-scroll";
 
 interface Comment {
   id: string;
@@ -47,7 +43,6 @@ interface Book {
   status: BookStatus;
   currentPage: number | null;
   format: string | null;
-  tags: string[] | null;
   seriesName: string | null;
   seriesIndex: number | null;
   seriesTotal: number | null;
@@ -56,57 +51,30 @@ interface Book {
 
 interface BookDetailsProps {
   book: Book;
-  /** Sagas de la bibliothèque, proposées à la saisie du nom de série. */
-  knownSeries?: KnownSeries[];
 }
 
 /** Au-delà, la description est repliée derrière un « Voir plus ». */
 const DESCRIPTION_PREVIEW_LENGTH = 260;
 
-const STATUS_OPTIONS = BOOK_STATUSES.map((value) => ({
-  value,
-  label: STATUS_LABELS[value],
-  activeClass: STATUS_ACTIVE[value],
-}));
-
-/** Formate une date pour un champ `type="date"`, qui n'accepte que `YYYY-MM-DD`. */
-function toDateInput(value: string | Date | null): string {
-  if (!value) return "";
-  return new Date(value).toISOString().slice(0, 10);
-}
-
 function formatDate(value: string | Date | null): string {
-  return value ? new Date(value).toLocaleDateString("fr-FR") : "?";
+  return value
+    ? new Date(value).toLocaleDateString("fr-FR", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      })
+    : "?";
 }
 
-export function BookDetails({ book, knownSeries = [] }: BookDetailsProps) {
+export function BookDetails({ book }: BookDetailsProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [newComment, setNewComment] = useState("");
   const [rating, setRating] = useState(book.userRating ?? 0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-
-  const [editForm, setEditForm] = useState({
-    title: book.title,
-    author: book.author,
-    description: book.description ?? "",
-    coverUrl: book.coverUrl ?? "",
-    pageCount: book.pageCount?.toString() ?? "",
-    genre: book.genre ?? "",
-    publishedDate: book.publishedDate ?? "",
-    userStartDate: toDateInput(book.userStartDate),
-    userEndDate: toDateInput(book.userEndDate),
-    status: book.status,
-    format: book.format ?? "",
-    tags: book.tags?.join(", ") ?? "",
-    seriesName: book.seriesName ?? "",
-    seriesIndex: book.seriesIndex?.toString() ?? "",
-    seriesTotal: book.seriesTotal?.toString() ?? "",
-  });
 
   async function handleAddComment() {
     if (!newComment.trim()) return;
@@ -149,40 +117,13 @@ export function BookDetails({ book, knownSeries = [] }: BookDetailsProps) {
     }
   }
 
-  async function handleSaveEdit() {
-    setIsSubmitting(true);
-    try {
-      const result = await apiFetch(`/api/books/${book.id}`, {
-        method: "PATCH",
-        // Les chaînes vides sont converties en NULL par le schéma Zod : rien à normaliser ici.
-        json: {
-          title: editForm.title,
-          author: editForm.author,
-          description: editForm.description,
-          coverUrl: editForm.coverUrl,
-          pageCount: editForm.pageCount,
-          genre: editForm.genre,
-          publishedDate: editForm.publishedDate,
-          userStartDate: editForm.userStartDate,
-          userEndDate: editForm.userEndDate,
-          status: editForm.status,
-          format: editForm.format,
-          tags: editForm.tags,
-          seriesName: editForm.seriesName,
-          seriesIndex: editForm.seriesIndex,
-          seriesTotal: editForm.seriesTotal,
-        },
-      });
-      if (!result.ok) {
-        toast(result.message, "error");
-        return;
-      }
-      setIsEditing(false);
-      toast("Livre mis à jour.", "success");
-      router.refresh();
-    } finally {
-      setIsSubmitting(false);
-    }
+  /** Retour à l'étagère telle qu'on l'a quittée, sinon à la page précédente. */
+  function goBack(e: React.MouseEvent) {
+    e.preventDefault();
+    const libraryUrl = libraryReturnUrl();
+    if (libraryUrl) router.push(libraryUrl, { scroll: false });
+    else if (window.history.length > 1) router.back();
+    else router.push("/books");
   }
 
   async function handleDelete() {
@@ -200,54 +141,48 @@ export function BookDetails({ book, knownSeries = [] }: BookDetailsProps) {
 
   const description = book.description ?? "";
   const isDescriptionLong = description.length > DESCRIPTION_PREVIEW_LENGTH;
+  const genres = book.genre ? parseGenres(book.genre) : [];
+  const facts = [
+    book.pageCount ? `${book.pageCount} pages` : null,
+    book.publishedDate ? `Paru en ${book.publishedDate}` : null,
+    isBookFormat(book.format) ? FORMAT_LABELS[book.format] : null,
+  ].filter((fact): fact is string => fact !== null);
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between gap-3">
         <Link
           href="/books"
-          className="inline-flex items-center gap-1 text-sm font-medium text-stone-500 transition hover:text-stone-900"
+          onClick={goBack}
+          className="-ml-1 inline-flex min-h-11 items-center gap-1 px-1 text-sm font-medium text-stone-500 transition hover:text-stone-900"
         >
-          <svg
-            className="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-            aria-hidden="true"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
+          <CaretLeft className="h-4 w-4" aria-hidden="true" />
           Retour
         </Link>
-
-        {!isEditing && (
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => setIsEditing(true)}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-stone-500 transition hover:bg-stone-100 hover:text-stone-900"
-              aria-label="Modifier le livre"
-            >
-              <EditIcon className="h-[18px] w-[18px]" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setConfirmDelete(true)}
-              className="hover:bg-destructive/5 hover:text-destructive flex h-8 w-8 items-center justify-center rounded-lg text-stone-500 transition"
-              aria-label="Supprimer le livre"
-            >
-              <TrashIcon className="h-[18px] w-[18px]" />
-            </button>
-          </div>
-        )}
+        <div className="flex items-center gap-1">
+          <Link
+            href={`/books/${book.id}/edit`}
+            className={buttonClasses("secondary", "min-h-10 px-4 py-2")}
+          >
+            <PencilSimple className="h-4 w-4" aria-hidden="true" />
+            Modifier
+          </Link>
+          <button
+            type="button"
+            onClick={() => setConfirmDelete(true)}
+            className="hover:bg-destructive/5 hover:text-destructive flex size-10 items-center justify-center rounded-[var(--radius-sm)] text-stone-500 transition"
+            aria-label="Supprimer le livre"
+          >
+            <Trash className="h-[18px] w-[18px]" aria-hidden="true" />
+          </button>
+        </div>
       </div>
 
       {confirmDelete && (
-        <div className="border-destructive/30 bg-destructive/5 mb-4 rounded-2xl border p-4">
+        <div className="border-destructive/30 bg-destructive/5 mb-4 rounded-[var(--radius-md)] border p-4">
           <p className="text-destructive text-sm font-medium">Supprimer ce livre ?</p>
           <p className="text-destructive/80 mt-1 text-sm">
-            Cette action est définitive et supprimera aussi vos notes.
+            Cette action est définitive et supprimera aussi vos notes et citations.
           </p>
           <div className="mt-3 flex gap-2">
             <Button variant="destructive" onClick={handleDelete} isLoading={isDeleting}>
@@ -261,404 +196,147 @@ export function BookDetails({ book, knownSeries = [] }: BookDetailsProps) {
       )}
 
       <article className="card overflow-hidden">
-        {isEditing ? (
-          <div className="space-y-4 p-5 sm:p-6">
-            <h2 className="text-sm font-medium text-stone-900">Modifier le livre</h2>
+        <div className="from-accent-50/70 flex flex-col items-center gap-6 bg-gradient-to-b to-transparent p-5 pt-8 text-center sm:flex-row sm:items-start sm:p-8 sm:text-left">
+          <BookCover
+            coverUrl={book.coverUrl}
+            alt={book.title}
+            author={book.author}
+            className="aspect-[2/3] w-36 shrink-0 rounded-[var(--radius-sm)] sm:w-44"
+            variant="large"
+            tactile
+          />
 
-            <Field
-              label="Titre"
-              required
-              value={editForm.title}
-              onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-            />
-            <Field
-              label="Auteur"
-              required
-              value={editForm.author}
-              onChange={(e) => setEditForm({ ...editForm, author: e.target.value })}
-            />
-            <Textarea
-              label="Description"
-              rows={4}
-              value={editForm.description}
-              onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-            />
-            <Field
-              label="Couverture (URL)"
-              type="url"
-              value={editForm.coverUrl}
-              onChange={(e) => setEditForm({ ...editForm, coverUrl: e.target.value })}
-            />
-
-            <div className="grid grid-cols-2 gap-3">
-              <Field
-                label="Pages"
-                type="number"
-                inputMode="numeric"
-                value={editForm.pageCount}
-                onChange={(e) => setEditForm({ ...editForm, pageCount: e.target.value })}
-              />
-              <Field
-                label="Genre"
-                placeholder="Roman, SF…"
-                value={editForm.genre}
-                onChange={(e) => setEditForm({ ...editForm, genre: e.target.value })}
-              />
-            </div>
-
-            <fieldset>
-              <legend className="mb-1.5 text-sm font-medium tracking-tight text-stone-700">
-                Statut
-              </legend>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                {STATUS_OPTIONS.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    aria-pressed={editForm.status === option.value}
-                    onClick={() => setEditForm({ ...editForm, status: option.value })}
-                    className={`rounded-[var(--radius-sm)] px-3 py-2 text-sm font-medium transition ${
-                      editForm.status === option.value
-                        ? option.activeClass
-                        : "bg-card text-stone-600 ring-1 ring-stone-200 hover:ring-stone-300"
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            </fieldset>
-
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Select
-                label="Format"
-                value={editForm.format}
-                onChange={(e) => setEditForm({ ...editForm, format: e.target.value })}
+          <div className="min-w-0 flex-1">
+            <span className={`badge ${STATUS_BADGE[book.status]}`}>
+              <span className={`status-dot ${STATUS_DOT[book.status]}`} />
+              {STATUS_LABELS[book.status]}
+            </span>
+            <h1 className="mt-3 font-serif text-2xl leading-tight text-balance text-stone-900 sm:text-3xl">
+              {book.title}
+            </h1>
+            <p className="mt-1 text-stone-600">{book.author}</p>
+            {book.seriesName && (
+              <Link
+                href="/books/sagas"
+                className="text-accent-700 mt-2 inline-block text-sm font-medium hover:underline"
               >
-                <option value="">Non précisé</option>
-                {BOOK_FORMATS.map((format) => (
-                  <option key={format} value={format}>
-                    {FORMAT_LABELS[format]}
-                  </option>
+                {book.seriesName}
+                {book.seriesIndex !== null &&
+                  `, tome ${book.seriesIndex}${book.seriesTotal ? ` sur ${book.seriesTotal}` : ""}`}
+              </Link>
+            )}
+
+            {(facts.length > 0 || genres.length > 0) && (
+              <div className="mt-4 flex flex-wrap justify-center gap-1.5 sm:justify-start">
+                {facts.map((fact) => (
+                  <span key={fact} className="badge border border-stone-200 text-stone-600">
+                    {fact}
+                  </span>
                 ))}
-              </Select>
-              <Field
-                label="Étagères"
-                placeholder="Favoris, Prêtés..."
-                helperText="Séparées par des virgules."
-                value={editForm.tags}
-                onChange={(e) => setEditForm({ ...editForm, tags: e.target.value })}
-              />
-            </div>
-
-            <fieldset>
-              <legend className="mb-1.5 text-sm font-medium tracking-tight text-stone-700">
-                Saga
-              </legend>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_6rem_6rem]">
-                <Field
-                  label="Nom de la série"
-                  hideLabel
-                  placeholder="Nom de la série (ex : Dune)"
-                  list="known-series"
-                  autoComplete="off"
-                  value={editForm.seriesName}
-                  onChange={(e) => {
-                    const seriesName = e.target.value;
-                    // Une saga existante choisie : on propose le tome suivant et son nombre
-                    // de tomes, sans écraser ce qui est déjà saisi.
-                    const known = knownSeries.find(
-                      (entry) => entry.name.toLowerCase() === seriesName.trim().toLowerCase(),
-                    );
-                    setEditForm({
-                      ...editForm,
-                      seriesName,
-                      seriesIndex:
-                        editForm.seriesIndex || !known
-                          ? editForm.seriesIndex
-                          : String(known.nextIndex),
-                      seriesTotal:
-                        editForm.seriesTotal || !known?.total
-                          ? editForm.seriesTotal
-                          : String(known.total),
-                    });
-                  }}
-                />
-                <datalist id="known-series">
-                  {knownSeries.map((entry) => (
-                    <option key={entry.name} value={entry.name} />
-                  ))}
-                </datalist>
-                <Field
-                  label="Tome"
-                  hideLabel
-                  type="number"
-                  inputMode="numeric"
-                  min={0}
-                  placeholder="Tome"
-                  value={editForm.seriesIndex}
-                  onChange={(e) => setEditForm({ ...editForm, seriesIndex: e.target.value })}
-                />
-                <Field
-                  label="Nombre de tomes"
-                  hideLabel
-                  type="number"
-                  inputMode="numeric"
-                  min={1}
-                  placeholder="Sur"
-                  value={editForm.seriesTotal}
-                  onChange={(e) => setEditForm({ ...editForm, seriesTotal: e.target.value })}
-                />
-              </div>
-            </fieldset>
-
-            <Field
-              label="Publié"
-              placeholder="2019"
-              value={editForm.publishedDate}
-              onChange={(e) => setEditForm({ ...editForm, publishedDate: e.target.value })}
-            />
-
-            {/* Un livre à lire n'a pas encore de dates de lecture. */}
-            {editForm.status !== "TO_READ" && (
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <Field
-                  label="Début"
-                  type="date"
-                  value={editForm.userStartDate}
-                  onChange={(e) => setEditForm({ ...editForm, userStartDate: e.target.value })}
-                />
-                {(editForm.status === "FINISHED" || editForm.status === "ABANDONED") && (
-                  <Field
-                    label={editForm.status === "ABANDONED" ? "Arrêt" : "Fin"}
-                    type="date"
-                    value={editForm.userEndDate}
-                    onChange={(e) => setEditForm({ ...editForm, userEndDate: e.target.value })}
-                  />
-                )}
+                {genres.map((genre) => (
+                  <span key={genre} className="badge bg-stone-100 text-stone-600">
+                    {genre}
+                  </span>
+                ))}
               </div>
             )}
 
-            <div className="flex gap-3">
-              <Button onClick={handleSaveEdit} isLoading={isSubmitting} className="flex-1">
-                {isSubmitting ? "Enregistrement…" : "Enregistrer"}
-              </Button>
-              <Button variant="secondary" onClick={() => setIsEditing(false)}>
-                Annuler
-              </Button>
-            </div>
+            {(book.userStartDate || book.userEndDate) && (
+              <p className="mt-3 text-sm text-stone-500">
+                {book.userEndDate
+                  ? `Lu du ${formatDate(book.userStartDate)} au ${formatDate(book.userEndDate)}`
+                  : `Commencé le ${formatDate(book.userStartDate)}`}
+              </p>
+            )}
           </div>
-        ) : (
-          <div className="flex flex-col gap-6 p-5 sm:flex-row sm:p-6">
-            <BookCover
-              coverUrl={book.coverUrl}
-              alt={book.title}
-              author={book.author}
-              className="mx-auto h-56 w-40 shrink-0 rounded-[var(--radius-sm)] sm:mx-0"
-              variant="large"
-              tactile
+        </div>
+
+        <div className="space-y-6 border-t border-stone-100 p-5 sm:p-8">
+          {(book.status === "READING" || book.status === "TO_READ") && (
+            <ReadingProgress
+              bookId={book.id}
+              currentPage={book.currentPage}
+              pageCount={book.pageCount}
             />
+          )}
 
-            <div className="flex-1">
-              <span className={`badge ${STATUS_BADGE[book.status]}`}>
-                <span className={`status-dot ${STATUS_DOT[book.status]}`} />
-                {STATUS_LABELS[book.status]}
-              </span>
-              <h1 className="mt-2 font-serif text-xl text-stone-900 sm:text-2xl">{book.title}</h1>
-              <p className="mt-1 text-stone-500">{book.author}</p>
-              {book.seriesName && (
-                <p className="mt-1 text-sm text-stone-600">
-                  {book.seriesName}
-                  {book.seriesIndex !== null &&
-                    `, tome ${book.seriesIndex}${book.seriesTotal ? ` sur ${book.seriesTotal}` : ""}`}
-                </p>
-              )}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm font-medium text-stone-700">Votre note</p>
+            <StarRating
+              value={rating}
+              onChange={(value) => void handleUpdateRating(value)}
+              disabled={isSubmitting}
+            />
+          </div>
 
-              {book.genre && (
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {parseGenres(book.genre).map((genre) => (
-                    <span key={genre} className="badge bg-stone-100 text-stone-600">
-                      {genre}
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              {(isBookFormat(book.format) || (book.tags && book.tags.length > 0)) && (
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {isBookFormat(book.format) && (
-                    <span className="badge border border-stone-200 text-stone-600">
-                      {FORMAT_LABELS[book.format]}
-                    </span>
-                  )}
-                  {book.tags?.map((tag) => (
-                    <Link
-                      key={tag}
-                      href={`/books?tag=${encodeURIComponent(tag)}`}
-                      className="badge bg-accent-50 text-accent-700 hover:bg-accent-100"
-                    >
-                      {tag}
-                    </Link>
-                  ))}
-                </div>
-              )}
-
-              <dl className="mt-4 space-y-1 text-sm text-stone-500">
-                {book.pageCount && (
-                  <div className="flex gap-2">
-                    <dt className="text-stone-400">Pages</dt>
-                    <dd>{book.pageCount}</dd>
-                  </div>
-                )}
-                {book.publishedDate && (
-                  <div className="flex gap-2">
-                    <dt className="text-stone-400">Publié</dt>
-                    <dd>{book.publishedDate}</dd>
-                  </div>
-                )}
-                {(book.userStartDate || book.userEndDate) && (
-                  <div className="flex gap-2">
-                    <dt className="text-stone-400">Lecture</dt>
-                    <dd>
-                      {formatDate(book.userStartDate)} — {formatDate(book.userEndDate)}
-                    </dd>
-                  </div>
-                )}
-              </dl>
-
-              {(book.status === "READING" || book.status === "TO_READ") && (
-                <ReadingProgress
-                  bookId={book.id}
-                  currentPage={book.currentPage}
-                  pageCount={book.pageCount}
-                />
-              )}
-
-              <div className="mt-5">
-                <p className="mb-2 text-sm font-medium text-stone-700">Votre note</p>
-                <StarRating
-                  value={rating}
-                  onChange={(value) => void handleUpdateRating(value)}
-                  disabled={isSubmitting}
-                />
-              </div>
-
-              {description && (
-                <div className="mt-5 border-t border-stone-100 pt-5">
-                  <p
-                    className={`text-sm leading-relaxed text-stone-600 ${
-                      !isDescriptionExpanded && isDescriptionLong ? "line-clamp-3" : ""
-                    }`}
-                  >
-                    {description}
-                  </p>
-                  {isDescriptionLong && (
-                    <button
-                      type="button"
-                      onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-                      className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-stone-900 transition hover:opacity-70"
-                    >
-                      {isDescriptionExpanded ? "Voir moins" : "Voir plus"}
-                      <ChevronIcon
-                        className={`h-4 w-4 transition-transform ${isDescriptionExpanded ? "rotate-180" : ""}`}
-                      />
-                    </button>
-                  )}
-                </div>
+          {description && (
+            <div className="border-t border-stone-100 pt-6">
+              <h2 className="text-sm font-medium text-stone-700">Résumé</h2>
+              <p
+                className={`mt-2 text-sm leading-relaxed whitespace-pre-line text-stone-600 ${
+                  !isDescriptionExpanded && isDescriptionLong ? "line-clamp-4" : ""
+                }`}
+              >
+                {description}
+              </p>
+              {isDescriptionLong && (
+                <button
+                  type="button"
+                  onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                  className="mt-2 inline-flex min-h-9 items-center gap-1 text-sm font-medium text-stone-900 transition hover:opacity-70"
+                >
+                  {isDescriptionExpanded ? "Voir moins" : "Lire la suite"}
+                  <ChevronIcon
+                    className={`h-4 w-4 transition-transform ${isDescriptionExpanded ? "rotate-180" : ""}`}
+                  />
+                </button>
               )}
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </article>
 
-      {!isEditing && (
-        <section className="card mt-6 p-5 sm:p-6">
-          <h2 className="font-serif text-lg text-stone-900">Notes personnelles</h2>
-          <p className="mt-1 text-sm text-stone-500">
-            Optionnel — conservez ici vos réflexions sur ce livre. Votre note est déjà enregistrée.
-          </p>
+      <section className="card mt-6 p-5 sm:p-6">
+        <h2 className="font-serif text-lg text-stone-900">Vos notes</h2>
+        <p className="mt-1 text-sm text-stone-500">Vos impressions, pour vous seul.</p>
 
-          <div className="mt-4">
-            <Textarea
-              label="Nouvelle note"
-              hideLabel
-              rows={3}
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              placeholder="Réflexions, citations, impressions…"
-            />
-            <div className="mt-2 flex justify-end">
-              <Button
-                onClick={handleAddComment}
-                isLoading={isSubmitting}
-                disabled={!newComment.trim()}
-              >
-                {isSubmitting ? "Ajout…" : "Ajouter une note"}
-              </Button>
-            </div>
+        <div className="mt-4">
+          <Textarea
+            label="Nouvelle note"
+            hideLabel
+            rows={3}
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+            placeholder="Ce que vous en avez pensé…"
+          />
+          <div className="mt-2 flex justify-end">
+            <Button
+              onClick={handleAddComment}
+              isLoading={isSubmitting}
+              disabled={!newComment.trim()}
+            >
+              {isSubmitting ? "Ajout…" : "Ajouter la note"}
+            </Button>
           </div>
+        </div>
 
+        {book.comments.length > 0 && (
           <div className="mt-6 space-y-4">
-            {book.comments.length > 0 ? (
-              book.comments.map((comment) => (
-                <div
-                  key={comment.id}
-                  className="border-t border-stone-100 pt-4 first:border-0 first:pt-0"
-                >
-                  <time className="text-xs text-stone-400">{formatDate(comment.createdAt)}</time>
-                  <p className="mt-1.5 text-sm text-stone-600">{comment.content}</p>
-                </div>
-              ))
-            ) : (
-              <p className="py-4 text-center text-sm text-stone-400">Aucune note pour le moment</p>
-            )}
+            {book.comments.map((comment) => (
+              <div
+                key={comment.id}
+                className="border-t border-stone-100 pt-4 first:border-0 first:pt-0"
+              >
+                <time className="text-xs text-stone-400">{formatDate(comment.createdAt)}</time>
+                <p className="mt-1.5 text-sm whitespace-pre-line text-stone-600">
+                  {comment.content}
+                </p>
+              </div>
+            ))}
           </div>
-        </section>
-      )}
+        )}
+      </section>
     </div>
-  );
-}
-
-function EditIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      aria-hidden="true"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"
-      />
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M19.5 12v6.75a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18.75V6.75A2.25 2.25 0 015.25 4.5h6.75"
-      />
-    </svg>
-  );
-}
-
-function TrashIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      aria-hidden="true"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
-      />
-    </svg>
   );
 }
 

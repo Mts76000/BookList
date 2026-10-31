@@ -4,10 +4,9 @@ import { MagnifyingGlass } from "@phosphor-icons/react/ssr";
 import { db } from "@/lib/db";
 import { book, quote } from "@/drizzle/schema";
 import { requireAuthPage } from "@/lib/permissions";
-import { getUserPlan } from "@/lib/subscription";
+import { countUserQuotes, getUserPlan } from "@/lib/subscription";
 import { BooksTabs } from "@/components/books-tabs";
-import { QuoteActions } from "@/components/book-quotes";
-import { PremiumTeaser } from "@/components/premium-teaser";
+import { QuoteActions, QuoteQuota } from "@/components/book-quotes";
 
 /** Échappe les jokers de LIKE pour chercher le texte tel que saisi. */
 function escapeLike(value: string): string {
@@ -20,9 +19,12 @@ export default async function QuotesPage({
   searchParams: Promise<{ q?: string }>;
 }) {
   const session = await requireAuthPage("/books/citations");
-  const [{ q }, plan] = await Promise.all([searchParams, getUserPlan(session.user.id)]);
-  // La recherche est un avantage Premium : ignorée pour un compte gratuit.
-  const search = plan.isPremium ? (q ?? "").trim().slice(0, 200) : "";
+  const [{ q }, plan, quoteCount] = await Promise.all([
+    searchParams,
+    getUserPlan(session.user.id),
+    countUserQuotes(session.user.id),
+  ]);
+  const search = (q ?? "").trim().slice(0, 200);
   const pattern = `%${escapeLike(search)}%`;
 
   const quotes = await db
@@ -59,37 +61,35 @@ export default async function QuotesPage({
 
       <header className="mb-6">
         <h1 className="font-serif text-2xl text-stone-900 sm:text-3xl">Vos citations</h1>
-        <p className="mt-1 text-sm text-stone-500">Ajoutez-en depuis la fiche de chaque livre.</p>
+        <p className="mt-1 text-sm text-stone-500">
+          {quoteCount > 0
+            ? `${quoteCount} citation${quoteCount > 1 ? "s" : ""}. Ajoutez-en depuis la fiche de chaque livre.`
+            : "Ajoutez-en depuis la fiche de chaque livre."}
+        </p>
       </header>
 
-      {plan.isPremium ? (
-        <form role="search" className="mb-6 sm:max-w-md">
-          <label htmlFor="quote-search" className="sr-only">
-            Rechercher dans vos citations
-          </label>
-          <div className="relative">
-            <MagnifyingGlass
-              className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-stone-400"
-              aria-hidden="true"
-            />
-            <input
-              id="quote-search"
-              name="q"
-              type="search"
-              defaultValue={search}
-              placeholder="Un mot, un titre, un auteur"
-              className="border-border bg-card focus:border-accent-400 focus:ring-accent-400/15 w-full rounded-[var(--radius-sm)] border py-3 pr-4 pl-11 text-base placeholder:text-stone-400 focus:ring-4 focus:outline-none"
-            />
-          </div>
-        </form>
-      ) : (
-        <PremiumTeaser
-          className="mb-6"
-          trialAvailable={plan.trialAvailable}
-          title="Retrouvez n'importe quelle citation"
-          description="Avec Premium : recherche par mot, titre ou auteur, et images à partager."
-        />
-      )}
+      <form role="search" className="mb-6 sm:max-w-md">
+        <label htmlFor="quote-search" className="sr-only">
+          Rechercher dans vos citations
+        </label>
+        <div className="relative">
+          <MagnifyingGlass
+            className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-stone-400"
+            aria-hidden="true"
+          />
+          <input
+            id="quote-search"
+            name="q"
+            type="search"
+            defaultValue={search}
+            placeholder="Un mot, un titre, un auteur"
+            className="border-border bg-card focus:border-accent-400 focus:ring-accent-400/15 w-full rounded-[var(--radius-sm)] border py-3 pr-4 pl-11 text-base placeholder:text-stone-400 focus:ring-4 focus:outline-none"
+          />
+        </div>
+      </form>
+      <div className="mb-6 empty:hidden">
+        <QuoteQuota quoteCount={quoteCount} isPremium={plan.isPremium} />
+      </div>
 
       {quotes.length === 0 ? (
         <p className="card p-6 text-center text-sm text-stone-500">

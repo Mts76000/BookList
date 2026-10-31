@@ -89,8 +89,8 @@ export const POST = withApiErrorHandling(async (request: Request) => {
           : `En vous abonnant, vous demandez l'accès immédiat à Premium et renoncez au délai de rétractation, conformément aux conditions générales (${env.NEXT_PUBLIC_APP_URL}/legal/terms). Remboursement intégral sur simple demande sous 14 jours.`,
       },
     },
-    success_url: `${env.NEXT_PUBLIC_APP_URL}/account?premium=success`,
-    cancel_url: `${env.NEXT_PUBLIC_APP_URL}/account?premium=cancel`,
+    success_url: `${env.NEXT_PUBLIC_APP_URL}/account/premium?premium=success`,
+    cancel_url: `${env.NEXT_PUBLIC_APP_URL}/account/premium?premium=cancel`,
   });
 
   if (!checkout.url) {
