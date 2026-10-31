@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { db } from "@/lib/db";
 import { book } from "@/drizzle/schema";
 import { requireAuth } from "@/lib/permissions";
@@ -8,6 +9,8 @@ import { createRateLimiter } from "@/lib/rate-limit";
 import { requestMetadata } from "@/lib/audit-log";
 import { csvRowsToObjects, parseCsv } from "@/lib/csv";
 import { detectImportFormat, toBookListRow } from "@/lib/import-formats";
+import { enrichLibrary } from "@/lib/library-enrichment";
+import { logger } from "@/lib/logger";
 import { catalogBook } from "@/drizzle/schema";
 import { and, eq, inArray, isNotNull } from "drizzle-orm";
 import { z } from "zod";
@@ -18,6 +21,9 @@ const importLimiter = createRateLimiter("books-import", 5, 10 * 60);
 // 14 colonnes restent sous la limite de 65 535 paramètres d'un INSERT Postgres.
 const MAX_ROWS = 2000;
 
+/** Livres complétés juste après l'import ; les suivants le sont par la tâche planifiée. */
+const AFTER_IMPORT_BATCH = 60;
+
 /**
  * Importe des livres depuis un CSV : le modèle BookList (colonnes title, author, isbn,
  * description, coverUrl, pageCount, genre, publishedDate, userRating, userStartDate,
@@ -25,7 +31,9 @@ const MAX_ROWS = 2000;
  * (voir `lib/import-formats.ts`).
  *
  * Ces exports n'ont ni couverture ni résumé : on les complète depuis le catalogue partagé
- * quand l'ISBN y est déjà, sans aucun appel à Google Books.
+ * quand l'ISBN y est déjà, sans aucun appel à Google Books. Les autres sont complétés après
+ * la réponse auprès des sources de livres, un premier lot tout de suite, la suite par la
+ * tâche planifiée `/api/cron/enrich-library`.
  *
  * Import partiel assumé : les lignes valides sont enregistrées même si d'autres échouent, et
  * la réponse détaille les lignes en erreur avec leur numéro. Refuser tout le fichier pour une
@@ -103,6 +111,15 @@ export const POST = withApiErrorHandling(async (request: Request) => {
       .onConflictDoNothing({ target: [book.userId, book.isbn] })
       .returning({ id: book.id });
     imported = inserted.length;
+  }
+
+  if (imported > 0) {
+    const userId = session.user.id;
+    after(() =>
+      enrichLibrary({ userId, limit: AFTER_IMPORT_BATCH }).catch((err: unknown) =>
+        logger.error({ err }, "Library enrichment after import failed"),
+      ),
+    );
   }
 
   return apiSuccess(

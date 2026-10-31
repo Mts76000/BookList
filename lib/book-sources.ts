@@ -12,6 +12,9 @@ import { toIsbn10, toIsbn13 } from "@/lib/isbn";
  *   France, c'est la source fiable du nombre de pages imprimées (« 1 vol. (113 p.) ») ; Google
  *   renvoie souvent celui d'une autre édition, ou 0.
  *
+ * - **Hardcover** (API GraphQL, jeton optionnel `HARDCOVER_API_TOKEN`) : catalogue communautaire
+ *   récent, aux couvertures et nombres de pages souvent mieux renseignés qu'Open Library.
+ *
  * Chaque appel a un délai court : une source lente ne doit pas retarder les autres, et son
  * échec n'est jamais une erreur pour l'utilisateur — on fait avec ce qui a répondu.
  */
@@ -198,6 +201,7 @@ export async function bnfByIsbn(isbn: string): Promise<CatalogEntry | null> {
     .map(authorFromCreator)
     .filter((name): name is string => !!name);
   const format = dcValues(record, "format").find((value) => /\d+\s*p\b/.test(value));
+  const ark = record.match(/ark:\/12148\/[0-9a-z]+/)?.[0];
 
   return {
     id: `bnf:${forms[0]}`,
@@ -206,9 +210,107 @@ export async function bnfByIsbn(isbn: string): Promise<CatalogEntry | null> {
     subtitle: null,
     authors,
     description: null,
-    coverUrl: null,
+    // Couverture de l'édition exacte, affichée par le catalogue de la BnF. Non vérifiée ici :
+    // une notice sans couverture renvoie une erreur, écartée par `lib/cover-check.ts`.
+    coverUrl: ark ? bnfCoverUrl(ark) : null,
     pageCount: format ? pagesFromFormat(format) : null,
     publishedDate: dcValues(record, "date")[0]?.match(/\d{4}/)?.[0] ?? null,
+    genres: null,
+  };
+}
+
+/** Couverture affichée par le catalogue de la BnF pour une notice (identifiant ARK). */
+export function bnfCoverUrl(ark: string): string {
+  const params = new URLSearchParams({ appName: "NE", idArk: ark, couverture: "1" });
+  return `https://catalogue.bnf.fr/couverture?${params}`;
+}
+
+// --- Google Books (couverture seule) ---------------------------------------------------
+
+/**
+ * Couverture Google d'un ISBN, servie sans passer par l'API et donc sans quota : elle reste
+ * disponible quand le quota de recherche est épuisé. Pour un ISBN que Google ne connaît pas,
+ * l'image est une vignette de remplacement, écartée par `lib/cover-check.ts`.
+ */
+export function googleCoverByIsbn(isbn: string): string {
+  return `https://books.google.com/books/content?vid=ISBN${isbn}&printsec=frontcover&img=1&zoom=1`;
+}
+
+// --- Hardcover -------------------------------------------------------------------------
+
+interface HardcoverEdition {
+  title?: string | null;
+  subtitle?: string | null;
+  pages?: number | null;
+  release_date?: string | null;
+  image?: { url?: string | null } | null;
+  book?: {
+    title?: string | null;
+    description?: string | null;
+    contributions?: { author?: { name?: string | null } | null }[] | null;
+  } | null;
+}
+
+const HARDCOVER_QUERY = `query EditionByIsbn($isbn13: String!, $isbn10: String!) {
+  editions(
+    where: { _or: [{ isbn_13: { _eq: $isbn13 } }, { isbn_10: { _eq: $isbn10 } }] }
+    limit: 1
+  ) {
+    title
+    subtitle
+    pages
+    release_date
+    image { url }
+    book { title description contributions { author { name } } }
+  }
+}`;
+
+/**
+ * Édition Hardcover d'un ISBN. Sans jeton configuré, la source est simplement ignorée.
+ * Jeton personnel à créer dans les réglages du compte Hardcover (valable un an).
+ */
+export async function hardcoverByIsbn(isbn: string): Promise<CatalogEntry | null> {
+  const token = env.HARDCOVER_API_TOKEN;
+  const isbn13 = toIsbn13(isbn);
+  if (!token || !isbn13) return null;
+
+  const response = await fetch("https://api.hardcover.app/v1/graphql", {
+    method: "POST",
+    headers: {
+      ...headers,
+      "Content-Type": "application/json",
+      // Le jeton copié depuis Hardcover commence déjà par « Bearer ».
+      Authorization: token.startsWith("Bearer ") ? token : `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      query: HARDCOVER_QUERY,
+      variables: { isbn13, isbn10: toIsbn10(isbn13) ?? "" },
+    }),
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+  });
+  if (!response.ok) throw new Error(`Hardcover a répondu ${response.status}`);
+  const data = (await response.json()) as {
+    data?: { editions?: HardcoverEdition[] };
+    errors?: { message?: string }[];
+  };
+  if (data.errors?.length) throw new Error(`Hardcover : ${data.errors[0].message}`);
+  const edition = data.data?.editions?.[0];
+  const title = edition?.title ?? edition?.book?.title;
+  if (!edition || !title) return null;
+
+  return {
+    id: `hc:${isbn13}`,
+    isbn: isbn13,
+    title,
+    subtitle: edition.subtitle ?? null,
+    authors:
+      edition.book?.contributions
+        ?.map((contribution) => contribution.author?.name ?? "")
+        .filter(Boolean) ?? [],
+    description: edition.book?.description ?? null,
+    coverUrl: edition.image?.url ?? null,
+    pageCount: validPageCount(edition.pages),
+    publishedDate: edition.release_date?.match(/\d{4}/)?.[0] ?? null,
     genres: null,
   };
 }

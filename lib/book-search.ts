@@ -3,10 +3,13 @@ import { logger } from "@/lib/logger";
 import { getCachedSearch, saveSearch, searchCacheKey, type CatalogEntry } from "@/lib/book-catalog";
 import {
   bnfByIsbn,
+  googleCoverByIsbn,
+  hardcoverByIsbn,
   openLibraryByIsbn,
   openLibrarySearch,
   validPageCount,
 } from "@/lib/book-sources";
+import { firstValidCover } from "@/lib/cover-check";
 import { sameIsbn, toIsbn13 } from "@/lib/isbn";
 import { normalizeText } from "@/lib/series-detection";
 
@@ -180,25 +183,29 @@ function mostComplete(entries: CatalogEntry[]): CatalogEntry | null {
 }
 
 /**
- * Un ISBN, interrogé sur les trois sources à la fois, donne une seule fiche fusionnée :
+ * Un ISBN, interrogé sur toutes les sources à la fois, donne une seule fiche fusionnée :
  * - titre, auteurs, résumé et genres de Google en priorité (les plus complets) ;
- * - couverture de Google, sinon d'Open Library (Google n'en a souvent aucune pour un ISBN
- *   français) ;
- * - nombre de pages de la BnF, sinon d'Open Library, sinon de Google : la notice du dépôt
- *   légal décrit l'édition imprimée exacte, Google souvent une autre.
+ * - nombre de pages de la BnF, sinon de Hardcover, d'Open Library, puis de Google : la
+ *   notice du dépôt légal décrit l'édition imprimée exacte, Google souvent une autre ;
+ * - couverture : la première qui existe vraiment (voir `lib/cover-check.ts`) parmi Google,
+ *   la BnF, Hardcover, Open Library et la couverture Google par ISBN (sans quota), dans cet
+ *   ordre ; à défaut, celle d'une autre édition de la même œuvre.
  * L'ISBN retenu est toujours celui demandé (le code-barres scanné), sous sa forme ISBN-13.
  */
 async function lookupIsbn(isbn: string): Promise<SearchResult & { partial: boolean }> {
-  const [google, openLibrary, bnf] = await Promise.all([
+  const [google, openLibrary, bnf, hardcover] = await Promise.all([
     searchGoogle({ isbn }),
     orNull("openlibrary", openLibraryByIsbn(isbn)),
     orNull("bnf", bnfByIsbn(isbn)),
+    orNull("hardcover", hardcoverByIsbn(isbn)),
   ]);
   // Le repli en texte libre de Google peut ramener d'autres livres que celui scanné.
   const fromGoogle = mostComplete(
     "books" in google ? google.books.filter((entry) => sameIsbn(entry.isbn, isbn)) : [],
   );
-  const sources = [fromGoogle, openLibrary, bnf].filter((entry): entry is CatalogEntry => !!entry);
+  const sources = [fromGoogle, openLibrary, bnf, hardcover].filter(
+    (entry): entry is CatalogEntry => !!entry,
+  );
   const partial = "unavailable" in google || openLibrary === null || bnf === null;
 
   if (sources.length === 0) {
@@ -217,8 +224,19 @@ async function lookupIsbn(isbn: string): Promise<SearchResult & { partial: boole
     subtitle: first("subtitle"),
     authors: sources.find((entry) => entry.authors.length > 0)?.authors ?? [],
     description: first("description"),
-    coverUrl: first("coverUrl"),
-    pageCount: bnf?.pageCount ?? openLibrary?.pageCount ?? fromGoogle?.pageCount ?? null,
+    coverUrl: await firstValidCover([
+      fromGoogle?.coverUrl,
+      bnf?.coverUrl,
+      hardcover?.coverUrl,
+      openLibrary?.coverUrl,
+      googleCoverByIsbn(isbn),
+    ]),
+    pageCount:
+      bnf?.pageCount ??
+      hardcover?.pageCount ??
+      openLibrary?.pageCount ??
+      fromGoogle?.pageCount ??
+      null,
     publishedDate: first("publishedDate"),
     genres: first("genres"),
   };
@@ -239,17 +257,23 @@ async function findCoverElsewhere(entry: CatalogEntry): Promise<string | null> {
     "openlibrary",
     openLibrarySearch(`${entry.title} ${author}`),
   );
-  const cover = fromOpenLibrary?.find((other) => other.coverUrl && sameWork(entry, other));
-  if (cover) return cover.coverUrl;
+  const cover = await firstValidCover(
+    (fromOpenLibrary ?? [])
+      .filter((other) => sameWork(entry, other))
+      .map((other) => other.coverUrl),
+  );
+  if (cover) return cover;
 
   const lastName = author.split(" ").pop() ?? "";
   const google = await searchGoogle({ q: `intitle:${entry.title} inauthor:${lastName}` });
   if ("unavailable" in google) return null;
-  return google.books.find((other) => other.coverUrl && sameWork(entry, other))?.coverUrl ?? null;
+  return firstValidCover(
+    google.books.filter((other) => sameWork(entry, other)).map((other) => other.coverUrl),
+  );
 }
 
 /** Même œuvre : titre identique (sans casse ni accents) et un nom d'auteur en commun. */
-function sameWork(a: CatalogEntry, b: CatalogEntry): boolean {
+export function sameWork(a: CatalogEntry, b: CatalogEntry): boolean {
   if (normalizeText(a.title) !== normalizeText(b.title)) return false;
   const names = new Set(a.authors.flatMap((name) => normalizeText(name).split(" ")));
   return b.authors.some((name) =>

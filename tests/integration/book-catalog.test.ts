@@ -31,18 +31,36 @@ const BNF_DUNE = `<srw:searchRetrieveResponse><oai_dc:dc>
   <dc:format>1 vol. (828 p.) ; 18 cm</dc:format>
 </oai_dc:dc></srw:searchRetrieveResponse>`;
 
+/** En-tête PNG d'une image aux dimensions données : assez pour la vérification de couverture. */
+function pngResponse(width: number, height: number) {
+  const bytes = new Uint8Array(24);
+  bytes.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 0x49, 0x48, 0x44, 0x52]);
+  const view = new DataView(bytes.buffer);
+  view.setUint32(16, width);
+  view.setUint32(20, height);
+  return new Response(bytes, { headers: { "content-type": "image/png" } });
+}
+
 /**
  * Faux services distants : Google Books renvoie `items` (ou le statut donné), Open Library
- * et la BnF ne connaissent rien sauf mention contraire (`others`).
+ * et la BnF ne connaissent rien sauf mention contraire (`others`). Toute image demandée
+ * existe, sauf celles dont l'URL contient l'un des `missingCovers`.
  */
 const fetchMock = vi.fn<typeof fetch>();
 
 function googleReplies(
   reply: { items?: unknown[] } | number,
-  others: { bnf?: string; openLibrary?: unknown } = {},
+  others: { bnf?: string; openLibrary?: unknown; missingCovers?: string[] } = {},
 ) {
   fetchMock.mockImplementation(async (input) => {
     const url = String(input);
+    const isImage =
+      /\.jpg|\/books\/content|\/couverture/.test(url) && !url.includes("googleapis.com");
+    if (isImage) {
+      return others.missingCovers?.some((part) => url.includes(part))
+        ? new Response(null, { status: 404 })
+        : pngResponse(400, 600);
+    }
     if (url.includes("catalogue.bnf.fr")) {
       return new Response(others.bnf ?? "<srw:searchRetrieveResponse/>");
     }
@@ -70,7 +88,13 @@ async function search(params: Record<string, string>) {
   );
   const body = await res.json();
   return body.data as {
-    books: { id: string; title: string; authors: string[]; pageCount: number | null }[];
+    books: {
+      id: string;
+      title: string;
+      authors: string[];
+      pageCount: number | null;
+      coverUrl: string | null;
+    }[];
     unavailable: string | null;
   };
 }
@@ -128,6 +152,37 @@ describe("GET /api/books/search — catalogue partagé", () => {
       isbn: "9782266320481",
       pageCount: 828,
       coverUrl: "https://covers.openlibrary.org/b/id/1-L.jpg",
+    });
+  });
+
+  it("écarte une couverture absente au profit de la couverture BnF de l'édition", async () => {
+    googleReplies(
+      { items: [DUNE] },
+      {
+        bnf: BNF_DUNE.replace(
+          "</oai_dc:dc>",
+          "<dc:identifier>http://catalogue.bnf.fr/ark:/12148/cb47290539v</dc:identifier></oai_dc:dc>",
+        ),
+        missingCovers: ["dune.jpg"],
+      },
+    );
+
+    const { books } = await search({ isbn: "9782266320481" });
+
+    expect(books[0].coverUrl).toBe(
+      "https://catalogue.bnf.fr/couverture?appName=NE&idArk=ark%3A%2F12148%2Fcb47290539v&couverture=1",
+    );
+  });
+
+  it("se rabat sur la couverture Google par ISBN, sans quota", async () => {
+    googleReplies(429, { bnf: BNF_DUNE });
+
+    const { books } = await search({ isbn: "9782266320481" });
+
+    expect(books[0]).toMatchObject({
+      pageCount: 828,
+      coverUrl:
+        "https://books.google.com/books/content?vid=ISBN9782266320481&printsec=frontcover&img=1&zoom=1",
     });
   });
 

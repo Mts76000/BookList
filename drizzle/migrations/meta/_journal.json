@@ -92,6 +92,13 @@
       "when": 1793395798093,
       "tag": "0012_half_star_rating_status_changed",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1793439865577,
+      "tag": "0013_book_metadata_checked",
+      "breakpoints": true
     }
   ]
 }

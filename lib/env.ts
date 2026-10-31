@@ -26,6 +26,10 @@ const envSchema = z.object({
   // still works but hits anonymous rate limits (HTTP 429) under load.
   GOOGLE_BOOKS_API_KEY: optional(z.string().min(1)),
 
+  // Optionnel : Hardcover, source supplémentaire de couvertures et de nombres de pages pour
+  // la recherche par ISBN (lib/book-sources.ts). Jeton personnel, valable un an.
+  HARDCOVER_API_TOKEN: optional(z.string().min(1)),
+
   NEXT_PUBLIC_UMAMI_WEBSITE_ID: optional(z.string().min(1)),
 
   RESEND_API_KEY: z.string().min(1),

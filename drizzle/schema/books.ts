@@ -74,6 +74,9 @@ export const book = pgTable(
     seriesName: text("series_name"),
     seriesIndex: integer("series_index"),
     seriesTotal: integer("series_total"),
+    // Dernière tentative de compléter la fiche (couverture, pages, résumé) auprès des sources
+    // de livres, par lib/library-enrichment.ts. NULL : jamais vérifiée.
+    metadataCheckedAt: timestamp("metadata_checked_at"),
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
@@ -91,6 +94,7 @@ export const book = pgTable(
     index("book_userRating_idx").on(table.userRating),
     index("book_status_idx").on(table.status),
     index("book_userId_seriesName_idx").on(table.userId, table.seriesName),
+    index("book_metadataCheckedAt_idx").on(table.metadataCheckedAt),
   ],
 );
 

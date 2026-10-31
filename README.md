@@ -37,6 +37,7 @@ variables propres à BookList, en plus de celles du socle :
 | Variable                                            | Description                                                                                                                         |
 | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | `GOOGLE_BOOKS_API_KEY`                              | Recherche de livres. Optionnelle en dev, **indispensable en production** : sans clé, le quota anonyme de Google est vite épuisé.    |
+| `HARDCOVER_API_TOKEN`                               | Optionnelle. Source supplémentaire de couvertures et de nombres de pages. Jeton personnel Hardcover, à renouveler chaque année.     |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`        | Abonnement Premium. Sans elles, les boutons d'abonnement affichent « Bientôt disponible ».                                          |
 | `STRIPE_PRICE_MONTHLY`, `STRIPE_PRICE_YEARLY`       | Identifiants des deux prix Stripe (2,99 €/mois et 24 €/an). L'essai de 14 jours est fixé par le code au paiement, pas sur les prix. |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | Rappels de lecture (notifications push). Paire générée par `npx web-push generate-vapid-keys`.                                      |
@@ -124,11 +125,12 @@ et Tailwind manqueraient au build, et le script `prepare` tolère l'absence de h
 À créer dans les Scheduled Tasks de Coolify, chacune en `POST` avec l'en-tête
 `Authorization: Bearer <CRON_SECRET>` :
 
-| Route                              | Fréquence     | Rôle                                                                        |
-| ---------------------------------- | ------------- | --------------------------------------------------------------------------- |
-| `/api/cron/cleanup-expired-tokens` | une fois/jour | Supprime les jetons et sessions expirés.                                    |
-| `/api/cron/purge-search-cache`     | une fois/jour | Purge les recherches Google Books et les correspondances Wikidata expirées. |
-| `/api/cron/reading-reminders`      | chaque soir   | Envoie les rappels de lecture (nécessite les clés VAPID).                   |
+| Route                              | Fréquence         | Rôle                                                                                |
+| ---------------------------------- | ----------------- | ----------------------------------------------------------------------------------- |
+| `/api/cron/cleanup-expired-tokens` | une fois/jour     | Supprime les jetons et sessions expirés.                                            |
+| `/api/cron/purge-search-cache`     | une fois/jour     | Purge les recherches Google Books et les correspondances Wikidata expirées.         |
+| `/api/cron/reading-reminders`      | chaque soir       | Envoie les rappels de lecture (nécessite les clés VAPID).                           |
+| `/api/cron/enrich-library`         | toutes les 10 min | Complète couvertures, pages et résumés manquants des bibliothèques, par lots de 30. |
 
 ### Mise en production
 

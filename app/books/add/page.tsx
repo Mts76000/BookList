@@ -114,7 +114,9 @@ export default function AddBookPage() {
       current && current.id === entry.id
         ? {
             ...current,
-            coverUrl: current.coverUrl ?? edition.coverUrl,
+            // La couverture de la fiche ISBN a été vérifiée côté serveur et correspond à
+            // cette édition : elle remplace celle du résultat texte.
+            coverUrl: edition.coverUrl ?? current.coverUrl,
             pageCount: edition.pageCount ?? current.pageCount,
             description: current.description ?? edition.description,
             publishedDate: current.publishedDate ?? edition.publishedDate,

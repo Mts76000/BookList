@@ -1,5 +1,6 @@
 /**
- * Hôtes des couvertures fournies par la recherche (Google Books, Open Library). Elles passent
+ * Hôtes des couvertures fournies par la recherche et l'enrichissement de la bibliothèque
+ * (Google Books, Open Library, BnF, Hardcover). Elles passent
  * par l'optimiseur d'images de Next.js (voir `images.remotePatterns` dans next.config.ts) et
  * par le cache hors-ligne du service worker.
  *
@@ -15,6 +16,8 @@ export const OPTIMIZED_COVER_HOSTNAMES = [
   // sous-domaine change d'une image à l'autre (ia801601, ia601601...).
   "archive.org",
   "*.archive.org",
+  "catalogue.bnf.fr",
+  "assets.hardcover.app",
 ] as const;
 
 export function isOptimizedCoverUrl(url: string): boolean {
