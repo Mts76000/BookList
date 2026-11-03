@@ -7,7 +7,7 @@ import {
 } from "./demo-library";
 
 /**
- * Bibliothèque du second compte de démonstration (voir drizzle/seed-demo.ts) : celle de
+ * Bibliothèque du second compte de démonstration (voir drizzle/seed.ts) : celle de
  * Lucas, inscrit depuis le début de l'année, amateur de polars et de science-fiction, qui
  * n'a pas pris Premium. Il montre l'application telle que la voit un compte gratuit : ses
  * sagas, citations et statistiques de base, mais ni sagas repérées ni tomes manquants à
