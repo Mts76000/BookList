@@ -18,6 +18,9 @@ export async function mockTurnstile(page: Page) {
           return "mock-widget";
         },
         reset: () => {},
+        // Appelé au démontage du widget (changement de page) : sans lui, la navigation
+        // qui suit la connexion ou l'inscription plantait sur la page d'erreur globale.
+        remove: () => {},
       };`,
     }),
   );
@@ -54,15 +57,17 @@ export function uniqueEmail(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 10_000)}@example.com`;
 }
 
-let ipCounter = 0;
-
 /**
  * A distinct fake IP per test/context. The register/login rate limiters (lib/rate-limit.ts)
  * are keyed by IP; every request from a local Playwright browser otherwise looks identical
  * to the server, so tests would share (and exhaust) one rate-limit bucket instead of each
  * getting its own, as real distinct users would.
+ *
+ * Tiré au hasard plutôt que compté : un compteur repartait de zéro dans chaque fichier de
+ * test, et books.spec.ts réutilisait les IP qu'auth.spec.ts venait d'épuiser avec son test
+ * de limitation, contre le même serveur.
  */
 export function uniqueIp() {
-  ipCounter += 1;
-  return `10.10.0.${ipCounter}`;
+  const byte = () => Math.floor(Math.random() * 254) + 1;
+  return `10.${byte()}.${byte()}.${byte()}`;
 }
