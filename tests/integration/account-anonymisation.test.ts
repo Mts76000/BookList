@@ -50,8 +50,8 @@ async function seedUserWithData(): Promise<string> {
         VALUES (${randomUUID()}, 'Excellent', ${bookId}, ${userId})`,
   );
   await db.execute(
-    sql`INSERT INTO "reading_activity" (id, pages_read, date, user_id)
-        VALUES (${randomUUID()}, 30, '2026-01-15', ${userId})`,
+    sql`INSERT INTO "reading_activity" (pages_read, date, user_id)
+        VALUES (30, '2026-01-15', ${userId})`,
   );
   return userId;
 }

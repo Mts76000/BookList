@@ -8,6 +8,7 @@ import {
   date,
   index,
   uniqueIndex,
+  primaryKey,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { user } from "@/drizzle/schema/auth";
@@ -50,9 +51,6 @@ export const book = pgTable(
     publishedDate: text("published_date"),
     // Note sur 5 par pas de 0,5 (demi-étoiles) : `real` représente ces valeurs exactement.
     userRating: real("user_rating"),
-    // Conservé de la v1 : plus écrit par l'application, mais d'anciennes lignes peuvent
-    // encore porter une valeur qu'on ne veut pas perdre à la migration.
-    userReadDate: timestamp("user_read_date"),
     userStartDate: timestamp("user_start_date"),
     userEndDate: timestamp("user_end_date"),
     status: bookStatus("status").notNull().default("FINISHED"),
@@ -86,13 +84,13 @@ export const book = pgTable(
       .defaultNow()
       .$onUpdate(() => new Date()),
   },
+  // Toutes les requêtes filtrent d'abord par utilisateur : les deux index qui commencent par
+  // `userId` servent aussi aux recherches sur `userId` seul. Un index global sur le statut ou
+  // la note ne servirait jamais.
   (table) => [
     // Un même ISBN ne peut apparaître qu'une fois par bibliothèque. Postgres ne considère
     // pas deux NULL comme égaux : les livres sans ISBN ne sont donc pas contraints.
     uniqueIndex("book_userId_isbn_idx").on(table.userId, table.isbn),
-    index("book_userId_idx").on(table.userId),
-    index("book_userRating_idx").on(table.userRating),
-    index("book_status_idx").on(table.status),
     index("book_userId_seriesName_idx").on(table.userId, table.seriesName),
     index("book_metadataCheckedAt_idx").on(table.metadataCheckedAt),
   ],
@@ -127,13 +125,13 @@ export const comment = pgTable(
 
 /**
  * Pages lues par utilisateur et par jour, source du graphe de contribution. Une seule ligne
- * par utilisateur et par date : les ajouts successifs incrémentent `pagesRead`.
+ * par utilisateur et par date, d'où la clé primaire (userId, date) : les ajouts successifs
+ * incrémentent `pagesRead`. Elle sert aussi aux lectures, toujours filtrées par utilisateur.
  * Suppression physique en cascade depuis l'utilisateur.
  */
 export const readingActivity = pgTable(
   "reading_activity",
   {
-    id: entityId(),
     pagesRead: integer("pages_read").notNull().default(0),
     // Jour civil (`date`) et non timestamp : la v1 stockait un timestamp ramené à minuit
     // dans le fuseau du serveur, ce qui rendait la contrainte d'unicité (userId, date)
@@ -143,11 +141,7 @@ export const readingActivity = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
   },
-  (table) => [
-    uniqueIndex("reading_activity_userId_date_idx").on(table.userId, table.date),
-    index("reading_activity_userId_idx").on(table.userId),
-    index("reading_activity_date_idx").on(table.date),
-  ],
+  (table) => [primaryKey({ columns: [table.userId, table.date] })],
 );
 
 /**
