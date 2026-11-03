@@ -120,6 +120,33 @@ Le Dockerfile résiste néanmoins à un `NODE_ENV=production` injecté par la pl
 `npm ci --include=dev` force l'installation des devDependencies, sans lesquelles TypeScript
 et Tailwind manqueraient au build, et le script `prepare` tolère l'absence de husky.
 
+### Préproduction (branche `develop`)
+
+Deux branches longues : `main` est la production, `develop` la préproduction. Le travail se
+fait sur une branche dédiée, fusionnée dans `develop` pour être vérifiée en ligne, puis
+`develop` est fusionnée dans `main` pour partir en production.
+
+Dans Coolify, la préproduction est une **seconde application**, distincte de celle de
+production :
+
+1. Même dépôt, branche `develop`, build pack « Dockerfile », déploiement automatique à chaque
+   push.
+2. **Sa propre base Postgres**, jamais celle de production : le conteneur applique les
+   migrations à son démarrage, une migration en cours de test toucherait sinon les vraies
+   données.
+3. Un domaine à part (par exemple `preview.<domaine>`) dans `NEXT_PUBLIC_APP_URL`, et
+   `NEXT_PUBLIC_IS_PREVIEW=true` pour que `robots.txt` interdise l'indexation.
+4. Ce domaine ajouté aux URI de redirection Google OAuth
+   (`<APP_URL>/api/auth/callback/google`) et aux noms d'hôte du widget Turnstile.
+5. Stripe en clés de test (`sk_test_…`) avec son propre webhook, ou laissé vide : les offres
+   s'affichent, le bouton d'abonnement est désactivé.
+6. Les comptes de démonstration se créent depuis le terminal du conteneur
+   (`node drizzle/seed-demo.mjs`).
+
+Les « Preview Deployments » de Coolify (une URL par pull request) restent possibles en plus,
+à condition de renseigner leurs variables dans l'onglet dédié avec une base distincte : par
+défaut elles reprennent celles de l'application, base de production comprise.
+
 ### Tâches planifiées
 
 À créer dans les Scheduled Tasks de Coolify, chacune en `POST` avec l'en-tête
