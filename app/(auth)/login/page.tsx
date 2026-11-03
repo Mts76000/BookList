@@ -53,15 +53,18 @@ export default function LoginPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-foreground text-2xl font-semibold tracking-tight">Connexion</h1>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Pas encore de compte ?{" "}
-          <Link href="/register" className="text-primary font-medium hover:underline">
-            Créer un compte
-          </Link>
-        </p>
-      </div>
+      {/* En tête de page : beaucoup arrivent ici en cherchant à s'inscrire. */}
+      <Link
+        href="/register"
+        className="border-border bg-card hover:border-accent-300 block rounded-[var(--radius-sm)] border px-4 py-3 text-sm transition-colors duration-200"
+      >
+        <span className="text-muted-foreground">Pas encore de compte ?</span>{" "}
+        <span className="text-accent-600 font-medium whitespace-nowrap">
+          Créer un compte gratuit →
+        </span>
+      </Link>
+
+      <h1 className="text-foreground text-2xl font-semibold tracking-tight">Connexion</h1>
 
       <GoogleButton onClick={handleGoogleSignIn} />
 
