@@ -1,0 +1,24 @@
+# BookList
+
+> BookList est une application de suivi de lecture en français : bibliothèque, statuts (à lire, en cours, terminé), notes, avis, dates de lecture, citations, sagas, objectif annuel, statistiques et bilan annuel à partager. On ajoute un livre en scannant son code-barres (ISBN) avec l'appareil photo. BookList s'utilise dans le navigateur et s'installe sur l'écran d'accueil d'un iPhone ou d'un Android comme une application, avec un accès hors ligne.
+
+## Formules
+
+- Gratuit : jusqu'à 50 livres et 30 citations, sans carte bancaire.
+- Premium : 24 € par an (soit 2 € par mois) ou 2,99 € au mois, avec 14 jours d'essai gratuit. Bibliothèque et citations illimitées, sagas complétées, pile à lire triée selon vos goûts, statistiques avancées, défis personnels.
+
+## Import depuis Goodreads et StoryGraph
+
+L'import d'un export CSV Goodreads ou StoryGraph est gratuit et complet, même au-delà des 50 livres du compte gratuit : statut de chaque livre, notes, texte des avis, dates de lecture, étagères, format et sagas sont repris.
+
+## Données
+
+Pas de publicité, pas de revente de données : l'abonnement Premium est la seule source de revenus de BookList. Les données s'exportent à tout moment.
+
+## Pages
+
+- [Accueil](https://booklist.mathis-lamotte.fr/) : présentation de l'application, formules et questions fréquentes
+- [Alternative à Goodreads](https://booklist.mathis-lamotte.fr/alternative-goodreads) : importer sa bibliothèque Goodreads ou StoryGraph
+- [Créer un compte](https://booklist.mathis-lamotte.fr/register) : inscription gratuite
+- [CGU et CGV](https://booklist.mathis-lamotte.fr/legal/terms) : conditions d'utilisation et de vente
+- [Confidentialité](https://booklist.mathis-lamotte.fr/legal/privacy) : politique de confidentialité

@@ -14,9 +14,20 @@ export async function Footer() {
   return (
     <footer className="border-border border-t px-6 py-6">
       <div className="text-muted-foreground mx-auto flex w-full max-w-5xl flex-col items-center justify-between gap-3 text-center text-xs sm:flex-row sm:text-left">
-        <p>
-          © {new Date().getFullYear()} {env.NEXT_PUBLIC_APP_NAME}. Tous droits réservés.
-        </p>
+        <div className="flex flex-col gap-1">
+          <p>
+            © {new Date().getFullYear()} {env.NEXT_PUBLIC_APP_NAME}. Tous droits réservés.
+          </p>
+          <p>
+            Site réalisé par{" "}
+            <a
+              href="https://mathis-lamotte.fr/realisations"
+              className="hover:text-foreground underline"
+            >
+              Mathis Lamotte, développeur web à Rouen
+            </a>
+          </p>
+        </div>
         <nav className="flex flex-wrap justify-center gap-x-4 gap-y-2">
           <Link href="/alternative-goodreads" className="hover:text-foreground">
             Alternative à Goodreads

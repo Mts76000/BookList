@@ -18,7 +18,12 @@ import { StickySignupCta } from "@/components/sticky-signup-cta";
 import { env } from "@/lib/env";
 import { FREE_BOOK_LIMIT, PREMIUM_PRICES } from "@/lib/plans";
 
-const FEATURES = [
+const FEATURES: {
+  index: string;
+  title: string;
+  description: string;
+  link?: { lead: string; label: string; href: string };
+}[] = [
   {
     index: "01",
     title: "Suivi de lecture",
@@ -47,7 +52,12 @@ const FEATURES = [
     index: "05",
     title: "Import de votre bibliothèque",
     description:
-      "Vous venez de Goodreads ou de StoryGraph, ou vous tenez vos lectures dans un tableur ? Déposez votre fichier CSV tel quel : statuts, notes et dates de lecture sont repris en une fois, même au-delà de 50 livres.",
+      "Vous venez de Goodreads ou de StoryGraph, ou vous tenez vos lectures dans un tableur ? Déposez votre fichier CSV tel quel : statuts, notes, avis et dates de lecture sont repris en une fois, même au-delà de 50 livres.",
+    link: {
+      lead: "Vous venez de Goodreads ?",
+      label: "Voir l'alternative à Goodreads",
+      href: "/alternative-goodreads",
+    },
   },
   {
     index: "06",
@@ -129,7 +139,7 @@ const STEPS = [
 
 export const metadata: Metadata = {
   title: {
-    absolute: `${env.NEXT_PUBLIC_APP_NAME} : application de suivi de lecture et carnet de lecture`,
+    absolute: `Suivi de lecture et carnet de lecture gratuit | ${env.NEXT_PUBLIC_APP_NAME}`,
   },
   description: SEO_DESCRIPTION,
   alternates: { canonical: canonicalUrl("/") },
@@ -143,8 +153,7 @@ export const metadata: Metadata = {
 const structuredData = [
   applicationJsonLd([
     { name: "Gratuit", value: 0 },
-    { name: "Premium mensuel", value: PREMIUM_PRICES.monthly.value },
-    { name: "Premium annuel", value: PREMIUM_PRICES.yearly.value },
+    { name: "Premium annuel", value: PREMIUM_PRICES.yearly.value, billingDuration: "P1Y" },
   ]),
   faqJsonLd(FAQ),
 ];
@@ -166,11 +175,12 @@ export default async function HomePage() {
               <div className="bg-card mb-4 inline-flex items-center gap-1.5 rounded-full border border-stone-200 px-3 py-1 text-xs font-medium text-stone-500 sm:mb-6 sm:px-4 sm:py-1.5">
                 Application de suivi de lecture
               </div>
-              <h1 className="font-serif text-[2.5rem] leading-[1.05] text-balance text-stone-900 sm:text-6xl lg:text-7xl">
-                Retrouvez le plaisir de lire, sans perdre le fil.
+              <h1 className="font-serif text-[2.25rem] leading-[1.05] text-balance text-stone-900 sm:text-5xl lg:text-6xl">
+                L&apos;application de suivi de lecture qui vous fait retrouver le plaisir de lire
               </h1>
               <p className="mt-4 max-w-md text-base text-stone-500 sm:mt-6 sm:text-lg">
-                Vos lectures, vos notes et vos statistiques, réunies dans un seul carnet.
+                Retrouvez le plaisir de lire, sans perdre le fil. Vos lectures, vos notes et vos
+                statistiques, réunies dans un seul carnet.
               </p>
               <div
                 id="hero-cta"
@@ -237,7 +247,20 @@ export default async function HomePage() {
                 <h2 className="font-serif text-xl text-stone-900 sm:w-56 sm:shrink-0">
                   {feature.title}
                 </h2>
-                <p className="text-sm leading-relaxed text-stone-500">{feature.description}</p>
+                <div className="text-sm leading-relaxed text-stone-500">
+                  <p>{feature.description}</p>
+                  {feature.link && (
+                    <p className="mt-2">
+                      {feature.link.lead}{" "}
+                      <Link
+                        href={feature.link.href}
+                        className="text-accent-700 font-medium hover:underline"
+                      >
+                        {feature.link.label}
+                      </Link>
+                    </p>
+                  )}
+                </div>
               </div>
             ))}
           </div>

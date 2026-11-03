@@ -68,6 +68,26 @@ function Cell({ value, premium = false }: { value: Included; premium?: boolean }
 
 export const FAQ = [
   {
+    question: "Quelle application pour suivre ses lectures en français ?",
+    answer:
+      "BookList, en français de bout en bout : scan du code-barres, avis, dates de lecture, sagas et objectif annuel. Le compte gratuit suffit pour commencer.",
+  },
+  {
+    question: "BookList fonctionne-t-il sur iPhone et Android ?",
+    answer:
+      "Oui. BookList s'utilise dans le navigateur et s'installe sur l'écran d'accueil comme une application, avec un accès hors ligne.",
+  },
+  {
+    question: "Peut-on tenir un carnet de lecture en ligne avec BookList ?",
+    answer:
+      "Oui : pour chaque livre, votre note, votre avis, vos dates de lecture et vos citations, retrouvés sur tous vos appareils et exportables à tout moment.",
+  },
+  {
+    question: "En quoi BookList est-il différent de Goodreads ou Babelio ?",
+    answer:
+      "BookList est le seul des trois à être en français et sans aucune publicité : Goodreads n'existe qu'en anglais et affiche de la publicité, Babelio vend des espaces publicitaires aux éditeurs. BookList repère aussi les tomes qui manquent à vos sagas et les ajoute à votre pile en un clic avec Premium. Et votre bibliothèque Goodreads s'importe en une minute, avis compris.",
+  },
+  {
     question: "Puis-je essayer Premium avant de payer ?",
     answer: `Oui : ${TRIAL_DAYS} jours d'essai gratuit sur les deux formules. Rien n'est prélevé pendant l'essai, et une résiliation avant la fin ne coûte rien : votre compte repasse simplement en gratuit.`,
   },
@@ -157,7 +177,7 @@ export function PricingSection() {
   );
 }
 
-/** Questions fréquentes sur l'offre, dépliables. */
+/** Questions fréquentes sur l'application et l'offre, dépliables. */
 export function FaqSection() {
   return (
     <section className="mx-auto max-w-3xl px-4 py-20 sm:px-6 sm:py-28">

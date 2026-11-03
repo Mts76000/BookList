@@ -139,6 +139,13 @@ export default function RegisterPage() {
           Créer mon compte
         </Button>
       </form>
+
+      <p className="text-muted-foreground text-center text-sm">
+        Vous quittez Goodreads ?{" "}
+        <Link href="/alternative-goodreads" className="text-primary font-medium hover:underline">
+          Importez votre bibliothèque
+        </Link>
+      </p>
     </div>
   );
 }

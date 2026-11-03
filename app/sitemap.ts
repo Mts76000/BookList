@@ -12,14 +12,14 @@ const PAGES: {
   changeFrequency: "monthly" | "yearly";
   priority: number;
 }[] = [
-  { path: "/", lastModified: "2026-10-30", changeFrequency: "monthly", priority: 1 },
+  { path: "/", lastModified: "2026-11-03", changeFrequency: "monthly", priority: 1 },
   {
     path: "/alternative-goodreads",
-    lastModified: "2026-10-30",
+    lastModified: "2026-11-03",
     changeFrequency: "monthly",
     priority: 0.8,
   },
-  { path: "/register", lastModified: "2026-10-30", changeFrequency: "yearly", priority: 0.5 },
+  { path: "/register", lastModified: "2026-11-03", changeFrequency: "yearly", priority: 0.5 },
   { path: "/legal/notice", lastModified: "2026-10-30", changeFrequency: "yearly", priority: 0.2 },
   { path: "/legal/terms", lastModified: "2026-10-30", changeFrequency: "yearly", priority: 0.2 },
   { path: "/legal/privacy", lastModified: "2026-10-30", changeFrequency: "yearly", priority: 0.2 },

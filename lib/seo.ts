@@ -10,11 +10,11 @@ export function canonicalUrl(path = "/"): string {
 }
 
 /**
- * Description pour les moteurs de recherche : moins de 160 caractères, avec les termes que
+ * Description pour les moteurs de recherche : 150 caractères au plus, avec les termes que
  * cherchent les lecteurs (suivi de lecture, carnet de lecture, Goodreads).
  */
 export const SEO_DESCRIPTION =
-  "Application gratuite de suivi de lecture : carnet de lecture, objectifs, statistiques, sagas et import Goodreads. Scannez vos livres et suivez vos lectures.";
+  "Application gratuite de suivi de lecture : carnet, objectif annuel, stats, sagas. Scannez l'ISBN, importez Goodreads. Sans pub, en français.";
 
 /** Organisation et site, déclarés sur toutes les pages (voir app/layout.tsx). */
 export function organizationJsonLd() {
@@ -40,11 +40,16 @@ export function organizationJsonLd() {
   };
 }
 
-/** L'application et ses offres, aux prix de lib/plans.ts. */
-export function applicationJsonLd(prices: { name: string; value: number }[]) {
+/**
+ * L'application et ses offres, aux prix de lib/plans.ts. `billingDuration` (durée ISO 8601,
+ * `P1Y` pour un an) précise la période d'un abonnement.
+ */
+export function applicationJsonLd(
+  prices: { name: string; value: number; billingDuration?: string }[],
+) {
   return {
     "@context": "https://schema.org",
-    "@type": "WebApplication",
+    "@type": "SoftwareApplication",
     name: env.NEXT_PUBLIC_APP_NAME,
     url: env.NEXT_PUBLIC_APP_URL,
     description: SEO_DESCRIPTION,
@@ -56,6 +61,14 @@ export function applicationJsonLd(prices: { name: string; value: number }[]) {
       name: price.name,
       price: price.value.toFixed(2),
       priceCurrency: "EUR",
+      ...(price.billingDuration && {
+        priceSpecification: {
+          "@type": "UnitPriceSpecification",
+          price: price.value.toFixed(2),
+          priceCurrency: "EUR",
+          billingDuration: price.billingDuration,
+        },
+      }),
     })),
   };
 }
