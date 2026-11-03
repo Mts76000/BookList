@@ -1,17 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CheckCircle } from "@phosphor-icons/react/ssr";
+import { Check, CheckCircle, X } from "@phosphor-icons/react/ssr";
 import { canonicalUrl, faqJsonLd, jsonLdScript } from "@/lib/seo";
 import { buttonClasses } from "@/components/ui/button";
 import { PublicHeader } from "@/components/public-header";
 import { Footer } from "@/components/footer";
-import { FREE_BOOK_LIMIT } from "@/lib/plans";
+import { FREE_BOOK_LIMIT, PREMIUM_PRICES, TRIAL_DAYS } from "@/lib/plans";
 
 const description =
-  "Quittez Goodreads sans rien perdre : importez votre bibliothèque Goodreads ou StoryGraph dans BookList, l'application de suivi de lecture en français.";
+  "Quittez Goodreads sans rien perdre : importez livres, notes et dates en une minute. Application de lecture en français, sans pub, gratuite.";
 
 export const metadata: Metadata = {
-  title: "Alternative à Goodreads en français : importez votre bibliothèque",
+  // Complété en « … | BookList » par le modèle de titre de app/layout.tsx.
+  title: "Alternative à Goodreads en français et gratuite",
   description,
   alternates: { canonical: canonicalUrl("/alternative-goodreads") },
   openGraph: {
@@ -36,6 +37,7 @@ const STORYGRAPH_STEPS = [
 const IMPORTED = [
   "Le statut de chaque livre : lu, en cours, à lire, et abandonné depuis StoryGraph",
   "Vos notes et vos dates de lecture",
+  "Le texte de vos avis, et vos notes privées Goodreads, en notes du livre",
   "Vos étagères, et le format (papier, numérique, audio)",
   "Les sagas et numéros de tome indiqués dans les titres Goodreads",
   "L'ISBN, qui complète couverture et résumé quand le livre est connu",
@@ -68,6 +70,64 @@ const REASONS = [
   },
 ];
 
+const COMPETITORS = ["Goodreads", "StoryGraph", "Babelio"] as const;
+
+/**
+ * Comparatif : seuls les critères où BookList se distingue, plus le scan pour montrer qu'on
+ * ne perd rien en changeant. Publicité comparative : chaque case des autres applications doit
+ * rester exacte et vérifiable (fiches App Store, pages d'aide et feuilles de route publiques,
+ * vérifiées à la date de COMPARISON_CHECKED, à revoir quand elle vieillit).
+ */
+const COMPARISON_CHECKED = "novembre 2026";
+
+/** `true` : oui ; `false` : non ; une chaîne : oui, avec cette précision. */
+type Available = boolean | string;
+
+const COMPARISON: {
+  label: string;
+  booklist: Available;
+  others: Record<(typeof COMPETITORS)[number], Available>;
+}[] = [
+  {
+    label: "Interface en français",
+    booklist: true,
+    others: { Goodreads: false, StoryGraph: false, Babelio: true },
+  },
+  {
+    // Goodreads affiche de la publicité ; Babelio vend des espaces aux éditeurs.
+    label: "Sans publicité",
+    booklist: true,
+    others: { Goodreads: false, StoryGraph: true, Babelio: false },
+  },
+  {
+    // Babelio prévient des nouvelles sorties, mais ne cherche pas les tomes déjà parus que
+    // vous n'avez pas ; StoryGraph n'a pas de suivi de séries (demande ouverte sur sa feuille
+    // de route publique).
+    label: "Tomes manquants de vos sagas trouvés et ajoutés en un clic",
+    booklist: "Avec Premium",
+    others: { Goodreads: false, StoryGraph: false, Babelio: false },
+  },
+  {
+    label: "Scan du code-barres",
+    booklist: true,
+    others: { Goodreads: true, StoryGraph: true, Babelio: true },
+  },
+];
+
+function Availability({ value, highlight = false }: { value: Available; highlight?: boolean }) {
+  if (value === true)
+    return (
+      <Check
+        className={`mx-auto h-5 w-5 ${highlight ? "text-accent-600" : "text-moss-500"}`}
+        weight="bold"
+        aria-label="Oui"
+      />
+    );
+  if (value === false)
+    return <X className="mx-auto h-4 w-4 text-stone-300" weight="bold" aria-label="Non" />;
+  return <span className="text-xs font-medium text-stone-900 sm:text-sm">{value}</span>;
+}
+
 const FAQ = [
   {
     question: "L'import est-il gratuit ?",
@@ -88,13 +148,23 @@ const FAQ = [
     answer:
       "Oui. BookList s'utilise dans le navigateur et s'installe sur l'écran d'accueil comme une application, sur iPhone comme sur Android.",
   },
+  {
+    question: "Goodreads existe-t-il en français ?",
+    answer:
+      "Non, l'interface de Goodreads n'existe qu'en anglais. BookList est en français de bout en bout, et reprend en une minute toute votre bibliothèque Goodreads : livres, notes, avis, dates et étagères.",
+  },
+  {
+    question: "Mes avis Goodreads sont-ils importés ?",
+    answer:
+      "Oui. Le texte de chaque avis et vos notes privées deviennent des notes du livre dans BookList, avec votre note en étoiles, le statut, la date de fin de lecture et vos étagères.",
+  },
 ];
 
-function Steps({ title, steps }: { title: string; steps: string[] }) {
+function Steps({ title, steps }: { title?: string; steps: string[] }) {
   return (
     <div className="card p-5 sm:p-6">
-      <h3 className="font-serif text-xl text-stone-900">{title}</h3>
-      <ol className="mt-4 space-y-3">
+      {title && <h3 className="mb-4 font-serif text-xl text-stone-900">{title}</h3>}
+      <ol className="space-y-3">
         {steps.map((step, index) => (
           <li key={step} className="flex gap-3 text-sm text-stone-700">
             <span className="bg-accent-50 text-accent-700 flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold">
@@ -139,9 +209,12 @@ export default function GoodreadsAlternativePage() {
 
         <section className="mx-auto max-w-4xl px-4 pb-16 sm:px-6">
           <h2 className="font-serif text-3xl text-stone-900">Importer en trois étapes</h2>
-          <div className="mt-6 grid gap-4 md:grid-cols-2">
+          <div className="mt-6">
             <Steps title="Depuis Goodreads" steps={GOODREADS_STEPS} />
-            <Steps title="Depuis StoryGraph" steps={STORYGRAPH_STEPS} />
+          </div>
+          <h2 className="mt-12 font-serif text-3xl text-stone-900">Vous venez de StoryGraph ?</h2>
+          <div className="mt-6">
+            <Steps steps={STORYGRAPH_STEPS} />
           </div>
           <div className="mt-6 rounded-[var(--radius-md)] border border-stone-200 bg-white p-5 sm:p-6">
             <h3 className="font-medium text-stone-900">Ce qui est repris</h3>
@@ -172,6 +245,96 @@ export default function GoodreadsAlternativePage() {
               ))}
             </div>
           </div>
+        </section>
+
+        <section className="mx-auto max-w-4xl px-4 pt-16 sm:px-6">
+          <h2 className="font-serif text-3xl text-balance text-stone-900">
+            La seule en français et sans publicité
+          </h2>
+          <p className="mt-3 max-w-2xl text-stone-500">
+            Face à Goodreads, StoryGraph et Babelio, BookList est la seule application qui coche
+            toutes les cases.
+          </p>
+          {/* Le tableau défile seul sur petit écran : la page, elle, ne défile jamais en largeur. */}
+          <div className="-mx-4 mt-6 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+            <table className="w-full min-w-[36rem] border-collapse text-left text-sm">
+              <caption className="sr-only">
+                Comparatif de BookList, Goodreads, StoryGraph et Babelio
+              </caption>
+              <thead>
+                <tr className="border-b border-stone-200 text-xs font-medium tracking-wide text-stone-500 uppercase">
+                  <th scope="col" className="w-[36%] py-3 pr-3 font-medium">
+                    <span className="sr-only">Critère</span>
+                  </th>
+                  <th
+                    scope="col"
+                    className="text-accent-700 bg-accent-50/40 px-3 py-3 text-center font-medium"
+                  >
+                    BookList
+                  </th>
+                  {COMPETITORS.map((name) => (
+                    <th key={name} scope="col" className="px-3 py-3 text-center font-medium">
+                      {name}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {COMPARISON.map((row) => (
+                  <tr key={row.label} className="border-t border-stone-100">
+                    <th scope="row" className="py-3 pr-3 font-normal text-stone-600">
+                      {row.label}
+                    </th>
+                    <td className="bg-accent-50/40 px-3 py-3 text-center">
+                      <Availability value={row.booklist} highlight />
+                    </td>
+                    {COMPETITORS.map((name) => (
+                      <td key={name} className="px-3 py-3 text-center">
+                        <Availability value={row.others[name]} />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-3 text-xs text-stone-500">
+            D&apos;après les fiches App Store, les pages d&apos;aide et les feuilles de route
+            publiques de chaque application, vérifiées en {COMPARISON_CHECKED}.
+          </p>
+        </section>
+
+        <section className="mx-auto max-w-4xl px-4 pt-16 sm:px-6">
+          <h2 className="font-serif text-3xl text-stone-900">Combien coûte BookList ?</h2>
+          <div className="mt-6 grid gap-4 md:grid-cols-2">
+            <div className="card p-5 sm:p-6">
+              <h3 className="font-medium text-stone-900">Gratuit</h3>
+              <p className="mt-2 font-serif text-4xl text-stone-900 tabular-nums">0 €</p>
+              <p className="mt-3 text-sm leading-relaxed text-stone-500">
+                Jusqu&apos;à {FREE_BOOK_LIMIT} livres ajoutés un par un. L&apos;import de votre
+                bibliothèque Goodreads ou StoryGraph est complet, même au-delà de {FREE_BOOK_LIMIT}{" "}
+                livres.
+              </p>
+            </div>
+            <div className="card p-5 sm:p-6">
+              <h3 className="text-accent-700 font-medium">Premium</h3>
+              <p className="mt-2 flex items-baseline gap-2 text-stone-900">
+                <span className="font-serif text-4xl tabular-nums">
+                  {PREMIUM_PRICES.yearly.perMonth}
+                </span>
+                <span className="text-sm text-stone-500">par mois</span>
+              </p>
+              <p className="mt-3 text-sm leading-relaxed text-stone-500">
+                Facturé {PREMIUM_PRICES.yearly.amount} par an, ou {PREMIUM_PRICES.monthly.amount} au
+                mois sans engagement. {TRIAL_DAYS} jours d&apos;essai gratuit.
+              </p>
+            </div>
+          </div>
+          <p className="mt-4 text-sm text-stone-500">
+            <Link href="/#tarifs" className="text-accent-700 font-medium hover:underline">
+              Comparer les deux formules en détail
+            </Link>
+          </p>
         </section>
 
         <section className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
