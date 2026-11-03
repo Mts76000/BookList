@@ -65,8 +65,8 @@ test.describe("Bibliothèque", () => {
       "true",
     );
 
-    await page.getByPlaceholder("Réflexions, citations").fill("Une prose magnifique.");
-    await page.getByRole("button", { name: "Ajouter une note" }).click();
+    await page.getByLabel("Nouvelle note").fill("Une prose magnifique.");
+    await page.getByRole("button", { name: "Ajouter la note" }).click();
     await expect(page.getByText("Une prose magnifique.")).toBeVisible();
 
     await page.goto("/books");
@@ -104,9 +104,12 @@ test.describe("Bibliothèque", () => {
     await page.getByRole("button", { name: "Ajouter", exact: true }).click();
     await expect(page).toHaveURL(/\/books\/[^/]+$/);
 
-    await page.getByRole("button", { name: "Modifier le livre" }).click();
-    await page.getByLabel("Couverture (URL)").fill(coverUrl);
-    await page.getByRole("button", { name: "Enregistrer", exact: true }).click();
+    // La modification se fait sur sa propre page, qui ramène à la fiche une fois enregistrée.
+    await page.getByRole("link", { name: "Modifier" }).click();
+    await expect(page).toHaveURL(/\/books\/[^/]+\/edit$/);
+    await page.getByLabel("Adresse de la couverture").fill(coverUrl);
+    await page.getByRole("button", { name: "Enregistrer les modifications" }).click();
+    await expect(page).toHaveURL(/\/books\/[^/]+$/);
 
     const cover = page.locator(`img[src="${coverUrl}"]`).first();
     await expect(cover).toBeVisible();
@@ -176,7 +179,8 @@ test.describe("Back-office", () => {
     await expect(page).toHaveURL(/\/admin\/users/);
     // La liste rend deux fois chaque compte — en cartes sous `lg`, en tableau au-dessus —
     // et le CSS n'en montre qu'un. On vise donc celui qui est réellement visible, sans
-    // supposer la largeur de la fenêtre de test.
-    await expect(page.getByText(email).filter({ visible: true })).toBeVisible();
+    // supposer la largeur de la fenêtre de test. Le contenu principal seulement : la barre
+    // latérale affiche aussi l'email de l'administrateur connecté, qui est ici le même.
+    await expect(page.getByRole("main").getByText(email).filter({ visible: true })).toBeVisible();
   });
 });

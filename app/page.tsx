@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Image, { type StaticImageData } from "next/image";
+import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getOptionalSession } from "@/lib/permissions";
@@ -17,11 +17,6 @@ import { PublicHeader } from "@/components/public-header";
 import { StickySignupCta } from "@/components/sticky-signup-cta";
 import { env } from "@/lib/env";
 import { FREE_BOOK_LIMIT, PREMIUM_PRICES } from "@/lib/plans";
-// Vraies captures de l'application (compte de démonstration, voir drizzle/seed-demo.ts).
-import dashboardShot from "@/public/screenshots/tableau-de-bord.webp";
-import yearReviewShot from "@/public/screenshots/bilan-annuel.webp";
-import statsShot from "@/public/screenshots/statistiques.webp";
-import sagasShot from "@/public/screenshots/sagas.webp";
 
 const FEATURES = [
   {
@@ -62,7 +57,17 @@ const FEATURES = [
   },
 ];
 
-const SHOWCASE: { image: StaticImageData; alt: string; title: string; description: string }[] = [
+// Vraies captures de l'application (compte de démonstration, voir drizzle/seed-demo.ts),
+// toutes au format d'un écran de téléphone en 2x. Chemins plutôt qu'imports statiques :
+// les types des imports d'images viennent de next-env.d.ts, généré et non versionné, et
+// manquent donc à la vérification de types de la CI.
+const SCREENSHOT_SIZE = { width: 780, height: 1328 };
+const dashboardShot = "/screenshots/tableau-de-bord.webp";
+const yearReviewShot = "/screenshots/bilan-annuel.webp";
+const statsShot = "/screenshots/statistiques.webp";
+const sagasShot = "/screenshots/sagas.webp";
+
+const SHOWCASE: { image: string; alt: string; title: string; description: string }[] = [
   {
     image: yearReviewShot,
     alt: "Écran Bilan 2026 de BookList : 11 livres lus, 5 120 pages tournées, coup de cœur Station Eleven",
@@ -91,7 +96,7 @@ function PhoneFrame({
   preload = false,
   className = "",
 }: {
-  image: StaticImageData;
+  image: string;
   alt: string;
   sizes: string;
   preload?: boolean;
@@ -103,6 +108,7 @@ function PhoneFrame({
     >
       <Image
         src={image}
+        {...SCREENSHOT_SIZE}
         alt={alt}
         sizes={sizes}
         preload={preload}
