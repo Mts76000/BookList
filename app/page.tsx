@@ -57,7 +57,7 @@ const FEATURES = [
   },
 ];
 
-// Vraies captures de l'application (compte de démonstration, voir drizzle/seed-demo.ts),
+// Vraies captures de l'application (compte de démonstration, voir drizzle/seed.ts),
 // toutes au format d'un écran de téléphone en 2x. Chemins plutôt qu'imports statiques :
 // les types des imports d'images viennent de next-env.d.ts, généré et non versionné, et
 // manquent donc à la vérification de types de la CI.

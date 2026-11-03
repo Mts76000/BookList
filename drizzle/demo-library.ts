@@ -1,5 +1,5 @@
 /**
- * Bibliothèque du compte de démonstration (voir drizzle/seed-demo.ts) : celle de Camille,
+ * Bibliothèque du compte de démonstration (voir drizzle/seed.ts) : celle de Camille,
  * lectrice de science-fiction, de fantasy, de classiques et de polars, sur trois ans.
  *
  * Pensée pour que chaque écran ait quelque chose de cohérent à montrer :
