@@ -1,6 +1,6 @@
 import { after } from "next/server";
 import { db } from "@/lib/db";
-import { book } from "@/drizzle/schema";
+import { book, comment } from "@/drizzle/schema";
 import { requireAuth } from "@/lib/permissions";
 import { apiSuccess, apiError, withApiErrorHandling } from "@/lib/api-response";
 import { validateBody } from "@/lib/validation";
@@ -8,7 +8,7 @@ import { createBookSchema, importBooksSchema } from "@/lib/validation-schemas";
 import { createRateLimiter } from "@/lib/rate-limit";
 import { requestMetadata } from "@/lib/audit-log";
 import { csvRowsToObjects, parseCsv } from "@/lib/csv";
-import { detectImportFormat, toBookListRow } from "@/lib/import-formats";
+import { detectImportFormat, importedComments, toBookListRow } from "@/lib/import-formats";
 import { enrichLibrary } from "@/lib/library-enrichment";
 import { logger } from "@/lib/logger";
 import { catalogBook } from "@/drizzle/schema";
@@ -29,6 +29,9 @@ const AFTER_IMPORT_BATCH = 60;
  * description, coverUrl, pageCount, genre, publishedDate, userRating, userStartDate,
  * userEndDate, status), ou tel quel un export Goodreads ou StoryGraph, reconnu à son en-tête
  * (voir `lib/import-formats.ts`).
+ *
+ * Les avis et notes privées de ces exports deviennent des commentaires du livre, écrits dans
+ * la même transaction que les livres.
  *
  * Ces exports n'ont ni couverture ni résumé : on les complète depuis le catalogue partagé
  * quand l'ISBN y est déjà, sans aucun appel à Google Books. Les autres sont complétés après
@@ -63,12 +66,25 @@ export const POST = withApiErrorHandling(async (request: Request) => {
   }
 
   const toCreate: (typeof book.$inferInsert)[] = [];
+  // Commentaires de chaque livre, par identifiant : attribué ici plutôt que par la base pour
+  // rattacher les commentaires aux seuls livres réellement insérés.
+  const commentsByBook = new Map<string, (typeof comment.$inferInsert)[]>();
   const errors: { line: number; message: string }[] = [];
 
   rows.forEach((row, index) => {
     const parsed = createBookSchema.safeParse(row);
     if (parsed.success) {
-      toCreate.push({ ...parsed.data, userId: session.user.id });
+      const id = crypto.randomUUID();
+      toCreate.push({ ...parsed.data, id, userId: session.user.id });
+      const notes = importedComments(row);
+      if (notes.length > 0) {
+        // Daté de la fin de lecture quand elle est connue : c'est là que l'avis a été écrit.
+        const createdAt = parsed.data.userEndDate ?? undefined;
+        commentsByBook.set(
+          id,
+          notes.map((content) => ({ content, bookId: id, userId: session.user.id, createdAt })),
+        );
+      }
     } else {
       errors.push({
         // +2 : une ligne pour l'en-tête, une pour l'index commençant à zéro. C'est le
@@ -103,14 +119,20 @@ export const POST = withApiErrorHandling(async (request: Request) => {
 
   let imported = 0;
   if (accepted.length > 0) {
-    // Les doublons d'ISBN déjà en bibliothèque sont ignorés silencieusement : réimporter
-    // un export complet ne doit pas dupliquer la bibliothèque.
-    const inserted = await db
-      .insert(book)
-      .values(accepted)
-      .onConflictDoNothing({ target: [book.userId, book.isbn] })
-      .returning({ id: book.id });
-    imported = inserted.length;
+    imported = await db.transaction(async (tx) => {
+      // Les doublons d'ISBN déjà en bibliothèque sont ignorés silencieusement : réimporter
+      // un export complet ne doit pas dupliquer la bibliothèque.
+      const inserted = await tx
+        .insert(book)
+        .values(accepted)
+        .onConflictDoNothing({ target: [book.userId, book.isbn] })
+        .returning({ id: book.id });
+
+      const comments = inserted.flatMap((entry) => commentsByBook.get(entry.id) ?? []);
+      if (comments.length > 0) await tx.insert(comment).values(comments);
+
+      return inserted.length;
+    });
   }
 
   if (imported > 0) {

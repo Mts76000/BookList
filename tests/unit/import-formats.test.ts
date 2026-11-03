@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { detectImportFormat, toBookListRow } from "@/lib/import-formats";
+import {
+  detectImportFormat,
+  importedComments,
+  splitComment,
+  toBookListRow,
+} from "@/lib/import-formats";
 
 const GOODREADS_HEADER =
   "Book Id,Title,Author,Author l-f,Additional Authors,ISBN,ISBN13,My Rating,Average Rating,Publisher,Binding,Number of Pages,Year Published,Original Publication Year,Date Read,Date Added,Bookshelves,Bookshelves with positions,Exclusive Shelf,My Review,Spoiler,Private Notes,Read Count,Owned Copies".split(
@@ -49,7 +54,27 @@ describe("toBookListRow — Goodreads", () => {
       status: "FINISHED",
       format: "paper",
       tags: "favoris, prêtés",
+      review: "",
+      privateNotes: "",
     });
+  });
+
+  it("reprend l'avis HTML et la note privée comme commentaires en texte", () => {
+    const row = toBookListRow("goodreads", {
+      Title: "Dune (Dune, #1)",
+      Author: "Frank Herbert",
+      "My Review": "Un <b>chef-d&#39;œuvre</b>.<br/><br/><br />À relire &amp; à offrir.",
+      "Private Notes": "Prêté à Léa",
+    });
+    expect(row.review).toBe("Un chef-d'œuvre.\n\nÀ relire & à offrir.");
+    expect(importedComments(row)).toEqual([
+      "Un chef-d'œuvre.\n\nÀ relire & à offrir.",
+      "Prêté à Léa",
+    ]);
+  });
+
+  it("n'ajoute aucun commentaire sans avis ni note", () => {
+    expect(importedComments(toBookListRow("goodreads", { Title: "Dune" }))).toEqual([]);
   });
 
   it("traite une note de 0 comme absente et une pile à lire comme TO_READ", () => {
@@ -118,5 +143,30 @@ describe("toBookListRow — StoryGraph", () => {
       Tags: "sf, culte",
     });
     expect(row).toMatchObject({ format: "audio", tags: "sf, culte" });
+  });
+
+  it("reprend l'avis comme commentaire", () => {
+    const row = toBookListRow("storygraph", {
+      Title: "Dune",
+      Authors: "Frank Herbert",
+      Review: "Vertigineux.",
+    });
+    expect(importedComments(row)).toEqual(["Vertigineux."]);
+  });
+});
+
+describe("splitComment", () => {
+  it("garde une note courte telle quelle", () => {
+    expect(splitComment("  Court.  ")).toEqual(["Court."]);
+  });
+
+  it("découpe une note trop longue à un espace, sans rien perdre", () => {
+    const parts = splitComment("aaaa bbbb cccc dddd", 10);
+    expect(parts).toEqual(["aaaa bbbb", "cccc dddd"]);
+    expect(parts.every((part) => part.length <= 10)).toBe(true);
+  });
+
+  it("coupe net un mot plus long que la limite", () => {
+    expect(splitComment("abcdefghijkl", 5)).toEqual(["abcde", "fghij", "kl"]);
   });
 });

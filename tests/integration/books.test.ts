@@ -273,4 +273,21 @@ describe("POST /api/books/import", () => {
     const rows = await db.execute(sql`SELECT id FROM "book" WHERE user_id = ${currentUser.id}`);
     expect(rows.rows).toHaveLength(1);
   });
+
+  it("reprend l'avis Goodreads comme commentaire, sans le doubler à la réimportation", async () => {
+    currentUser.id = await createUser(currentUser.email);
+    const csv = [
+      "Book Id,Title,Author,ISBN13,My Rating,Date Read,Exclusive Shelf,My Review",
+      '1,Dune,Frank Herbert,="9782266320481",5,2024/03/07,read,"Immense.<br/>À relire, vraiment."',
+    ].join("\n");
+    const url = "http://localhost:3000/api/books/import";
+
+    await importBooks(request(url, "POST", { csv }));
+    await importBooks(request(url, "POST", { csv }));
+
+    const comments = await db.execute(
+      sql`SELECT content FROM "comment" WHERE user_id = ${currentUser.id}`,
+    );
+    expect(comments.rows).toEqual([{ content: "Immense.\nÀ relire, vraiment." }]);
+  });
 });

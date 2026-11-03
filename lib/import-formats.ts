@@ -74,6 +74,54 @@ function toFormat(value: string | undefined): string {
   return "paper";
 }
 
+/** Longueur maximale d'un commentaire (voir `commentSchema`). */
+export const MAX_COMMENT_LENGTH = 5000;
+
+const HTML_ENTITIES: Record<string, string> = {
+  amp: "&",
+  lt: "<",
+  gt: ">",
+  quot: '"',
+  apos: "'",
+  nbsp: " ",
+};
+
+/**
+ * Texte d'un avis ou d'une note. Goodreads exporte ses avis en HTML (`<br />`, `<i>`…) :
+ * les retours à la ligne sont gardés, les autres balises retirées, les entités décodées.
+ */
+function cleanNote(value: string | undefined): string {
+  return (value ?? "")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n\n")
+    .replace(/<[^>]*>/g, "")
+    .replace(/&(#\d+|#x[\da-f]+|\w+);/gi, (entity, code: string) => {
+      if (code.startsWith("#x") || code.startsWith("#X"))
+        return String.fromCodePoint(Number.parseInt(code.slice(2), 16));
+      if (code.startsWith("#")) return String.fromCodePoint(Number.parseInt(code.slice(1), 10));
+      return HTML_ENTITIES[code.toLowerCase()] ?? entity;
+    })
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+/**
+ * Découpe une note trop longue pour un seul commentaire en plusieurs, à un espace près de la
+ * limite : un long avis est repris en entier plutôt que tronqué.
+ */
+export function splitComment(text: string, max = MAX_COMMENT_LENGTH): string[] {
+  const parts: string[] = [];
+  let rest = text.trim();
+  while (rest.length > max) {
+    const cut = rest.lastIndexOf(" ", max);
+    const end = cut > max / 2 ? cut : max;
+    parts.push(rest.slice(0, end).trim());
+    rest = rest.slice(end).trim();
+  }
+  if (rest) parts.push(rest);
+  return parts;
+}
+
 /** Étagères Goodreads standard, déjà reprises dans le statut. */
 const GOODREADS_STATUS_SHELVES = new Set(["read", "to-read", "currently-reading"]);
 
@@ -98,6 +146,8 @@ function fromGoodreads(row: Row): Row {
       .map((shelf) => shelf.trim())
       .filter((shelf) => shelf && !GOODREADS_STATUS_SHELVES.has(shelf))
       .join(", "),
+    review: cleanNote(row["My Review"]),
+    privateNotes: cleanNote(row["Private Notes"]),
   };
 }
 
@@ -117,7 +167,16 @@ function fromStoryGraph(row: Row): Row {
     status: status === "did-not-finish" ? "ABANDONED" : toStatus(status, userEndDate),
     format: toFormat(row["Format"]),
     tags: row["Tags"] ?? "",
+    review: cleanNote(row["Review"]),
   };
+}
+
+/**
+ * Avis et notes privées d'une ligne traduite, à enregistrer comme commentaires du livre :
+ * ils ne font pas partie des colonnes du livre, que `createBookSchema` ignore donc.
+ */
+export function importedComments(row: Row): string[] {
+  return [row.review, row.privateNotes].flatMap((note) => (note ? splitComment(note) : []));
 }
 
 /** Traduit une ligne du format détecté en colonnes BookList, sans rien valider. */
