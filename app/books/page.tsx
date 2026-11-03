@@ -31,7 +31,7 @@ const BOOKS_PER_PAGE = 12;
 const readingDate = sql`case
   when ${book.status} = 'TO_READ' then null
   when ${book.status} = 'READING' then coalesce(${book.userStartDate}, ${book.statusChangedAt})
-  else coalesce(${book.userEndDate}, ${book.userReadDate}, ${book.statusChangedAt}, ${book.userStartDate})
+  else coalesce(${book.userEndDate}, ${book.statusChangedAt}, ${book.userStartDate})
 end`;
 
 /**
