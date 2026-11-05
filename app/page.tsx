@@ -67,20 +67,23 @@ const FEATURES: {
   },
 ];
 
-// Vraies captures de l'application (compte de démonstration, voir drizzle/seed.ts),
-// toutes au format d'un écran de téléphone en 2x. Chemins plutôt qu'imports statiques :
-// les types des imports d'images viennent de next-env.d.ts, généré et non versionné, et
-// manquent donc à la vérification de types de la CI.
-const SCREENSHOT_SIZE = { width: 780, height: 1328 };
-const dashboardShot = "/screenshots/tableau-de-bord.webp";
-const yearReviewShot = "/screenshots/bilan-annuel.webp";
-const statsShot = "/screenshots/statistiques.webp";
-const sagasShot = "/screenshots/sagas.webp";
+// Vraies captures de l'application (compte de démonstration, voir drizzle/seed.ts), toutes au
+// format d'un écran de téléphone, avec une bande libre en haut pour l'encoche et en bas pour
+// la barre d'accueil du cadre. Chemins plutôt qu'imports statiques : les types des imports
+// d'images viennent de next-env.d.ts, généré et non versionné, et manquent donc à la
+// vérification de types de la CI.
+// Une image remplacée doit changer de nom : /_next/image reste en cache jusqu'à un mois chez
+// les visiteurs, sur l'URL seule (en-têtes HTTP et service worker, voir app/sw.ts).
+const SCREENSHOT_SIZE = { width: 741, height: 1504 };
+const dashboardShot = "/screenshots/tableau-de-bord-v2.webp";
+const yearReviewShot = "/screenshots/bilan-annuel-v2.webp";
+const statsShot = "/screenshots/statistiques-v2.webp";
+const sagasShot = "/screenshots/sagas-v2.webp";
 
 const SHOWCASE: { image: string; alt: string; title: string; description: string }[] = [
   {
     image: yearReviewShot,
-    alt: "Écran Bilan 2026 de BookList : 11 livres lus, 5 120 pages tournées, coup de cœur Station Eleven",
+    alt: "Bilan 2026 de BookList : 12 livres lus, 5 491 pages tournées, coup de cœur Un hiver pour te résister",
     title: "Un bilan à partager",
     description: "Votre année en une image, prête pour vos stories.",
   },
@@ -98,6 +101,14 @@ const SHOWCASE: { image: string; alt: string; title: string; description: string
   },
 ];
 
+// Boutons sur la tranche du téléphone : action et volume à gauche, verrouillage à droite.
+const PHONE_BUTTONS = [
+  "-left-[2px] top-[14%] h-[4%] rounded-l-sm",
+  "-left-[2px] top-[20.5%] h-[7.5%] rounded-l-sm",
+  "-left-[2px] top-[29.5%] h-[7.5%] rounded-l-sm",
+  "-right-[2px] top-[23%] h-[11%] rounded-r-sm",
+];
+
 /** Cadre de téléphone autour d'une capture de l'application. */
 function PhoneFrame({
   image,
@@ -113,17 +124,37 @@ function PhoneFrame({
   className?: string;
 }) {
   return (
-    <div
-      className={`rounded-[2.25rem] bg-stone-900 p-2 shadow-[0_2px_4px_rgba(36,29,21,0.12),0_32px_56px_-24px_rgba(36,29,21,0.55)] ${className}`}
-    >
-      <Image
-        src={image}
-        {...SCREENSHOT_SIZE}
-        alt={alt}
-        sizes={sizes}
-        preload={preload}
-        className="h-auto w-full rounded-[1.75rem]"
-      />
+    <div className={className}>
+      <div className="relative">
+        {PHONE_BUTTONS.map((position) => (
+          <span
+            key={position}
+            aria-hidden="true"
+            className={`absolute w-[3px] bg-stone-700 ${position}`}
+          />
+        ))}
+        <div className="relative rounded-[2.25rem] bg-stone-950 p-[6px] shadow-[inset_0_0_0_2px_var(--color-stone-700),0_1px_2px_rgba(36,29,21,0.2),0_12px_24px_-8px_rgba(36,29,21,0.22),0_40px_64px_-24px_rgba(36,29,21,0.45)]">
+          <div className="relative overflow-hidden rounded-[1.875rem]">
+            <Image
+              src={image}
+              {...SCREENSHOT_SIZE}
+              alt={alt}
+              sizes={sizes}
+              preload={preload}
+              className="h-auto w-full"
+            />
+            {/* Encoche et barre d'accueil, dans les bandes libres des captures. */}
+            <span
+              aria-hidden="true"
+              className="absolute top-[2%] left-1/2 aspect-[7/2] w-[22%] -translate-x-1/2 rounded-full bg-stone-950"
+            />
+            <span
+              aria-hidden="true"
+              className="absolute bottom-[1.5%] left-1/2 h-1 w-[34%] -translate-x-1/2 rounded-full bg-stone-900"
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -172,9 +203,6 @@ export default async function HomePage() {
             {/* Pas d'animation d'entrée sur le texte : le titre est le plus grand élément du
                 premier écran, le faire apparaître en fondu retardait son affichage (LCP). */}
             <div>
-              <div className="bg-card mb-4 inline-flex items-center gap-1.5 rounded-full border border-stone-200 px-3 py-1 text-xs font-medium text-stone-500 sm:mb-6 sm:px-4 sm:py-1.5">
-                Application de suivi de lecture
-              </div>
               <h1 className="font-serif text-[2.25rem] leading-[1.05] text-balance text-stone-900 sm:text-5xl lg:text-6xl">
                 L&apos;application de suivi de lecture qui vous fait retrouver le plaisir de lire
               </h1>
@@ -200,36 +228,36 @@ export default async function HomePage() {
             </div>
 
             <div
-              className="animate-fade-in-up relative mx-auto w-full max-w-[15rem] sm:max-w-[18rem] lg:max-w-[22rem]"
+              className="animate-fade-in-up relative mx-auto w-full max-w-[13rem] sm:max-w-[15rem] lg:max-w-[22rem]"
               style={{ animationDelay: "120ms" }}
             >
               <PhoneFrame
                 image={yearReviewShot}
                 alt=""
-                sizes="216px"
-                className="absolute top-10 -right-28 hidden w-[13.5rem] rotate-6 opacity-95 lg:block"
+                sizes="188px"
+                className="absolute top-10 -right-12 hidden w-[11.75rem] rotate-6 lg:block"
               />
               <PhoneFrame
                 image={dashboardShot}
                 alt="Accueil de BookList : la lecture en cours à 65 %, le compteur de pages et la suite de la pile"
-                sizes="(min-width: 1024px) 288px, (min-width: 640px) 288px, 240px"
+                sizes="(min-width: 1024px) 248px, (min-width: 640px) 240px, 208px"
                 preload
-                className="relative w-full lg:w-[18rem]"
+                className="relative w-full lg:w-[15.5rem]"
               />
             </div>
           </div>
         </section>
 
         <section className="bg-card border-y border-stone-200/70">
-          <div className="mx-auto max-w-5xl px-4 pt-16 sm:px-6 sm:pt-20">
+          <div className="mx-auto max-w-[52rem] px-4 pt-16 sm:px-6 sm:pt-20">
             {/* Défilement horizontal sur mobile plutôt que trois téléphones empilés. */}
             <ul className="-mx-4 flex snap-x snap-mandatory gap-5 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-8 sm:overflow-visible sm:px-0">
               {SHOWCASE.map((item) => (
-                <li key={item.title} className="w-[68%] shrink-0 snap-center sm:w-auto">
+                <li key={item.title} className="w-[58%] shrink-0 snap-center sm:w-auto">
                   <PhoneFrame
                     image={item.image}
                     alt={item.alt}
-                    sizes="(min-width: 1024px) 300px, (min-width: 640px) 30vw, 68vw"
+                    sizes="(min-width: 1024px) 240px, (min-width: 640px) 30vw, 58vw"
                   />
                   <h2 className="mt-5 font-serif text-lg text-stone-900">{item.title}</h2>
                   <p className="mt-1 text-sm text-stone-500">{item.description}</p>
