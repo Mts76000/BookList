@@ -37,8 +37,31 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      # Production dependencies: blocks on any high/critical advisory.
-      - run: npm audit --omit=dev --audit-level=high
+      # Production dependencies: blocks on any high/critical advisory not in AUDIT_ALLOWLIST.
+      # GHSA-fc5q-39xc-vjpf (picomatch ReDoS, no patched release as of 2026-11) only reaches
+      # the production tree through vitest, an *optional* peer of better-auth: npm marks it
+      # devOptional, which `--omit=dev` alone does not drop, but it is never installed in
+      # production. Remove the entry once picomatch ships a fix.
+      - name: npm audit (production, high+)
+        env:
+          AUDIT_ALLOWLIST: GHSA-fc5q-39xc-vjpf
+        run: |
+          npm audit --omit=dev --json > audit.json || true
+          node -e '
+            const report = JSON.parse(require("fs").readFileSync("audit.json", "utf8"));
+            if (report.error) { console.error(report.error.summary); process.exit(1); }
+            const allow = new Set(process.env.AUDIT_ALLOWLIST.split(/\s+/).filter(Boolean));
+            const blocking = new Map();
+            for (const v of Object.values(report.vulnerabilities ?? {}))
+              for (const a of v.via)
+                if (typeof a === "object" && ["high", "critical"].includes(a.severity)) {
+                  const id = a.url.split("/").pop();
+                  if (!allow.has(id)) blocking.set(id, `${a.name}: ${a.title} (${a.url})`);
+                }
+            for (const line of blocking.values()) console.error(line);
+            console.log(`${blocking.size} blocking advisory(ies), allowlist: ${[...allow].join(", ")}`);
+            process.exit(blocking.size ? 1 : 0);
+          '
       # All dependencies: blocks on critical only. Accepted high, dev-only advisory:
       # braces (via eslint-config-next > fast-glob), which has no patched release and is
       # only reached with glob patterns from our own ESLint config — never user input.
