@@ -33,7 +33,7 @@
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
     "@react-email/components": "^1.0.12",
-    "@serwist/turbopack": "^9.5.13",
+    "@serwist/turbopack": "^9.5.15",
     "@upstash/ratelimit": "^2.2.0",
     "@upstash/redis": "^1.41.0",
     "@zxing/browser": "^0.2.1",
@@ -50,7 +50,7 @@
     "react-dom": "19.3.1",
     "react-email": "^6.11.8",
     "resend": "^6.35.0",
-    "serwist": "^9.5.13",
+    "serwist": "^9.5.15",
     "stripe": "^23.0.1",
     "web-push": "^3.6.7",
     "zod": "^4.6.7"
