@@ -4,9 +4,15 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    # Patch/minor updates are grouped (one PR per group) and auto-merged once CI passes
+    # (.github/workflows/dependabot-automerge.yml). Majors stay as separate PRs for review.
     groups:
       dev-dependencies:
         dependency-type: "development"
+        update-types: ["minor", "patch"]
+      prod-dependencies:
+        dependency-type: "production"
+        update-types: ["minor", "patch"]
     open-pull-requests-limit: 10
     # Versions majeures à faire volontairement : @types/node suit le Node de production
     # (24 LTS), TypeScript et ESLint changent de comportement d'une majeure à l'autre.
