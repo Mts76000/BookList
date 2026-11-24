@@ -34,7 +34,7 @@
     "@phosphor-icons/react": "^2.1.10",
     "@react-email/components": "^1.0.12",
     "@serwist/turbopack": "^9.5.15",
-    "@upstash/ratelimit": "^2.2.0",
+    "@upstash/ratelimit": "^2.2.1",
     "@upstash/redis": "^1.41.0",
     "@zxing/browser": "^0.2.1",
     "@zxing/library": "^0.23.0",
