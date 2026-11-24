@@ -1,4 +1,4 @@
-import webpush from "web-push";
+import { sendNotification, setVapidDetails } from "web-push";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { pushSubscription } from "@/drizzle/schema";
@@ -14,7 +14,7 @@ export function isPushEnabled(): boolean {
 function configure(): boolean {
   if (!isPushEnabled()) return false;
   if (!configured) {
-    webpush.setVapidDetails(
+    setVapidDetails(
       `mailto:${env.CONTACT_EMAIL}`,
       env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
       env.VAPID_PRIVATE_KEY!,
@@ -48,7 +48,7 @@ export async function sendPushToUser(userId: string, payload: PushPayload): Prom
   let sent = 0;
   for (const subscription of subscriptions) {
     try {
-      await webpush.sendNotification(
+      await sendNotification(
         {
           endpoint: subscription.endpoint,
           keys: { p256dh: subscription.p256dh, auth: subscription.auth },
